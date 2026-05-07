@@ -43,7 +43,7 @@ def pack_packet(cmd, data=b'', packet_remain=0):
     """
     Pack Paperang protocol packet
     Format: [0x02] [CMD:1B] [packetRemain:1B] [dataLength:2B LE] [DATA:0-1023B] [CRC32:4B LE] [0x03]
-    
+
     Args:
         cmd: Command byte
         data: Data content
@@ -66,22 +66,22 @@ class PaperangP2:
         self.dev = None
         self.ep_out = None
         self.ep_in = None
-        
+
     def connect(self):
         """Connect to printer"""
         self.dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
         if self.dev is None:
             raise RuntimeError("Paperang P2 printer not found")
-        
+
         # Detach kernel driver if active
         if self.dev.is_kernel_driver_active(0):
             self.dev.detach_kernel_driver(0)
-        
+
         # Set configuration
         self.dev.set_configuration()
         cfg = self.dev.get_active_configuration()
         intf = cfg[(0, 0)]
-        
+
         # Find endpoints
         self.ep_out = usb.util.find_descriptor(
             intf,
@@ -91,15 +91,15 @@ class PaperangP2:
             intf,
             custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN
         )
-        
+
         return True
-    
+
     def send(self, cmd, data=b''):
         """Send command"""
         packet = pack_packet(cmd, data)
         self.dev.write(self.ep_out.bEndpointAddress, packet)
         return True
-    
+
     def send_multi_packet(self, cmd, data):
         """
         Send multi-packet data (for large data printing)
@@ -108,27 +108,27 @@ class PaperangP2:
         total_len = len(data)
         offset = 0
         packet_idx = 0
-        
+
         while offset < total_len:
             # Calculate remaining packets
             remaining = total_len - offset
             current_packet_data_len = min(MAX_PACKET_DATA, remaining)
             next_offset = offset + current_packet_data_len
             packets_remain = (total_len - next_offset + MAX_PACKET_DATA - 1) // MAX_PACKET_DATA
-            
+
             chunk = data[offset:next_offset]
             packet = pack_packet(cmd, chunk, packets_remain)
             self.dev.write(self.ep_out.bEndpointAddress, packet)
-            
+
             offset = next_offset
             packet_idx += 1
-        
+
         return True
-    
+
     def feed(self, lines=100):
         """Feed paper (command 0x1A)"""
         return self.send(0x1A, struct.pack('<H', lines))
-    
+
     def set_heat_density(self, density=75):
         """
         Set heat density/print darkness (command 0x19)
@@ -140,15 +140,15 @@ class PaperangP2:
         if density > 100:
             density = 100
         return self.send(0x19, struct.pack('<H', density))
-    
+
     def set_paper_type(self, paper_type=0):
         """Set paper type (0=normal, 1=continuous)"""
         return self.send(0x2C, bytes([paper_type]))
-    
+
     def print_test_page(self):
         """Print test page"""
         return self.send(0x1B)
-    
+
     def read_response(self, timeout=1000):
         """Read and parse response from printer"""
         try:
@@ -157,35 +157,35 @@ class PaperangP2:
             # Format: [0x02] [CMD:1B] [packetRemain:1B] [dataLength:2B LE] [DATA] [CRC32:4B LE] [0x03]
             if len(resp) < 10:
                 return None
-            
+
             # Find start byte
             start_idx = 0
             for i in range(len(resp)):
                 if resp[i] == 0x02:
                     start_idx = i
                     break
-            
+
             if start_idx + 10 > len(resp):
                 return None
-            
+
             cmd = resp[start_idx + 1]
             packet_remain = resp[start_idx + 2]
             data_len = struct.unpack('<H', resp[start_idx + 3:start_idx + 5])[0]
-            
+
             if start_idx + 5 + data_len + 4 + 1 > len(resp):
                 return None
-            
+
             data = bytes(resp[start_idx + 5:start_idx + 5 + data_len])
             crc = struct.unpack('<I', resp[start_idx + 5 + data_len:start_idx + 5 + data_len + 4])[0]
             end_byte = resp[start_idx + 5 + data_len + 4]
-            
+
             if end_byte != 0x03:
                 return None
-            
+
             return {'cmd': cmd, 'packet_remain': packet_remain, 'data': data, 'crc': crc}
         except Exception as e:
             return None
-    
+
     def get_status(self):
         """Get printer status"""
         self.send(0x0C)
@@ -193,7 +193,7 @@ class PaperangP2:
         if resp:
             return resp['data'].hex() if resp['data'] else None
         return None
-    
+
     def get_battery(self):
         """Get battery level"""
         self.send(0x10)
@@ -202,45 +202,47 @@ class PaperangP2:
             # Battery level is typically in the first byte
             return resp['data'][0] if len(resp['data']) > 0 else None
         return None
-    
+
     def print_bitmap(self, bitmap_data, width_bytes=72):
         """Print bitmap data (row-based packet splitting, based on Java project)"""
         # Lines per packet: 1023 / 72 = 14 lines
         lines_per_packet = MAX_PACKET_DATA // width_bytes  # 14
-        
+
         total_bytes = len(bitmap_data)
         total_lines = total_bytes // width_bytes
-        
+
         # Calculate total packets
         total_packets = (total_lines + lines_per_packet - 1) // lines_per_packet
-        
+
         offset = 0
         line_offset = 0
         packet_idx = 0
-        
+
         while offset < total_bytes:
             # Calculate lines for current packet
             remaining_lines = total_lines - line_offset
             current_lines = min(lines_per_packet, remaining_lines)
             current_bytes = current_lines * width_bytes
-            
+
             # Calculate remaining packets (after this packet)
             packet_idx += 1
             remaining_packets = total_packets - packet_idx
-            
+
             chunk = bitmap_data[offset:offset + current_bytes]
             packet = pack_packet(0x00, chunk, remaining_packets)
             self.dev.write(self.ep_out.bEndpointAddress, packet)
-            
+
             offset += current_bytes
             line_offset += current_lines
-        
+
         return True
-    
-    def print_image(self, image_path, heat_density=75, feed_before=50, feed_after=300, threshold=128, brightness=1.0, contrast=1.0):
+
+    def print_image(self, image_path, heat_density=75, feed_before=50,
+                    feed_after=300, threshold=128, brightness=1.0,
+                    contrast=1.0):
         """
         Print image file
-        
+
         Args:
             image_path: Path to image file
             heat_density: Heat density 0-100 (default 75)
@@ -252,26 +254,26 @@ class PaperangP2:
         """
         # Open image
         img = Image.open(image_path)
-        
+
         # Resize to 576 pixels width
         if img.width != PRINT_WIDTH:
             ratio = PRINT_WIDTH / img.width
             new_height = int(img.height * ratio)
             img = img.resize((PRINT_WIDTH, new_height), Image.LANCZOS)
-        
+
         # Convert to grayscale then binarize (if not already 1-bit)
         if img.mode != '1':
             img = img.convert('L')
             # Apply brightness and contrast adjustments
             img = img.point(lambda x: max(0, min(255, int((x - 128) * contrast + 128 * brightness))))
             img = img.point(lambda x: 0 if x < threshold else 255, '1')
-        
+
         # Convert to bitmap data (based on Java project's toByteArrays())
         # Row-based packing: 72 bytes per line, each byte's 8 bits represent 8 horizontal pixels
         # bitPos = 7 - (x % 8), i.e., MSB on left
         width_bytes = PRINT_WIDTH // 8  # 72
         height = img.height
-        
+
         # Pack data by row
         data = bytearray()
         for y in range(height):
@@ -282,7 +284,7 @@ class PaperangP2:
                     bit_pos = 7 - (x % 8)  # MSB on left
                     row[byte_pos] |= (1 << bit_pos)
             data.extend(row)
-        
+
         # Print flow (based on Java project)
         self.set_paper_type(0)           # Set normal paper
         self.set_heat_density(heat_density)  # Set heat density
@@ -290,7 +292,7 @@ class PaperangP2:
         self.print_bitmap(bytes(data), width_bytes)  # Send print data
         self.feed(feed_after)            # Feed after printing
         return True
-    
+
     def print_text(self, text, font_size=24, heat_density=75):
         """Print text"""
         # Try to load fonts (prioritize CJK-supporting fonts)
@@ -309,13 +311,13 @@ class PaperangP2:
                 break
         if font is None:
             font = ImageFont.load_default()
-        
+
         # Calculate dimensions
         lines = text.split('\n')
         max_width = 0
         total_height = 0
         line_heights = []
-        
+
         for line in lines:
             bbox = font.getbbox(line)
             w = bbox[2] - bbox[0] if bbox else len(line) * font_size // 2
@@ -324,24 +326,24 @@ class PaperangP2:
             max_width = max(max_width, w)
             line_heights.append(h + 4)
             total_height += h + 4
-        
+
         # Create image (width must be 576, height must be multiple of 8)
         img_width = PRINT_WIDTH  # 576
         img_height = ((total_height + 20 + 7) // 8) * 8  # Round up to multiple of 8
         img = Image.new('1', (img_width, img_height), 1)
         draw = ImageDraw.Draw(img)
-        
+
         # Draw text
         y = 10
         for i, line in enumerate(lines):
             draw.text((10, y), line, font=font, fill=0)
             y += line_heights[i]
-        
+
         # Save temp file and print
         tmp_path = '/tmp/paperang_text.png'
         img.save(tmp_path)
         return self.print_image(tmp_path, heat_density=heat_density)
-    
+
     def print_qr(self, content, box_size=10, heat_density=75, max_width=None):
         """Print QR code"""
         try:
@@ -349,11 +351,11 @@ class PaperangP2:
         except ImportError:
             print("Please install qrcode: pip3 install qrcode[pil]")
             return False
-        
+
         # Calculate optimal box size to fill width
         if max_width is None:
             max_width = PRINT_WIDTH - 40  # Default: leave 20px margin on each side
-        
+
         # Calculate optimal box size
         # QR code size = (version * 4 + 17) * box_size + 2 * border * box_size
         # For version 5: (5*4+17) = 37 modules, with border=2: 41 modules total
@@ -361,45 +363,45 @@ class PaperangP2:
         optimal_box_size = max_width // 41
         if optimal_box_size < 4:
             optimal_box_size = 4
-        
+
         # Generate QR code with calculated box size
         qr = qrcode.QRCode(version=None, box_size=optimal_box_size, border=2)
         qr.add_data(content)
         qr.make(fit=True)
-        
+
         # Create image and ensure it's square
         img = qr.make_image(fill_color="black", back_color="white")
-        
+
         # Convert to RGB if necessary and ensure square
         if img.mode != 'RGB':
             img = img.convert('RGB')
-        
+
         # The QR code should be square, but ensure it
         qr_size = min(img.width, img.height, max_width)
         img = img.resize((qr_size, qr_size), Image.NEAREST)
-        
+
         # Convert to 1-bit for printing
         img = img.convert('L').point(lambda x: 0 if x < 128 else 255, '1')
-        
+
         # Create canvas and center QR code
         canvas = Image.new('1', (PRINT_WIDTH, qr_size + 20), 1)
         offset_x = (PRINT_WIDTH - qr_size) // 2
         canvas.paste(img, (offset_x, 10))
-        
+
         tmp_path = '/tmp/paperang_qr.png'
         canvas.save(tmp_path)
         return self.print_image(tmp_path, heat_density=heat_density)
-    
+
     def print_pattern_test(self):
         """
         Print pattern test (based on UsbPatternTest.kt)
         Tests: line length, dots per line, dots per column, multi-packet transmission
         """
         width_bytes = LINE_BYTES  # 72 bytes = 576 dots
-        
+
         # Create test pattern data
         data = bytearray()
-        
+
         # 1. Test line length - print columns every 8 bytes
         # Print 8 columns, each 8 bytes wide
         for _ in range(50):  # 50 rows
@@ -409,28 +411,28 @@ class PaperangP2:
                 for b in range(9):
                     row[start_byte + b] = 0xFF
             data.extend(row)
-        
+
         # 2. Test dots per line - alternating pattern 10101010
         for _ in range(50):
             row = bytearray(width_bytes)
             for b in range(width_bytes):
                 row[b] = 0xAA  # 10101010
             data.extend(row)
-        
+
         # 3. Test dots per column - vertical lines
         for _ in range(50):
             row = bytearray(width_bytes)
             for b in range(width_bytes):
                 row[b] = 0x81  # 10000001 - vertical lines on both sides
             data.extend(row)
-        
+
         # 4. Random data test for multi-packet transmission
         for _ in range(100):
             row = bytearray(width_bytes)
             for b in range(width_bytes):
                 row[b] = random.randint(0, 255)
             data.extend(row)
-        
+
         # Print flow
         self.set_paper_type(0)
         self.set_heat_density(75)
@@ -438,41 +440,41 @@ class PaperangP2:
         self.print_bitmap(bytes(data), width_bytes)
         self.feed(300)
         return True
-    
+
     def print_heat_density_test(self):
         """
         Print heat density test (based on UsbHeatDensityTest.kt)
         Shows printing effect at different heat densities
         """
         width_bytes = LINE_BYTES
-        
+
         densities = [0, 25, 50, 75, 100]
-        
+
         for density in densities:
             # Set heat density
             self.set_heat_density(density)
-            
+
             # Print density marker bar
             data = bytearray()
-            
+
             # Top blank
             for _ in range(20):
                 data.extend(bytearray(width_bytes))
-            
+
             # Solid block
             for _ in range(30):
                 row = bytearray(width_bytes)
                 for b in range(width_bytes):
                     row[b] = 0xFF
                 data.extend(row)
-            
+
             # Bottom blank
             for _ in range(20):
                 data.extend(bytearray(width_bytes))
-            
+
             self.print_bitmap(bytes(data), width_bytes)
             self.feed(50)
-        
+
         # Restore default density
         self.set_heat_density(75)
         self.feed(300)
@@ -528,7 +530,7 @@ def load_profiles():
     import json
     script_dir = os.path.dirname(os.path.abspath(__file__))
     profiles_path = os.path.join(script_dir, 'profiles.json')
-    
+
     if os.path.exists(profiles_path):
         with open(profiles_path, 'r') as f:
             return json.load(f)
@@ -562,30 +564,30 @@ def main():
     parser.add_argument('--status', action='store_true', help='Get printer status')
     parser.add_argument('--battery', action='store_true', help='Get battery level')
     parser.add_argument('--list-profiles', action='store_true', help='List available profiles')
-    parser.add_argument('--pickup-code', help='Print a pickup code in large bold style (e.g. "19-4308")')
-    
+    parser.add_argument('--pickup-code', help='Print a pickup code in large bold style')
+
     args = parser.parse_args()
-    
+
     # List profiles and exit
     if args.list_profiles:
         list_profiles()
         return 0
-    
+
     # Load profile settings
     profiles = load_profiles()
     profile_settings = profiles.get(args.profile, {}) if args.profile else {}
-    
+
     # Use profile values or defaults
     threshold = args.threshold if args.threshold is not None else profile_settings.get('threshold', 180)
     brightness = args.brightness if args.brightness is not None else profile_settings.get('brightness', 1.5)
     contrast = args.contrast if args.contrast is not None else profile_settings.get('contrast', 0.6)
     heat_density = args.density if args.density is not None else profile_settings.get('heat_density', 75)
-    
+
     printer = PaperangP2()
-    
+
     try:
         printer.connect()
-        
+
         if args.test:
             printer.print_test_page()
         elif args.pattern_test:
@@ -605,7 +607,8 @@ def main():
         elif args.qr:
             printer.print_qr(args.qr, heat_density=heat_density, max_width=args.qr_size)
         elif args.pickup_code:
-            printer.print_pickup_code(args.pickup_code, heat_density=heat_density)
+            printer.print_pickup_code(args.pickup_code,
+                                      heat_density=heat_density)
         else:
             # Default test text
             test_text = """Paperang P2 Test Print
@@ -614,10 +617,10 @@ Printer working!
 
 Time: """ + os.popen('date "+%Y-%m-%d %H:%M:%S"').read().strip()
             printer.print_text(test_text, heat_density=heat_density)
-        
+
         print("Print complete!")
         return 0
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return 1

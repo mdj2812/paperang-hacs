@@ -6,10 +6,14 @@ Wraps the verified working paperang_p2.py as a HA component.
 import logging
 import usb.util
 
+import homeassistant  # noqa: F401  # pylint: disable=unused-import
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
-from .const import (
+# Import the verified working paperang_p2.py
+from . import paperang_core  # noqa: E402
+
+from .const import (  # noqa: E402
     DOMAIN,
     SERVICE_PRINT_TEXT,
     SERVICE_PRINT_IMAGE,
@@ -27,9 +31,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Import the verified working paperang_p2.py
-from . import paperang_core
-
 
 def _safe_cleanup(printer):
     """Safely release USB resources."""
@@ -40,7 +41,7 @@ def _safe_cleanup(printer):
             pass
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylint: disable=unused-argument
     """Set up the Paperang P2 Printer component."""
 
     async def handle_print_text(call: ServiceCall) -> None:
