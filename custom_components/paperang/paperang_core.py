@@ -295,6 +295,7 @@ class PaperangP2:
         """Print text"""
         # Try to load fonts (prioritize CJK-supporting fonts)
         font_paths = [
+            '/config/paperang/DejaVuSans.ttf',
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
             '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
@@ -484,6 +485,8 @@ class PaperangP2:
         """
         # Load largest available CJK font
         font_paths = [
+            '/config/paperang/DejaVuSans-Bold.ttf',
+            '/config/paperang/DejaVuSans.ttf',
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
             '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
