@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.3 (2026-05-08)
+
+### Added
+- Bundle wqy-zenhei (CJK) and DejaVu fonts for out-of-the-box CJK text support
+
+### Changed
+- Prioritize bundled fonts over system fonts in print_text and print_pickup_code
+
 ## v1.0.2 (2026-05-08)
 
 ### Added
