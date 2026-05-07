@@ -8,7 +8,7 @@ Control your Paperang P2 thermal printer through Home Assistant. Supports printi
 
 1. Add a custom repository in HACS:
    - HACS → Integrations → ⋮ → Custom repositories
-   - Repository URL: `http://192.168.99.20:3000/home_lab/paperang-hacs.git`
+   - Repository URL: `https://github.com/mdj2812/paperang-hacs.git`
    - Category: `Integration`
    - Install `Paperang P2 Printer`
 

@@ -8,7 +8,7 @@
 
 1. 在 HACS 中添加自定义仓库：
    - HACS → Integrations → ⋮ → Custom repositories
-   - 添加仓库地址：`http://192.168.99.20:3000/home_lab/paperang-hacs.git`
+   - 添加仓库地址：`https://github.com/mdj2812/paperang-hacs.git`
    - Category 选择 `Integration`
    - 安装 `Paperang P2 Printer`
 
