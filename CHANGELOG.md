@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.1 (2026-05-08)
+
+### Fixed
+- Fix pylint issues: trailing whitespace, line length, import order, unused args
+- Break long lines in paperang_core.py main block
+- Shorten pattern-test help line
+
+### Added
+- Add Pylint workflow for Python code analysis
+- Add GitHub Actions workflow for validation
+- Add brand assets and printer icon
+
+### Changed
+- Update codeowners to @mdj2812
+- Update repo URLs to GitHub mirror
+
 ## v1.0.0 (2026-05-08)
 
 Initial release of the Paperang P2 Printer Home Assistant integration.
