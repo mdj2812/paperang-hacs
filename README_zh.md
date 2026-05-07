@@ -114,23 +114,6 @@ automation:
           heat_density: 80
 ```
 
-## 版本历史
-
-### v1.2.0 (2026-05-07)
-
-- 添加 `print_pickup_code` 服务
-- 支持大号取件码打印（96px 粗体）
-
-### v1.1.0 (2026-04-14)
-
-- 添加 MQTT 客户端支持
-- Home Assistant 集成
-
-### v1.0.0 (2026-04-12)
-
-- 初始版本
-- 支持文本、图片、QR 码打印
-
 ## 许可证
 
 MIT License - Copyright (c) 2026 Martin Ma

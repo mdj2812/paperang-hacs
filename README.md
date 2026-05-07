@@ -114,23 +114,6 @@ automation:
           heat_density: 80
 ```
 
-## Version History
-
-### v1.2.0 (2026-05-07)
-
-- Added `print_pickup_code` service
-- Support for large pickup code printing (96px bold)
-
-### v1.1.0 (2026-04-14)
-
-- Added MQTT print client support
-- Home Assistant integration
-
-### v1.0.0 (2026-04-12)
-
-- Initial release
-- Text, image, and QR code printing support
-
 ## License
 
 MIT License - Copyright (c) 2026 Martin Ma
