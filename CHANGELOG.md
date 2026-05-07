@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.4 (2026-05-08)
+
+### Changed
+- Switch bundled CJK font from wqy-zenhei to wqy-microhei (5MB vs 17MB, lighter repo)
+
 ## v1.0.3 (2026-05-08)
 
 ### Added
