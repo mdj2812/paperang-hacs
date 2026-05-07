@@ -295,8 +295,13 @@ class PaperangP2:
 
     def print_text(self, text, font_size=24, heat_density=75):
         """Print text"""
-        # Try to load fonts (prioritize CJK-supporting fonts)
+        # Determine bundled fonts path (relative to this script)
+        bundled_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
+        # Try to load fonts (prioritize bundled fonts, then user-installed, then system)
         font_paths = [
+            os.path.join(bundled_dir, 'wqy-zenhei.ttc'),
+            os.path.join(bundled_dir, 'DejaVuSans.ttf'),
+            '/config/paperang/wqy-zenhei.ttc',
             '/config/paperang/DejaVuSans.ttf',
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
@@ -485,8 +490,11 @@ class PaperangP2:
         Print a pickup code in large bold style (e.g. "19-4308")
         Font: 96px, centered, max density for bold effect
         """
-        # Load largest available CJK font
+        # Determine bundled fonts path (relative to this script)
+        bundled_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
         font_paths = [
+            os.path.join(bundled_dir, 'DejaVuSans-Bold.ttf'),
+            os.path.join(bundled_dir, 'DejaVuSans.ttf'),
             '/config/paperang/DejaVuSans-Bold.ttf',
             '/config/paperang/DejaVuSans.ttf',
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
