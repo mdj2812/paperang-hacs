@@ -4,7 +4,6 @@ import logging
 import os
 import struct
 import zlib
-import urllib.request
 
 import usb.core
 import usb.util
@@ -30,21 +29,23 @@ PRINT_PROFILES = {
     "light": {"threshold": 200, "brightness": 1.3, "contrast": 0.5, "heat_density": 45},
 }
 
+# Font search paths - NotoSans (HA compatible)
 _FONT_CANDIDATES = [
-    "/usr/share/fonts/TTF/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
     "/config/paperang/DejaVuSans.ttf",
+    "/config/paperang/NotoSans-Regular.ttf",
+    "/usr/share/fonts/TTF/NotoSans-Regular.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
 ]
 _BOLD_FONT_CANDIDATES = [
-    "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/config/paperang/DejaVuSans-Bold.ttf",
+    "/config/paperang/NotoSans-Bold.ttf",
+    "/usr/share/fonts/TTF/NotoSans-Bold.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
 ]
 
 
 def _find_font(size, bold=False):
-    """Find a usable font, downloading DejaVu if none found."""
+    """Find a usable font."""
     candidates = _BOLD_FONT_CANDIDATES if bold else _FONT_CANDIDATES
     for path in candidates:
         if os.path.exists(path):
@@ -52,25 +53,6 @@ def _find_font(size, bold=False):
                 return ImageFont.truetype(path, size)
             except Exception:
                 pass
-
-    dl_dir = "/config/paperang"
-    dl_name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
-    dl_path = os.path.join(dl_dir, dl_name)
-    if not os.path.exists(dl_path):
-        try:
-            os.makedirs(dl_dir, exist_ok=True)
-            url = f"https://github.com/google/fonts/raw/main/ofl/dejavusans/{dl_name}"
-            urllib.request.urlretrieve(url, dl_path)
-            _LOGGER.info("Downloaded font to %s", dl_path)
-        except Exception as e:
-            _LOGGER.warning("Failed to download font: %s", e)
-
-    if os.path.exists(dl_path):
-        try:
-            return ImageFont.truetype(dl_path, size)
-        except Exception:
-            pass
-
     return None
 
 
@@ -235,6 +217,7 @@ class PaperangPrinter:
 
             if image_path.startswith("http"):
                 tmp_path = "/tmp/paperang_image.jpg"
+                import urllib.request
                 urllib.request.urlretrieve(image_path, tmp_path)
                 image_path = tmp_path
 
