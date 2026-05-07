@@ -30,6 +30,49 @@ PRINT_PROFILES = {
     "light": {"threshold": 200, "brightness": 1.3, "contrast": 0.5, "heat_density": 45},
 }
 
+_FONT_CANDIDATES = [
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    "/config/paperang/DejaVuSans.ttf",
+]
+_BOLD_FONT_CANDIDATES = [
+    "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/config/paperang/DejaVuSans-Bold.ttf",
+]
+
+
+def _find_font(size, bold=False):
+    """Find a usable font, downloading DejaVu if none found."""
+    candidates = _BOLD_FONT_CANDIDATES if bold else _FONT_CANDIDATES
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:
+                pass
+
+    dl_dir = "/config/paperang"
+    dl_name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    dl_path = os.path.join(dl_dir, dl_name)
+    if not os.path.exists(dl_path):
+        try:
+            os.makedirs(dl_dir, exist_ok=True)
+            url = f"https://github.com/google/fonts/raw/main/ofl/dejavusans/{dl_name}"
+            urllib.request.urlretrieve(url, dl_path)
+            _LOGGER.info("Downloaded font to %s", dl_path)
+        except Exception as e:
+            _LOGGER.warning("Failed to download font: %s", e)
+
+    if os.path.exists(dl_path):
+        try:
+            return ImageFont.truetype(dl_path, size)
+        except Exception:
+            pass
+
+    return None
+
 
 def crc32_paperang(data, seed=CRC_SEED):
     """Paperang-specific CRC32 calculation."""
@@ -69,7 +112,6 @@ class PaperangPrinter:
             if self.dev is None:
                 raise ConnectionError("Paperang P2 printer not found (USB IDs: 4348:5584)")
 
-            # Detach kernel driver if active
             if self.dev.is_kernel_driver_active(0):
                 self.dev.detach_kernel_driver(0)
                 _LOGGER.info("Detached kernel driver from Paperang printer")
@@ -106,11 +148,11 @@ class PaperangPrinter:
             self._connected = False
             _LOGGER.info("Paperang P2 printer disconnected")
 
-    def _send_command(self, cmd, data=b''):
+    def _send_command(self, cmd, data=b'', packet_remain=0):
         """Send a command packet to the printer."""
         if not self._connected:
             raise ConnectionError("Printer not connected")
-        packet = pack_packet(cmd, data)
+        packet = pack_packet(cmd, data, packet_remain)
         self.out_ep.write(packet, timeout=5000)
 
     def _read_response(self, length=64):
@@ -123,42 +165,52 @@ class PaperangPrinter:
             _LOGGER.warning("Failed to read from printer: %s", e)
             return b''
 
+    def _render_text_bitmap(self, text, font_size=24):
+        """Render text to a 1-bit bitmap image."""
+        font = _find_font(font_size)
+
+        if font is None:
+            _LOGGER.warning("No TrueType font available, printing test pattern")
+            height = max(font_size, 32)
+            img = Image.new('1', (PRINT_WIDTH, height + 8), 1)
+            draw = ImageDraw.Draw(img)
+            for i in range(0, PRINT_WIDTH, 16):
+                draw.line([(i, 4), (i, height)], fill=0)
+            for y in range(0, height, 16):
+                draw.line([(0, y), (PRINT_WIDTH, y)], fill=0)
+            return img
+
+        temp = Image.new('1', (1, 1))
+        bbox = ImageDraw.Draw(temp).textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+
+        if th < 4:
+            th = font_size
+        if tw < 4:
+            tw = len(text) * font_size // 2
+
+        img = Image.new('1', (PRINT_WIDTH, th + 8), 1)
+        draw = ImageDraw.Draw(img)
+        x = max(0, (PRINT_WIDTH - tw) // 2)
+        draw.text((x, 4), text, fill=0, font=font)
+        return img
+
     def print_text(self, text, font_size=24, heat_density=75):
         """Print text content."""
         _LOGGER.info("Printing text: %s (font_size=%d, heat_density=%d)", text[:50], font_size, heat_density)
 
         try:
-            # Set print density
             self._send_command(0x1A, bytes([heat_density]))
             self._read_response()
 
-            # Calculate bitmap dimensions
-            img = Image.new('1', (PRINT_WIDTH, 1), 1)
-            draw = ImageDraw.Draw(img)
+            img = self._render_text_bitmap(text, font_size)
 
-            # Try to load a font, fallback to default
-            try:
-                font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSans.ttf", font_size)
-            except Exception:
-                try:
-                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size)
-                except Exception:
-                    font = ImageFont.load_default()
+            black_pixels = sum(1 for y in range(img.height) for x in range(img.width) if img.getpixel((x, y)) == 0)
+            _LOGGER.info("Bitmap: %dx%d, %d black pixels", img.width, img.height, black_pixels)
 
-            # Calculate text size
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-
-            # Create image with text
-            img = Image.new('1', (PRINT_WIDTH, text_height + 4), 1)
-            draw = ImageDraw.Draw(img)
-            draw.text((max(0, (PRINT_WIDTH - text_width) // 2), 2), text, fill=0, font=font)
-
-            # Convert to bitmap rows and print
             self._send_bitmap(img)
 
-            # Feed paper
             self._send_command(0x20, bytes([100]))
             self._read_response()
 
@@ -178,11 +230,9 @@ class PaperangPrinter:
                 contrast = p["contrast"]
                 heat_density = p["heat_density"]
 
-            # Set print density
             self._send_command(0x1A, bytes([heat_density]))
             self._read_response()
 
-            # Load and process image
             if image_path.startswith("http"):
                 tmp_path = "/tmp/paperang_image.jpg"
                 urllib.request.urlretrieve(image_path, tmp_path)
@@ -191,20 +241,15 @@ class PaperangPrinter:
             img = Image.open(image_path).convert('L')
             img = img.resize((PRINT_WIDTH, int(img.height * PRINT_WIDTH / img.width)), Image.Resampling.LANCZOS)
 
-            # Apply adjustments
             from PIL import ImageEnhance
             enhancer = ImageEnhance.Brightness(img)
             img = enhancer.enhance(brightness)
             enhancer = ImageEnhance.Contrast(img)
             img = enhancer.enhance(contrast)
 
-            # Convert to 1-bit bitmap
             img = img.point(lambda p: 0 if p < threshold else 1).convert('1')
-
-            # Print bitmap
             self._send_bitmap(img)
 
-            # Feed paper
             self._send_command(0x20, bytes([100]))
             self._read_response()
 
@@ -217,11 +262,9 @@ class PaperangPrinter:
         _LOGGER.info("Printing QR code: %s", content[:50])
 
         try:
-            # Set print density
             self._send_command(0x1A, bytes([heat_density]))
             self._read_response()
 
-            # Generate QR code
             qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=2)
             qr.add_data(content)
             qr.make(fit=True)
@@ -229,15 +272,12 @@ class PaperangPrinter:
             img = qr.make_image(fill_color="black", back_color="white").convert('1')
             img = img.resize((min(size, PRINT_WIDTH), min(size, PRINT_WIDTH)), Image.Resampling.NEAREST)
 
-            # Center on paper
             final_img = Image.new('1', (PRINT_WIDTH, img.height + 20), 1)
             x_offset = (PRINT_WIDTH - img.width) // 2
             final_img.paste(img, (x_offset, 10))
 
-            # Print bitmap
             self._send_bitmap(final_img)
 
-            # Feed paper
             self._send_command(0x20, bytes([100]))
             self._read_response()
 
@@ -250,37 +290,33 @@ class PaperangPrinter:
         _LOGGER.info("Printing pickup code: %s", code)
 
         try:
-            # Set max print density for clarity
             self._send_command(0x1A, bytes([heat_density]))
             self._read_response()
 
-            # Create large text image
             font_size = 96
-            try:
-                font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSans-Bold.ttf", font_size)
-            except Exception:
-                try:
-                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-                except Exception:
-                    font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSans.ttf", font_size)
+            font = _find_font(font_size, bold=True)
 
-            # Calculate size
-            img = Image.new('1', (PRINT_WIDTH, 1), 1)
-            draw = ImageDraw.Draw(img)
-            bbox = draw.textbbox((0, 0), code, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
+            if font is None:
+                _LOGGER.warning("No bold font for pickup code, printing test pattern")
+                img = Image.new('1', (PRINT_WIDTH, 100), 1)
+                draw = ImageDraw.Draw(img)
+                for x in range(10, PRINT_WIDTH - 10, 20):
+                    draw.rectangle([(x, 10), (x + 12, 90)], fill=0)
+            else:
+                temp = Image.new('1', (1, 1))
+                bbox = ImageDraw.Draw(temp).textbbox((0, 0), code, font=font)
+                tw = bbox[2] - bbox[0]
+                th = bbox[3] - bbox[1]
+                if th < 4:
+                    th = font_size
 
-            # Create centered image
-            final_img = Image.new('1', (PRINT_WIDTH, text_height + 20), 1)
-            draw = ImageDraw.Draw(final_img)
-            x = max(0, (PRINT_WIDTH - text_width) // 2)
-            draw.text((x, 10), code, fill=0, font=font)
+                img = Image.new('1', (PRINT_WIDTH, th + 20), 1)
+                draw = ImageDraw.Draw(img)
+                x = max(0, (PRINT_WIDTH - tw) // 2)
+                draw.text((x, 10), code, fill=0, font=font)
 
-            # Print bitmap
-            self._send_bitmap(final_img)
+            self._send_bitmap(img)
 
-            # Feed paper
             self._send_command(0x20, bytes([100]))
             self._read_response()
 
@@ -294,25 +330,22 @@ class PaperangPrinter:
             img = img.convert('1')
 
         width, height = img.size
-        rows = height
-        total_packets = rows  # Each row is one packet
-        remaining = total_packets - 1
+        remaining = height - 1
 
         pixels = img.load()
-        for y in range(rows):
+        for y in range(height):
             row_data = bytearray()
             for byte_idx in range(LINE_BYTES):
                 byte_val = 0
                 for bit in range(8):
                     x = byte_idx * 8 + bit
-                    if x < width and pixels[x, y] == 0:  # 0 = black (print)
+                    if x < width and pixels[x, y] == 0:
                         byte_val |= (1 << (7 - bit))
                 row_data.append(byte_val)
-
             self._send_command(0x28, bytes(row_data), remaining)
             remaining -= 1
 
-        _LOGGER.info("Bitmap sent: %d rows", rows)
+        _LOGGER.info("Bitmap sent: %d rows", height)
 
     def get_status(self):
         """Get printer status."""

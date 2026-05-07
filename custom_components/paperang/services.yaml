@@ -6,26 +6,17 @@ print_text:
       name: Text
       description: Text content to print
       required: true
-      selector:
-        text:
+      example: "Hello World"
     font_size:
       name: Font Size
       description: Font size in pixels (default: 24)
       default: 24
-      selector:
-        number:
-          min: 12
-          max: 96
-          step: 1
+      example: 24
     heat_density:
       name: Heat Density
       description: Print heat density 0-100 (default: 75)
       default: 75
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 1
+      example: 75
 
 print_image:
   name: Print Image
@@ -35,29 +26,17 @@ print_image:
       name: Image URL
       description: URL or local path of the image to print
       required: true
-      selector:
-        text:
+      example: "http://example.com/photo.jpg"
     profile:
       name: Profile
-      description: Print profile for different content types
+      description: Print profile (portrait, landscape, document, high_contrast, light)
       default: document
-      selector:
-        select:
-          options:
-            - portrait
-            - landscape
-            - document
-            - high_contrast
-            - light
+      example: document
     heat_density:
       name: Heat Density
       description: Print heat density 0-100 (default: 75)
       default: 75
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 1
+      example: 75
 
 print_qr:
   name: Print QR Code
@@ -67,26 +46,17 @@ print_qr:
       name: QR Content
       description: Content to encode in QR code
       required: true
-      selector:
-        text:
+      example: "https://example.com"
     qr_size:
       name: QR Size
       description: QR code size in pixels (default: 500)
       default: 500
-      selector:
-        number:
-          min: 100
-          max: 576
-          step: 1
+      example: 500
     heat_density:
       name: Heat Density
       description: Print heat density 0-100 (default: 75)
       default: 75
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 1
+      example: 75
 
 print_pickup_code:
   name: Print Pickup Code
@@ -96,5 +66,4 @@ print_pickup_code:
       name: Pickup Code
       description: Pickup code in format like '19-4308'
       required: true
-      selector:
-        text:
+      example: "19-4308"
