@@ -1,88 +1,75 @@
-# Paperang P2 Printer - Home Assistant Integration
+# Paperang P2 打印机 - Home Assistant 集成
 
-Control your Paperang P2 thermal printer through Home Assistant. Supports printing text, images, QR codes, and pickup codes.
+通过 Home Assistant 控制 Paperang P2 热敏打印机，支持文本、图片、QR 码和取件码打印。
 
-## Installation
+## 安装
 
-### Method 1: HACS (Recommended)
+### 方式一：HACS（推荐）
 
-1. Add a custom repository in HACS:
+1. 在 HACS 中添加自定义仓库：
    - HACS → Integrations → ⋮ → Custom repositories
-   - Repository URL: `http://192.168.99.20:3000/home_lab/paperang-hacs.git`
-   - Category: `Integration`
-   - Install `Paperang P2 Printer`
+   - 添加仓库地址：`http://192.168.99.20:3000/home_lab/paperang-hacs.git`
+   - Category 选择 `Integration`
+   - 安装 `Paperang P2 Printer`
 
-### Method 2: Manual Installation
+### 方式二：手动安装
 
-1. Clone or download the `custom_components/paperang` directory
-2. Copy to HA's `/config/custom_components/paperang/`
-3. Restart Home Assistant
+1. 克隆或下载 `custom_components/paperang` 目录
+2. 复制到 HA 的 `/config/custom_components/paperang/`
+3. 重启 Home Assistant
 
-## Prerequisites
+## 前提条件
 
-- Paperang P2 printer connected via USB to the HA host
-- USB device passed through to the HA VM (if running in a VM)
-- `usblp` kernel module unloaded (otherwise it will claim the device)
+- Paperang P2 打印机通过 USB 连接到 HA 主机
+- USB 设备已直通到 HA VM（如果在虚拟机中运行）
 
-### USB Configuration
-
-```bash
-# Unload usblp driver (persistent)
-echo 'blacklist usblp' | sudo tee /etc/modprobe.d/blacklist-usblp.conf
-sudo rmmod usblp
-
-# Verify device is visible
-lsusb | grep 4348
-# Should show: ID 4348:5584 MPTII Printer
-```
-
-## Services
+## 服务
 
 ### paperang.print_text
 
-Print text content.
+打印文本内容。
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| text | string | - | Text to print |
-| font_size | number | 24 | Font size in pixels (12-96) |
-| heat_density | number | 75 | Print heat density (0-100) |
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| text | string | - | 要打印的文本 |
+| font_size | number | 24 | 字体大小（12-96） |
+| heat_density | number | 75 | 加热浓度（0-100） |
 
 ### paperang.print_pickup_code
 
-Print large pickup codes (e.g., for package lockers).
+打印大号取件码（如快递柜取件码）。
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| pickup_code | string | - | Pickup code, e.g. "19-4308" |
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| pickup_code | string | - | 取件码，如 "19-4308" |
 
 ### paperang.print_qr
 
-Print a QR code.
+打印 QR 码。
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| qr_content | string | - | Content to encode in the QR code |
-| qr_size | number | 500 | QR code size in pixels (100-576) |
-| heat_density | number | 75 | Print heat density (0-100) |
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| qr_content | string | - | QR 码内容 |
+| qr_size | number | 500 | QR 码大小（100-576） |
+| heat_density | number | 75 | 加热浓度（0-100） |
 
 ### paperang.print_image
 
-Print an image.
+打印图片。
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| image_url | string | - | Image URL or local file path |
-| profile | select | document | Print profile: portrait/landscape/document/high_contrast/light |
-| heat_density | number | 75 | Print heat density (0-100) |
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| image_url | string | - | 图片 URL 或本地路径 |
+| profile | select | document | 打印配置：portrait/landscape/document/high_contrast/light |
+| heat_density | number | 75 | 加热浓度（0-100） |
 
-## Automation Examples
+## Automation 示例
 
-### Auto-print Pickup Code on Package Arrival
+### 快递到站自动打印取件码
 
 ```yaml
 automation:
-  - alias: "Print Pickup Code"
+  - alias: "打印快递取件码"
     trigger:
       platform: state
       entity_id: sensor.package_arrived
@@ -92,11 +79,11 @@ automation:
           pickup_code: "{{ states('input_text.pickup_code') }}"
 ```
 
-### Daily Weather Print
+### 每日天气打印
 
 ```yaml
 automation:
-  - alias: "Daily Weather Print"
+  - alias: "每日天气打印"
     trigger:
       - platform: time
         at: "08:00:00"
@@ -104,17 +91,17 @@ automation:
       - service: paperang.print_text
         data:
           text: >
-            Today: {{ states('weather.home') }}
-            Temp: {{ states('sensor.home_temperature') }}°C
+            今天天气：{{ states('weather.home') }}
+            温度：{{ states('sensor.home_temperature') }}°C
           font_size: 18
           heat_density: 60
 ```
 
-### Doorbell Notification Print
+### 门铃通知打印
 
 ```yaml
 automation:
-  - alias: "Doorbell Notification Print"
+  - alias: "门铃通知打印"
     trigger:
       platform: state
       entity_id: binary_sensor.doorbell
@@ -122,28 +109,28 @@ automation:
     action:
       - service: paperang.print_text
         data:
-          text: "Someone at the door!"
+          text: "有人按门铃！"
           font_size: 32
           heat_density: 80
 ```
 
-## Version History
+## 版本历史
 
 ### v1.2.0 (2026-05-07)
 
-- Added `print_pickup_code` service
-- Support for large pickup code printing (96px bold)
+- 添加 `print_pickup_code` 服务
+- 支持大号取件码打印（96px 粗体）
 
 ### v1.1.0 (2026-04-14)
 
-- Added MQTT print client support
-- Home Assistant integration
+- 添加 MQTT 客户端支持
+- Home Assistant 集成
 
 ### v1.0.0 (2026-04-12)
 
-- Initial release
-- Text, image, and QR code printing support
+- 初始版本
+- 支持文本、图片、QR 码打印
 
-## License
+## 许可证
 
 MIT License - Copyright (c) 2026 Martin Ma

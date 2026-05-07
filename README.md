@@ -22,19 +22,6 @@ Control your Paperang P2 thermal printer through Home Assistant. Supports printi
 
 - Paperang P2 printer connected via USB to the HA host
 - USB device passed through to the HA VM (if running in a VM)
-- `usblp` kernel module unloaded (otherwise it will claim the device)
-
-### USB Configuration
-
-```bash
-# Unload usblp driver (persistent)
-echo 'blacklist usblp' | sudo tee /etc/modprobe.d/blacklist-usblp.conf
-sudo rmmod usblp
-
-# Verify device is visible
-lsusb | grep 4348
-# Should show: ID 4348:5584 MPTII Printer
-```
 
 ## Services
 
