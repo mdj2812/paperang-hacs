@@ -4,8 +4,7 @@ Wraps the verified working paperang_p2.py as a HA component.
 """
 
 import logging
-import sys
-import os
+import usb.util
 
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
@@ -28,13 +27,17 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Add component dir to path so paperang_core can find profiles.json
-COMPONENT_DIR = os.path.dirname(os.path.abspath(__file__))
-if COMPONENT_DIR not in sys.path:
-    sys.path.insert(0, COMPONENT_DIR)
-
 # Import the verified working paperang_p2.py
 from . import paperang_core
+
+
+def _safe_cleanup(printer):
+    """Safely release USB resources."""
+    if hasattr(printer, "dev") and printer.dev:
+        try:
+            usb.util.dispose_resources(printer.dev)
+        except Exception:
+            pass
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -51,7 +54,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             printer.connect()
             printer.print_text(text, font_size=font_size, heat_density=heat_density)
         finally:
-            printer.disconnect()
+            _safe_cleanup(printer)
 
     async def handle_print_image(call: ServiceCall) -> None:
         """Handle print image service call."""
@@ -59,7 +62,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        # Load profile settings
         profiles = paperang_core.load_profiles()
         profile_settings = profiles.get(profile, {}) if profile else {}
 
@@ -80,7 +82,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 contrast=contrast,
             )
         finally:
-            printer.disconnect()
+            _safe_cleanup(printer)
 
     async def handle_print_qr(call: ServiceCall) -> None:
         """Handle print QR code service call."""
@@ -93,7 +95,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             printer.connect()
             printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
         finally:
-            printer.disconnect()
+            _safe_cleanup(printer)
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
         """Handle print pickup code service call."""
@@ -104,7 +106,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             printer.connect()
             printer.print_pickup_code(pickup_code)
         finally:
-            printer.disconnect()
+            _safe_cleanup(printer)
 
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
