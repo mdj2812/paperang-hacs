@@ -543,7 +543,10 @@ def list_profiles():
     print("Available profiles:")
     for name, settings in profiles.items():
         print(f"  {name}: {settings.get('description', 'No description')}")
-        print(f"    threshold={settings.get('threshold', 128)}, brightness={settings.get('brightness', 1.0)}, contrast={settings.get('contrast', 1.0)}, heat_density={settings.get('heat_density', 75)}")
+        print(f"    threshold={settings.get('threshold', 128)}, "
+              f"brightness={settings.get('brightness', 1.0)}, "
+              f"contrast={settings.get('contrast', 1.0)}, "
+              f"heat_density={settings.get('heat_density', 75)}")
 
 
 def main():
@@ -560,7 +563,8 @@ def main():
     parser.add_argument('-d', '--density', type=int, help='Heat density 0-100')
     parser.add_argument('--test', action='store_true', help='Print test page')
     parser.add_argument('--pattern-test', action='store_true', help='Print pattern test (test line/column/multi-packet)')
-    parser.add_argument('--density-test', action='store_true', help='Print heat density test')
+    parser.add_argument('--density-test', action='store_true',
+                        help='Print heat density test')
     parser.add_argument('--status', action='store_true', help='Get printer status')
     parser.add_argument('--battery', action='store_true', help='Get battery level')
     parser.add_argument('--list-profiles', action='store_true', help='List available profiles')
@@ -603,7 +607,10 @@ def main():
         elif args.text:
             printer.print_text(args.text, font_size=args.font_size, heat_density=heat_density)
         elif args.image:
-            printer.print_image(args.image, heat_density=heat_density, threshold=threshold, brightness=brightness, contrast=contrast)
+            printer.print_image(
+                args.image, heat_density=heat_density,
+                threshold=threshold, brightness=brightness,
+                contrast=contrast)
         elif args.qr:
             printer.print_qr(args.qr, heat_density=heat_density, max_width=args.qr_size)
         elif args.pickup_code:
