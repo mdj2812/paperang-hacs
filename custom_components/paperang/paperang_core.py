@@ -299,13 +299,12 @@ class PaperangP2:
         bundled_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
         # Try to load fonts (prioritize bundled fonts, then user-installed, then system)
         font_paths = [
-            os.path.join(bundled_dir, 'wqy-zenhei.ttc'),
+            os.path.join(bundled_dir, 'wqy-microhei.ttc'),
             os.path.join(bundled_dir, 'DejaVuSans.ttf'),
-            '/config/paperang/wqy-zenhei.ttc',
+            '/config/paperang/wqy-microhei.ttc',
             '/config/paperang/DejaVuSans.ttf',
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
-            '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
             '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
         ]
