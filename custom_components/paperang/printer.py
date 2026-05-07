@@ -158,20 +158,23 @@ class PaperangPrinter:
         self._read_response()
 
     def _render_text_bitmap(self, text, font_size=24):
-        """Render text to a 1-bit bitmap image."""
+        """Render text to a 1-bit bitmap image. Height rounded up to multiple of 8."""
         font = _find_font(font_size)
 
         if font is None:
             _LOGGER.warning("No TrueType font available, printing test pattern")
             height = max(font_size, 32)
-            img = Image.new('1', (PRINT_WIDTH, height + 8), 1)
+            # Round up to multiple of 8
+            height = ((height + 7) // 8) * 8
+            img = Image.new('1', (PRINT_WIDTH, height), 1)
             draw = ImageDraw.Draw(img)
             for i in range(0, PRINT_WIDTH, 16):
-                draw.line([(i, 4), (i, height)], fill=0)
+                draw.line([(i, 4), (i, height - 4)], fill=0)
             for y in range(0, height, 16):
                 draw.line([(0, y), (PRINT_WIDTH, y)], fill=0)
             return img
 
+        # Measure text
         temp = Image.new('1', (1, 1))
         bbox = ImageDraw.Draw(temp).textbbox((0, 0), text, font=font)
         tw = bbox[2] - bbox[0]
@@ -182,7 +185,10 @@ class PaperangPrinter:
         if tw < 4:
             tw = len(text) * font_size // 2
 
-        img = Image.new('1', (PRINT_WIDTH, th + 8), 1)
+        # Round height up to multiple of 8 (printer requirement)
+        img_height = ((th + 8 + 7) // 8) * 8
+
+        img = Image.new('1', (PRINT_WIDTH, img_height), 1)
         draw = ImageDraw.Draw(img)
         x = max(0, (PRINT_WIDTH - tw) // 2)
         draw.text((x, 4), text, fill=0, font=font)
@@ -197,12 +203,22 @@ class PaperangPrinter:
         - Batch 14 lines (1008 bytes) per packet
         - Each line = 72 bytes (576 pixels / 8 bits)
         - Row-based packing, MSB on left
+        - Height must be multiple of 8
         """
         if img.mode != '1':
             img = img.convert('1')
 
         width, height = img.size
         
+        # Ensure height is a multiple of 8
+        if height % 8 != 0:
+            new_height = ((height + 7) // 8) * 8
+            new_img = Image.new('1', (width, new_height), 1)
+            new_img.paste(img, (0, 0))
+            img = new_img
+            height = new_height
+            _LOGGER.info("Height padded to %d (multiple of 8)", height)
+
         # Convert image to bitmap bytes (row-based packing)
         bitmap_data = bytearray()
         pixels = img.load()
@@ -339,7 +355,7 @@ class PaperangPrinter:
 
             if font is None:
                 _LOGGER.warning("No bold font for pickup code, printing test pattern")
-                img = Image.new('1', (PRINT_WIDTH, 100), 1)
+                img = Image.new('1', (PRINT_WIDTH, 104), 1)  # 104 is multiple of 8
                 draw = ImageDraw.Draw(img)
                 for x in range(10, PRINT_WIDTH - 10, 20):
                     draw.rectangle([(x, 10), (x + 12, 90)], fill=0)
@@ -351,7 +367,10 @@ class PaperangPrinter:
                 if th < 4:
                     th = font_size
 
-                img = Image.new('1', (PRINT_WIDTH, th + 20), 1)
+                # Round height up to multiple of 8
+                img_height = ((th + 20 + 7) // 8) * 8
+
+                img = Image.new('1', (PRINT_WIDTH, img_height), 1)
                 draw = ImageDraw.Draw(img)
                 x = max(0, (PRINT_WIDTH - tw) // 2)
                 draw.text((x, 10), code, fill=0, font=font)
