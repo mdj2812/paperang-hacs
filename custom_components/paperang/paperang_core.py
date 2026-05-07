@@ -562,7 +562,8 @@ def main():
     parser.add_argument('-f', '--font-size', type=int, default=24, help='Font size')
     parser.add_argument('-d', '--density', type=int, help='Heat density 0-100')
     parser.add_argument('--test', action='store_true', help='Print test page')
-    parser.add_argument('--pattern-test', action='store_true', help='Print pattern test (test line/column/multi-packet)')
+    parser.add_argument('--pattern-test', action='store_true',
+                        help='Print pattern test (line/column/multi-packet)')
     parser.add_argument('--density-test', action='store_true',
                         help='Print heat density test')
     parser.add_argument('--status', action='store_true', help='Get printer status')
