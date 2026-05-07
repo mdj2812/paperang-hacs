@@ -295,19 +295,10 @@ class PaperangP2:
 
     def print_text(self, text, font_size=24, heat_density=75):
         """Print text"""
+        from .const import BUNDLED_FONTS_TEXT
         # Determine bundled fonts path (relative to this script)
-        bundled_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
-        # Try to load fonts (prioritize bundled fonts, then user-installed, then system)
-        font_paths = [
-            os.path.join(bundled_dir, 'wqy-microhei.ttc'),
-            os.path.join(bundled_dir, 'DejaVuSans.ttf'),
-            '/config/paperang/wqy-microhei.ttc',
-            '/config/paperang/DejaVuSans.ttf',
-            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
-            '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
-            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-        ]
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        font_paths = [os.path.join(base_dir, f) for f in BUNDLED_FONTS_TEXT]
         font = None
         for fp in font_paths:
             if os.path.exists(fp):
@@ -489,20 +480,10 @@ class PaperangP2:
         Print a pickup code in large bold style (e.g. "19-4308")
         Font: 96px, centered, max density for bold effect
         """
+        from .const import BUNDLED_FONTS_PICKUP
         # Determine bundled fonts path (relative to this script)
-        bundled_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
-        font_paths = [
-            os.path.join(bundled_dir, 'DejaVuSans-Bold.ttf'),
-            os.path.join(bundled_dir, 'DejaVuSans.ttf'),
-            '/config/paperang/DejaVuSans-Bold.ttf',
-            '/config/paperang/DejaVuSans.ttf',
-            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
-            '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
-            '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
-            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-        ]
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        font_paths = [os.path.join(base_dir, f) for f in BUNDLED_FONTS_PICKUP]
         font = None
         for fp in font_paths:
             if os.path.exists(fp):
