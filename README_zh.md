@@ -19,11 +19,7 @@
    git clone https://github.com/mdj2812/paperang-hacs.git
    cp -r paperang-hacs/custom_components/paperang /config/custom_components/paperang
    ```
-2. 安装 pip 依赖：
-   ```bash
-   pip install paperang-p2-lib[qr,cjk]>=0.2.0
-   ```
-3. 重启 Home Assistant
+2. 重启 Home Assistant（HA 会自动安装依赖）
 
 ## 前提条件
 
