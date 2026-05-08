@@ -14,8 +14,11 @@
 
 ### 方式二：手动安装
 
-1. 克隆或下载 `custom_components/paperang` 目录
-2. 复制到 HA 的 `/config/custom_components/paperang/`
+1. 复制 `custom_components/paperang` 到 HA 的 `/config/custom_components/paperang/`
+2. 安装 pip 依赖：
+   ```bash
+   pip install paperang-p2-lib[qr,cjk]>=0.2.0
+   ```
 3. 重启 Home Assistant
 
 ## 前提条件
