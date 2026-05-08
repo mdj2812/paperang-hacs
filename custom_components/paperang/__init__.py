@@ -4,12 +4,27 @@ Powered by paperang-p2-lib for core printer logic.
 """
 
 import logging
+import sys
 import usb.util
 
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
-from paperang import PaperangP2, load_profiles
+# The pip-installed paperang-p2-lib shares the same top-level module name
+# as this HA component ('paperang'). HA puts custom_components first in
+# sys.path, so 'from paperang import ...' would import ourselves.
+# Temporarily remove custom_components from sys.path to import the lib.
+_custom_paths = [p for p in sys.path if 'custom_components' in p]
+for _p in _custom_paths:
+    sys.path.remove(_p)
+
+import paperang as _lib
+
+for _p in _custom_paths:
+    sys.path.insert(0, _p)
+
+PaperangP2 = _lib.PaperangP2
+load_profiles = _lib.load_profiles
 
 from .const import (
     DOMAIN,
