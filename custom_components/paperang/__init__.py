@@ -53,6 +53,52 @@ def _safe_cleanup(printer):
             pass
 
 
+def _do_print_text(text, font_size, heat_density):
+    """Blocking: print text."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        printer.print_text(text, font_size=font_size, heat_density=heat_density)
+    finally:
+        _safe_cleanup(printer)
+
+
+def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
+    """Blocking: print image."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        printer.print_image(
+            image_url,
+            heat_density=heat_density,
+            threshold=threshold,
+            brightness=brightness,
+            contrast=contrast,
+        )
+    finally:
+        _safe_cleanup(printer)
+
+
+def _do_print_qr(qr_content, qr_size, heat_density):
+    """Blocking: print QR code."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
+    finally:
+        _safe_cleanup(printer)
+
+
+def _do_print_pickup_code(pickup_code):
+    """Blocking: print pickup code."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        printer.print_pickup_code(pickup_code)
+    finally:
+        _safe_cleanup(printer)
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylint: disable=unused-argument
     """Set up the Paperang P2 Printer component."""
 
@@ -61,13 +107,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         text = call.data.get(ATTR_TEXT, "")
         font_size = call.data.get(ATTR_FONT_SIZE, 24)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-
-        printer = PaperangP2()
-        try:
-            printer.connect()
-            printer.print_text(text, font_size=font_size, heat_density=heat_density)
-        finally:
-            _safe_cleanup(printer)
+        await hass.async_add_executor_job(_do_print_text, text, font_size, heat_density)
 
     async def handle_print_image(call: ServiceCall) -> None:
         """Handle print image service call."""
@@ -84,42 +124,21 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         if "heat_density" in profile_settings:
             heat_density = profile_settings["heat_density"]
 
-        printer = PaperangP2()
-        try:
-            printer.connect()
-            printer.print_image(
-                image_url,
-                heat_density=heat_density,
-                threshold=threshold,
-                brightness=brightness,
-                contrast=contrast,
-            )
-        finally:
-            _safe_cleanup(printer)
+        await hass.async_add_executor_job(
+            _do_print_image, image_url, heat_density, threshold, brightness, contrast
+        )
 
     async def handle_print_qr(call: ServiceCall) -> None:
         """Handle print QR code service call."""
         qr_content = call.data.get(ATTR_QR_CONTENT, "")
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-
-        printer = PaperangP2()
-        try:
-            printer.connect()
-            printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
-        finally:
-            _safe_cleanup(printer)
+        await hass.async_add_executor_job(_do_print_qr, qr_content, qr_size, heat_density)
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
         """Handle print pickup code service call."""
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
-
-        printer = PaperangP2()
-        try:
-            printer.connect()
-            printer.print_pickup_code(pickup_code)
-        finally:
-            _safe_cleanup(printer)
+        await hass.async_add_executor_job(_do_print_pickup_code, pickup_code)
 
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
