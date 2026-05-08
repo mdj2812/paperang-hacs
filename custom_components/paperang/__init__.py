@@ -10,23 +10,22 @@ import usb.util
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
-# The pip-installed paperang-p2-lib shares the same top-level module name
-# as this HA component ('paperang'). HA puts custom_components first in
-# sys.path, so 'from paperang import ...' would import ourselves.
-# Temporarily remove custom_components from sys.path to import the lib.
+# The pip-installed paperang-p2-lib shares the module name 'paperang'
+# with this HA component. HA puts custom_components/ first in sys.path,
+# so temporarily remove it to import the library correctly.
 _custom_paths = [p for p in sys.path if 'custom_components' in p]
 for _p in _custom_paths:
     sys.path.remove(_p)
 
-import paperang as _lib
+import paperang as _lib  # pylint: disable=wrong-import-position,import-self
 
 for _p in _custom_paths:
     sys.path.insert(0, _p)
 
-PaperangP2 = _lib.PaperangP2
-load_profiles = _lib.load_profiles
+PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
+load_profiles = _lib.load_profiles  # pylint: disable=no-member
 
-from .const import (
+from .const import (  # pylint: disable=wrong-import-position
     DOMAIN,
     SERVICE_PRINT_TEXT,
     SERVICE_PRINT_IMAGE,
