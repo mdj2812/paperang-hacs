@@ -14,12 +14,16 @@ Control your Paperang P2 thermal printer through Home Assistant. Supports printi
 
 ### Method 2: Manual Installation
 
-1. Copy `custom_components/paperang` to HA's `/config/custom_components/paperang/`
-2. Install the pip dependency:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/mdj2812/paperang-hacs.git
+   ```
+2. Copy `custom_components/paperang` to HA's `/config/custom_components/paperang/`
+3. Install the pip dependency:
    ```bash
    pip install paperang-p2-lib[qr,cjk]>=0.2.0
    ```
-3. Restart Home Assistant
+4. Restart Home Assistant
 
 ## Prerequisites
 
