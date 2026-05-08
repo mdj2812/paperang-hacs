@@ -1,19 +1,17 @@
 """Paperang P2 Printer integration for Home Assistant.
 
-Wraps the verified working paperang_p2.py as a HA component.
+Powered by paperang-p2-lib for core printer logic.
 """
 
 import logging
 import usb.util
 
-import homeassistant  # noqa: F401  # pylint: disable=unused-import
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
-# Import the verified working paperang_p2.py
-from . import paperang_core  # noqa: E402
+from paperang import PaperangP2, load_profiles
 
-from .const import (  # noqa: E402
+from .const import (
     DOMAIN,
     SERVICE_PRINT_TEXT,
     SERVICE_PRINT_IMAGE,
@@ -50,7 +48,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         font_size = call.data.get(ATTR_FONT_SIZE, 24)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        printer = paperang_core.PaperangP2()
+        printer = PaperangP2()
         try:
             printer.connect()
             printer.print_text(text, font_size=font_size, heat_density=heat_density)
@@ -63,7 +61,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        profiles = paperang_core.load_profiles()
+        profiles = load_profiles()
         profile_settings = profiles.get(profile, {}) if profile else {}
 
         threshold = profile_settings.get("threshold", 128)
@@ -72,7 +70,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         if "heat_density" in profile_settings:
             heat_density = profile_settings["heat_density"]
 
-        printer = paperang_core.PaperangP2()
+        printer = PaperangP2()
         try:
             printer.connect()
             printer.print_image(
@@ -91,7 +89,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        printer = paperang_core.PaperangP2()
+        printer = PaperangP2()
         try:
             printer.connect()
             printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
@@ -102,7 +100,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         """Handle print pickup code service call."""
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
 
-        printer = paperang_core.PaperangP2()
+        printer = PaperangP2()
         try:
             printer.connect()
             printer.print_pickup_code(pickup_code)

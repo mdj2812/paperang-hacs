@@ -2,10 +2,6 @@
 
 DOMAIN = "paperang"
 
-# USB IDs
-VENDOR_ID = 0x4348
-PRODUCT_ID = 0x5584
-
 # Services
 SERVICE_PRINT_TEXT = "print_text"
 SERVICE_PRINT_IMAGE = "print_image"
@@ -21,14 +17,3 @@ ATTR_PROFILE = "profile"
 ATTR_QR_CONTENT = "qr_content"
 ATTR_QR_SIZE = "qr_size"
 ATTR_PICKUP_CODE = "pickup_code"
-
-# Bundled font files (relative to component directory)
-FONTS_DIR = "fonts"
-BUNDLED_FONTS_TEXT = [
-    "fonts/wqy-microhei.ttc",   # CJK support
-    "fonts/DejaVuSans.ttf",     # Latin fallback
-]
-BUNDLED_FONTS_PICKUP = [
-    "fonts/DejaVuSans-Bold.ttf",
-    "fonts/DejaVuSans.ttf",
-]

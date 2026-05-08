@@ -7,6 +7,6 @@
   "documentation": "https://github.com/mdj2812/paperang-hacs",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/mdj2812/paperang-hacs/issues",
-  "requirements": ["pyusb>=1.2.1", "Pillow>=10.0.0", "qrcode[pil]>=7.4.2"],
-  "version": "1.0.2"
+  "requirements": ["paperang-p2-lib[qr,cjk]>=0.2.0"],
+  "version": "1.1.0"
 }

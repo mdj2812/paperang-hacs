@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.0 (2026-05-08)
+
+### Changed
+- **Use paperang-p2-lib**: Core printer logic now comes from paperang-p2-lib pip package
+  - Removed embedded `paperang_core.py` (replaced by `paperang.PaperangP2`)
+  - Removed bundled fonts (provided by paperang-p2-lib + paperang-p2-fonts-cjk)
+  - Removed `profiles.json` (bundled in paperang-p2-lib)
+  - Updated manifest requirements to `paperang-p2-lib[qr,cjk]>=0.2.0`
+- Simplified `const.py` (font constants no longer needed)
+- Slimmer component zip (no embedded fonts, ~7MB smaller)
+
 ## v1.0.2 (2026-05-08)
 
 ### Added
