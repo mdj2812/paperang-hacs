@@ -14,9 +14,10 @@
 
 ### 方式二：手动安装
 
-1. 直接克隆到 HA 的 custom_components：
+1. 克隆并复制组件：
    ```bash
-   git clone https://github.com/mdj2812/paperang-hacs.git /config/custom_components/paperang
+   git clone https://github.com/mdj2812/paperang-hacs.git
+   cp -r paperang-hacs/custom_components/paperang /config/custom_components/paperang
    ```
 2. 安装 pip 依赖：
    ```bash
