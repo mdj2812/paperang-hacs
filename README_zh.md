@@ -14,16 +14,15 @@
 
 ### 方式二：手动安装
 
-1. 克隆仓库：
+1. 直接克隆到 HA 的 custom_components：
    ```bash
-   git clone https://github.com/mdj2812/paperang-hacs.git
+   git clone https://github.com/mdj2812/paperang-hacs.git /config/custom_components/paperang
    ```
-2. 复制 `custom_components/paperang` 到 HA 的 `/config/custom_components/paperang/`
-3. 安装 pip 依赖：
+2. 安装 pip 依赖：
    ```bash
    pip install paperang-p2-lib[qr,cjk]>=0.2.0
    ```
-4. 重启 Home Assistant
+3. 重启 Home Assistant
 
 ## 前提条件
 
