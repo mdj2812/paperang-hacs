@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.2.0 (2026-05-12)
+
+### Added
+- Sensor platform: battery level and printer status monitoring
+  - `sensor.paperang_p2_battery` — battery percentage (%)
+  - `sensor.paperang_p2_status` — printer status (raw hex)
+  - Polling every 60 seconds via DataUpdateCoordinator
+- New services: `paperang.get_status`, `paperang.feed_paper`
+- `async_setup_entry` / `async_unload_entry` for future config flow support
+- Dependency bump: `paperang-p2-lib >= 0.2.2`
+
+### Fixed
+- `get_status()` and `get_battery()` now send required data byte (via lib update)
+- Resolved all pylint warnings in sensor.py
+
+## v1.1.1 (2026-05-11)
+
+### Added
+- HACS one-click install button in README
+
+### Fixed
+- Install instructions URLs point to GitHub repository
+
 ## v1.1.1 (2026-05-11)
 
 ### Added
