@@ -1,0 +1,149 @@
+"""Paperang P2 Printer - Sensor platform.
+
+Provides battery level and printer status via periodic USB polling.
+"""
+
+from __future__ import annotations
+
+import logging
+import struct
+from datetime import timedelta
+
+import usb.util
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+)
+
+from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
+
+# Handle paperang module path conflict
+import sys as _sys
+_custom = [p for p in _sys.path if "custom_components" in p]
+for p in _custom:
+    _sys.path.remove(p)
+import paperang as _lib  # pylint: disable=wrong-import-position
+for p in _custom:
+    _sys.path.insert(0, p)
+
+PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
+
+# Monkey-patch get_status/get_battery to send required data byte
+def _patched_get_status(self):
+    self.send(0x0C, struct.pack('<B', 1))
+    resp = self.read_response()
+    if resp:
+        return resp['data'].hex() if resp['data'] else None
+    return None
+
+def _patched_get_battery(self):
+    self.send(0x10, struct.pack('<B', 1))
+    resp = self.read_response()
+    if resp and resp['data']:
+        return resp['data'][0] if len(resp['data']) > 0 else None
+    return None
+
+PaperangP2.get_status = _patched_get_status  # pylint: disable=no-member
+PaperangP2.get_battery = _patched_get_battery  # pylint: disable=no-member
+
+SCAN_INTERVAL = timedelta(seconds=60)
+
+
+def _read_printer_state():
+    """Blocking: connect to printer and read battery + status."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        battery = printer.get_battery()
+        status = printer.get_status()
+        result = {"battery": battery, "status": status, "available": True}
+    except Exception as err:
+        result = {"battery": None, "status": None, "available": False}
+        _LOGGER.debug("Printer not available: %s", err)
+    finally:
+        if printer.dev:
+            try:
+                usb.util.dispose_resources(printer.dev)
+            except Exception:
+                pass
+    _LOGGER.debug("Paperang state: %s", result)
+    return result
+
+
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
+) -> None:
+    """Set up Paperang sensors."""
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="paperang",
+        update_method=lambda: hass.async_add_executor_job(_read_printer_state),
+        update_interval=SCAN_INTERVAL,
+    )
+
+    # Fetch initial data before adding entities
+    await coordinator.async_refresh()
+    _LOGGER.info("Paperang coordinator data after initial refresh: %s", coordinator.data)
+
+    async_add_entities([
+        PaperangBatterySensor(coordinator),
+        PaperangStatusSensor(coordinator),
+    ])
+
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up from config entry."""
+    await async_setup_platform(hass, {}, async_add_entities)
+
+
+class PaperangBatterySensor(CoordinatorEntity, SensorEntity):
+    """Battery level sensor."""
+
+    _attr_name = "Paperang P2 Battery"
+    _attr_unique_id = "paperang_p2_battery"
+    _attr_device_class = "battery"
+    _attr_state_class = "measurement"
+    _attr_native_unit_of_measurement = "%"
+    _attr_icon = "mdi:battery"
+
+    @property
+    def native_value(self):
+        data = self.coordinator.data
+        if data and data.get("available"):
+            return data.get("battery")
+        return None
+
+    @property
+    def available(self) -> bool:
+        data = self.coordinator.data
+        return data is not None and data.get("available", False)
+
+
+class PaperangStatusSensor(CoordinatorEntity, SensorEntity):
+    """Printer status sensor (raw hex)."""
+
+    _attr_name = "Paperang P2 Status"
+    _attr_unique_id = "paperang_p2_status"
+    _attr_icon = "mdi:printer"
+
+    @property
+    def native_value(self):
+        data = self.coordinator.data
+        if data and data.get("available"):
+            return data.get("status")
+        return None
+
+    @property
+    def available(self) -> bool:
+        data = self.coordinator.data
+        return data is not None and data.get("available", False)

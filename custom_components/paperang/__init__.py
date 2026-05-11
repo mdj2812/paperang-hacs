@@ -7,6 +7,7 @@ import logging
 import sys
 import usb.util
 
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
@@ -24,6 +25,8 @@ for _p in _custom_paths:
 
 PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
 load_profiles = _lib.load_profiles  # pylint: disable=no-member
+crc32_paperang = _lib.crc32_paperang  # pylint: disable=no-member
+pack_packet = _lib.pack_packet  # pylint: disable=no-member
 
 from .const import (  # pylint: disable=wrong-import-position
     DOMAIN,
@@ -31,6 +34,8 @@ from .const import (  # pylint: disable=wrong-import-position
     SERVICE_PRINT_IMAGE,
     SERVICE_PRINT_QR,
     SERVICE_PRINT_PICKUP_CODE,
+    SERVICE_GET_STATUS,
+    SERVICE_FEED_PAPER,
     ATTR_TEXT,
     ATTR_FONT_SIZE,
     ATTR_HEAT_DENSITY,
@@ -39,7 +44,10 @@ from .const import (  # pylint: disable=wrong-import-position
     ATTR_QR_CONTENT,
     ATTR_QR_SIZE,
     ATTR_PICKUP_CODE,
+    ATTR_LINES,
 )
+
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -99,6 +107,30 @@ def _do_print_pickup_code(pickup_code):
         _safe_cleanup(printer)
 
 
+def _do_get_status():
+    """Blocking: get printer battery and status."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        battery = printer.get_battery()
+        status = printer.get_status()
+        return {"battery": battery, "status": status, "available": True}
+    except Exception as err:
+        return {"battery": None, "status": None, "available": False, "error": str(err)}
+    finally:
+        _safe_cleanup(printer)
+
+
+def _do_feed_paper(lines):
+    """Blocking: feed paper."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        printer.feed(lines)
+    finally:
+        _safe_cleanup(printer)
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylint: disable=unused-argument
     """Set up the Paperang P2 Printer component."""
 
@@ -140,11 +172,34 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
         await hass.async_add_executor_job(_do_print_pickup_code, pickup_code)
 
+    async def handle_get_status(call: ServiceCall) -> None:  # pylint: disable=unused-argument
+        """Handle get status service call."""
+        result = await hass.async_add_executor_job(_do_get_status)
+        _LOGGER.info("Paperang P2 status: %s", result)
+
+    async def handle_feed_paper(call: ServiceCall) -> None:
+        """Handle feed paper service call."""
+        lines = call.data.get(ATTR_LINES, 100)
+        await hass.async_add_executor_job(_do_feed_paper, lines)
+
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
     hass.services.async_register(DOMAIN, SERVICE_PRINT_IMAGE, handle_print_image)
     hass.services.async_register(DOMAIN, SERVICE_PRINT_QR, handle_print_qr)
     hass.services.async_register(DOMAIN, SERVICE_PRINT_PICKUP_CODE, handle_print_pickup_code)
+    hass.services.async_register(DOMAIN, SERVICE_GET_STATUS, handle_get_status)
+    hass.services.async_register(DOMAIN, SERVICE_FEED_PAPER, handle_feed_paper)
 
     _LOGGER.info("Paperang P2 Printer integration loaded")
     return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry):
+    """Set up from config entry (for future config flow support)."""
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_unload_entry(hass, entry):
+    """Unload a config entry."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
