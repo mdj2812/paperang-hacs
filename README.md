@@ -2,7 +2,7 @@
 
 Control your Paperang P2 thermal printer through Home Assistant. Supports printing text, images, QR codes, and pickup codes.
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=paperang-hacs&category=integration&url=https%3A%2F%2Fgithub.com%2Fmdj2812%2Fpaperang-hacs)
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mdj2812&repository=paperang-hacs&category=integration)
 
 ## Installation
 
