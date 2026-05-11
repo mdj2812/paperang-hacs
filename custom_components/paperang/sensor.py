@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import struct
+import sys
 from datetime import timedelta
 
 import usb.util
@@ -19,22 +20,18 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .const import DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
-
-# Handle paperang module path conflict
-import sys as _sys
-_custom = [p for p in _sys.path if "custom_components" in p]
+# Handle paperang module path conflict (lib shares name with this integration)
+_custom = [p for p in sys.path if "custom_components" in p]
 for p in _custom:
-    _sys.path.remove(p)
-import paperang as _lib  # pylint: disable=wrong-import-position
+    sys.path.remove(p)
+import paperang as _lib  # pylint: disable=wrong-import-order,import-self
 for p in _custom:
-    _sys.path.insert(0, p)
+    sys.path.insert(0, p)
 
 PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
 
 # Monkey-patch get_status/get_battery to send required data byte
+# (remove once paperang-p2-lib >= 0.2.2 is guaranteed)
 def _patched_get_status(self):
     self.send(0x0C, struct.pack('<B', 1))
     resp = self.read_response()
@@ -42,12 +39,14 @@ def _patched_get_status(self):
         return resp['data'].hex() if resp['data'] else None
     return None
 
+
 def _patched_get_battery(self):
     self.send(0x10, struct.pack('<B', 1))
     resp = self.read_response()
     if resp and resp['data']:
         return resp['data'][0] if len(resp['data']) > 0 else None
     return None
+
 
 PaperangP2.get_status = _patched_get_status  # pylint: disable=no-member
 PaperangP2.get_battery = _patched_get_battery  # pylint: disable=no-member
@@ -62,18 +61,16 @@ def _read_printer_state():
         printer.connect()
         battery = printer.get_battery()
         status = printer.get_status()
-        result = {"battery": battery, "status": status, "available": True}
+        return {"battery": battery, "status": status, "available": True}
     except Exception as err:
-        result = {"battery": None, "status": None, "available": False}
         _LOGGER.debug("Printer not available: %s", err)
+        return {"battery": None, "status": None, "available": False}
     finally:
         if printer.dev:
             try:
                 usb.util.dispose_resources(printer.dev)
             except Exception:
                 pass
-    _LOGGER.debug("Paperang state: %s", result)
-    return result
 
 
 async def async_setup_platform(
