@@ -12,6 +12,7 @@ from datetime import timedelta
 import usb.util
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import (
@@ -32,6 +33,14 @@ for p in _custom:
     sys.path.insert(0, p)
 
 PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
+
+DEVICE_ID = "paperang_p2_printer"
+DEVICE_INFO = DeviceInfo(
+    identifiers={("paperang", DEVICE_ID)},
+    name="Paperang P2 Printer",
+    manufacturer="Paperang",
+    model="P2",
+)
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
@@ -103,6 +112,10 @@ class PaperangBatterySensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:battery"
 
     @property
+    def device_info(self) -> DeviceInfo:
+        return DEVICE_INFO
+
+    @property
     def native_value(self):
         data = self.coordinator.data
         if data and data.get("available"):
@@ -121,6 +134,10 @@ class PaperangStatusSensor(CoordinatorEntity, SensorEntity):
     _attr_name = "Paperang P2 Status"
     _attr_unique_id = "paperang_p2_status"
     _attr_icon = "mdi:printer"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DEVICE_INFO
 
     @property
     def native_value(self):
