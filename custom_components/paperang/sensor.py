@@ -37,7 +37,13 @@ SCAN_INTERVAL = timedelta(seconds=60)
 
 
 # pylint: disable=duplicate-code
-def _read_printer_state():
+async def _read_printer_state(hass):
+    """Read battery and status from printer (runs blocking USB in executor)."""
+    return await hass.async_add_executor_job(_do_read_printer_state)
+# pylint: enable=duplicate-code
+
+
+def _do_read_printer_state():
     """Blocking: connect to printer and read battery + status."""
     printer = PaperangP2()
     try:
@@ -68,7 +74,7 @@ async def async_setup_platform(
         hass,
         _LOGGER,
         name="paperang",
-        update_method=lambda: hass.async_add_executor_job(_read_printer_state),
+        update_method=_read_printer_state,
         update_interval=SCAN_INTERVAL,
     )
 
