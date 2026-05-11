@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.1 (2026-05-12)
+
+### Changed
+- Dependency bump: `paperang-p2-lib >= 0.3.2` (fixes GET command response parsing)
+
 ## v1.2.0 (2026-05-12)
 
 ### Added

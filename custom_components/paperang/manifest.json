@@ -8,5 +8,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/mdj2812/paperang-hacs/issues",
   "requirements": ["paperang-p2-lib[qr,cjk]>=0.3.2"],
-  "version": "1.2.0"
+  "version": "1.2.1"
 }
