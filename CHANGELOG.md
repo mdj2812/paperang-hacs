@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.2.2 (2026-05-12)
+
+### Changed
+- `_read_printer_state()` refactored to async with executor wrapper
+- Dependency bump: `paperang-p2-lib >= 0.3.3`
+- Removed monkey-patch, now calls lib API directly
+
 ## v1.2.1 (2026-05-12)
 
 ### Changed
