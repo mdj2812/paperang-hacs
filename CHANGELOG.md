@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.1.1 (2026-05-11)
+
+### Added
+- HACS one-click install button in README
+
+### Fixed
+- Install instructions URLs point to GitHub repository
+
+
 ## v1.1.0 (2026-05-08)
 
 ### Changed
