@@ -33,22 +33,25 @@ for p in _custom:
     sys.path.insert(0, p)
 
 PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
+_unpack = _lib.unpack_response  # pylint: disable=no-member
 
-# Monkey-patch get_status/get_battery to send required data byte
-# (remove once paperang-p2-lib >= 0.2.2 is guaranteed)
+# Monkey-patch get_status/get_battery to handle dual-response protocol
+# (two frames come in a single USB response: echo + actual data)
 def _patched_get_status(self):
     self.send(0x0C, struct.pack('<B', 1))
-    resp = self.read_response()
-    if resp:
-        return resp['data'].hex() if resp['data'] else None
+    raw = self.dev.read(self.ep_in.bEndpointAddress, 64, timeout=1000)
+    for frame in _unpack(raw):
+        if frame['cmd'] != 0x0C:  # skip echo, return actual data
+            return frame['data'].hex() if frame['data'] else None
     return None
 
 
 def _patched_get_battery(self):
     self.send(0x10, struct.pack('<B', 1))
-    resp = self.read_response()
-    if resp and resp['data']:
-        return resp['data'][0] if len(resp['data']) > 0 else None
+    raw = self.dev.read(self.ep_in.bEndpointAddress, 64, timeout=1000)
+    for frame in _unpack(raw):
+        if frame['cmd'] != 0x10:  # skip echo, return actual data
+            return frame['data'][0] if frame['data'] and len(frame['data']) > 0 else None
     return None
 
 
