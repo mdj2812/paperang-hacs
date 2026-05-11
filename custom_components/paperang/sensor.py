@@ -36,13 +36,12 @@ PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
 SCAN_INTERVAL = timedelta(seconds=60)
 
 
-# pylint: disable=duplicate-code
 async def _read_printer_state(hass):
     """Read battery and status from printer (runs blocking USB in executor)."""
     return await hass.async_add_executor_job(_do_read_printer_state)
-# pylint: enable=duplicate-code
 
 
+# pylint: disable=duplicate-code
 def _do_read_printer_state():
     """Blocking: connect to printer and read battery + status."""
     printer = PaperangP2()
