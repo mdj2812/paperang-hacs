@@ -2,13 +2,15 @@
 
 通过 Home Assistant 控制 Paperang P2 热敏打印机，支持文本、图片、QR 码和取件码打印。
 
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=paperang-hacs&category=integration&url=https%3A%2F%2F192.168.99.20%2Fhome_lab%2Fpaperang-hacs)
+
 ## 安装
 
 ### 方式一：HACS（推荐）
 
 1. 在 HACS 中添加自定义仓库：
    - HACS → Integrations → ⋮ → Custom repositories
-   - 添加仓库地址：`https://github.com/mdj2812/paperang-hacs.git`
+   - 添加仓库地址：`http://192.168.99.20:3000/home_lab/paperang-hacs`
    - Category 选择 `Integration`
    - 安装 `Paperang P2 Printer`
 
@@ -16,7 +18,7 @@
 
 1. 克隆并复制组件：
    ```bash
-   git clone https://github.com/mdj2812/paperang-hacs.git
+   git clone http://192.168.99.20:3000/home_lab/paperang-hacs.git
    cp -r paperang-hacs/custom_components/paperang /config/custom_components/paperang
    ```
 2. 重启 Home Assistant（HA 会自动安装依赖）
