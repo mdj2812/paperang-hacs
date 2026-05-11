@@ -20,11 +20,15 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # Handle paperang module path conflict (lib shares name with this integration)
+# pylint: disable=wrong-import-position, wrong-import-order
 _custom = [p for p in sys.path if "custom_components" in p]
 for p in _custom:
     sys.path.remove(p)
-import paperang as _lib  # pylint: disable=wrong-import-order,import-self
+import paperang as _lib
+
 for p in _custom:
     sys.path.insert(0, p)
 
