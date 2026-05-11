@@ -54,6 +54,7 @@ PaperangP2.get_battery = _patched_get_battery  # pylint: disable=no-member
 SCAN_INTERVAL = timedelta(seconds=60)
 
 
+# pylint: disable=duplicate-code
 def _read_printer_state():
     """Blocking: connect to printer and read battery + status."""
     printer = PaperangP2()
@@ -71,6 +72,7 @@ def _read_printer_state():
                 usb.util.dispose_resources(printer.dev)
             except Exception:
                 pass
+# pylint: enable=duplicate-code
 
 
 async def async_setup_platform(
