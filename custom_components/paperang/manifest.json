@@ -7,6 +7,6 @@
   "documentation": "https://github.com/mdj2812/paperang-hacs",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/mdj2812/paperang-hacs/issues",
-  "requirements": ["paperang-p2-lib[qr,cjk]>=0.3.2"],
+  "requirements": ["paperang-p2-lib[qr,cjk]>=0.3.3"],
   "version": "1.2.1"
 }
