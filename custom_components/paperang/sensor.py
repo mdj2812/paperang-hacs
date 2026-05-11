@@ -1,6 +1,7 @@
 """Paperang P2 Printer - Sensor platform.
 
-Provides battery level and printer status via periodic USB polling.
+Provides battery, status, voltage, temperature, and other printer telemetry
+via periodic USB polling.
 """
 
 from __future__ import annotations
@@ -11,6 +12,11 @@ from datetime import timedelta
 
 import usb.util
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -46,28 +52,40 @@ SCAN_INTERVAL = timedelta(seconds=60)
 
 
 async def _read_printer_state(hass):
-    """Read battery and status from printer (runs blocking USB in executor)."""
+    """Read all printer telemetry (runs blocking USB in executor)."""
     return await hass.async_add_executor_job(_do_read_printer_state)
 
 
 # pylint: disable=duplicate-code
 def _do_read_printer_state():
-    """Blocking: connect to printer and read battery + status."""
+    """Blocking: connect to printer and read all telemetry."""
+    data = {"available": False}
     printer = PaperangP2()
     try:
         printer.connect()
-        battery = printer.get_battery()
-        status = printer.get_status()
-        return {"battery": battery, "status": status, "available": True}
+        data.update({
+            "battery": printer.get_battery(),
+            "status": printer.get_status(),
+            "voltage": printer.get_voltage(),
+            "temperature": printer.get_temperature(),
+            "heat_density": printer.get_heat_density(),
+            "paper_type": printer.get_paper_type(),
+            "version": printer.get_version(),
+            "model": printer.get_model(),
+            "serial": printer.get_sn(),
+            "board": printer.get_board_version(),
+            "hw_info": printer.get_hw_info(),
+        })
+        data["available"] = True
     except Exception as err:
         _LOGGER.debug("Printer not available: %s", err)
-        return {"battery": None, "status": None, "available": False}
     finally:
         if printer.dev:
             try:
                 usb.util.dispose_resources(printer.dev)
             except Exception:
                 pass
+    return data
 # pylint: enable=duplicate-code
 
 
@@ -86,13 +104,25 @@ async def async_setup_platform(
         update_interval=SCAN_INTERVAL,
     )
 
-    # Fetch initial data before adding entities
     await coordinator.async_refresh()
-    _LOGGER.info("Paperang coordinator data after initial refresh: %s", coordinator.data)
+    _LOGGER.info("Paperang coordinator data: %s", coordinator.data)
 
     async_add_entities([
-        PaperangBatterySensor(coordinator),
-        PaperangStatusSensor(coordinator),
+        PaperangSensor(coordinator, "battery", "Battery", "mdi:battery",
+                       "battery", PERCENTAGE, "measurement"),
+        PaperangSensor(coordinator, "status", "Status", "mdi:printer"),
+        PaperangSensor(coordinator, "voltage", "Voltage", "mdi:flash",
+                       "voltage", UnitOfElectricPotential.MILLIVOLT, "measurement"),
+        PaperangSensor(coordinator, "temperature", "Temperature", "mdi:thermometer",
+                       "temperature", UnitOfTemperature.CELSIUS, "measurement"),
+        PaperangSensor(coordinator, "heat_density", "Heat Density", "mdi:thermometer-lines",
+                       None, PERCENTAGE, "measurement"),
+        PaperangSensor(coordinator, "paper_type", "Paper Type", "mdi:paper-roll"),
+        PaperangSensor(coordinator, "version", "Firmware Version", "mdi:information-outline"),
+        PaperangSensor(coordinator, "model", "Model", "mdi:printer-3d-nozzle"),
+        PaperangSensor(coordinator, "serial", "Serial Number", "mdi:barcode"),
+        PaperangSensor(coordinator, "board", "Board Version", "mdi:chip"),
+        PaperangSensor(coordinator, "hw_info", "Hardware Info", "mdi:memory"),
     ])
 
 
@@ -101,39 +131,27 @@ async def async_setup_entry(hass, entry, async_add_entities):
     await async_setup_platform(hass, {}, async_add_entities)
 
 
-class PaperangBatterySensor(CoordinatorEntity, SensorEntity):
-    """Battery level sensor."""
+class PaperangSensor(CoordinatorEntity, SensorEntity):
+    """Generic Paperang sensor. Reads a key from coordinator data."""
 
-    _attr_name = "Paperang P2 Battery"
-    _attr_unique_id = "paperang_p2_battery"
-    _attr_device_class = "battery"
-    _attr_state_class = "measurement"
-    _attr_native_unit_of_measurement = "%"
-    _attr_icon = "mdi:battery"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DEVICE_INFO
-
-    @property
-    def native_value(self):
-        data = self.coordinator.data
-        if data and data.get("available"):
-            return data.get("battery")
-        return None
-
-    @property
-    def available(self) -> bool:
-        data = self.coordinator.data
-        return data is not None and data.get("available", False)
-
-
-class PaperangStatusSensor(CoordinatorEntity, SensorEntity):
-    """Printer status sensor (raw hex)."""
-
-    _attr_name = "Paperang P2 Status"
-    _attr_unique_id = "paperang_p2_status"
-    _attr_icon = "mdi:printer"
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        key: str,
+        name: str,
+        icon: str,
+        device_class: str | None = None,
+        unit: str | None = None,
+        state_class: str | None = None,
+    ) -> None:
+        super().__init__(coordinator)
+        self._key = key
+        self._attr_name = f"Paperang P2 {name}"
+        self._attr_unique_id = f"paperang_p2_{key}"
+        self._attr_icon = icon
+        self._attr_device_class = device_class
+        self._attr_native_unit_of_measurement = unit
+        self._attr_state_class = state_class
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -143,7 +161,7 @@ class PaperangStatusSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         data = self.coordinator.data
         if data and data.get("available"):
-            return data.get("status")
+            return data.get(self._key)
         return None
 
     @property
