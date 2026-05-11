@@ -6,7 +6,6 @@ Provides battery level and printer status via periodic USB polling.
 from __future__ import annotations
 
 import logging
-import struct
 import sys
 from datetime import timedelta
 
@@ -33,35 +32,10 @@ for p in _custom:
     sys.path.insert(0, p)
 
 PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
-_unpack = _lib.unpack_response  # pylint: disable=no-member
-
-# Monkey-patch get_status/get_battery to handle dual-response protocol
-# (two frames come in a single USB response: echo + actual data)
-def _patched_get_status(self):
-    self.send(0x0C, struct.pack('<B', 1))
-    raw = self.dev.read(self.ep_in.bEndpointAddress, 64, timeout=1000)
-    for frame in _unpack(raw):
-        if frame['cmd'] != 0x0C:  # skip echo, return actual data
-            return frame['data'].hex() if frame['data'] else None
-    return None
-
-
-def _patched_get_battery(self):
-    self.send(0x10, struct.pack('<B', 1))
-    raw = self.dev.read(self.ep_in.bEndpointAddress, 64, timeout=1000)
-    for frame in _unpack(raw):
-        if frame['cmd'] != 0x10:  # skip echo, return actual data
-            return frame['data'][0] if frame['data'] and len(frame['data']) > 0 else None
-    return None
-
-
-PaperangP2.get_status = _patched_get_status  # pylint: disable=no-member
-PaperangP2.get_battery = _patched_get_battery  # pylint: disable=no-member
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
 
-# pylint: disable=duplicate-code
 def _read_printer_state():
     """Blocking: connect to printer and read battery + status."""
     printer = PaperangP2()
@@ -79,7 +53,6 @@ def _read_printer_state():
                 usb.util.dispose_resources(printer.dev)
             except Exception:
                 pass
-# pylint: enable=duplicate-code
 
 
 async def async_setup_platform(
