@@ -61,9 +61,39 @@ SCAN_INTERVAL = timedelta(seconds=60)
 # ── Coordinator update logic ───────────────────────────────────
 
 _static_data: dict[str, object] = {}
+_dynamic_data: dict[str, object] = {}
 
 # pylint: disable=duplicate-code
 _RETRIES = 3
+
+_STATIC_KEYS = [
+    "voltage", "temperature", "heat_density", "paper_type",
+    "version", "model", "serial", "board", "hw_info",
+]
+
+_STATIC_READERS = [
+    ("voltage", lambda p: p.get_voltage()),
+    ("temperature", lambda p: p.get_temperature()),
+    ("heat_density", lambda p: p.get_heat_density()),
+    ("paper_type", lambda p: p.get_paper_type()),
+    ("version", lambda p: p.get_version()),
+    ("model", lambda p: p.get_model()),
+    ("serial", lambda p: p.get_sn()),
+    ("board", lambda p: p.get_board_version()),
+    ("hw_info", lambda p: p.get_hw_info()),
+]
+
+
+def _update_if_not_none(cache: dict[str, object], key: str, val: object) -> None:
+    """Update cache if value is not None, otherwise keep existing."""
+    if val is not None:
+        cache[key] = val
+
+
+def _get_or_fallback(cache: dict[str, object], key: str) -> object:
+    """Get value from cache, return None if never seen."""
+    return cache.get(key)
+
 
 async def _read_printer_state(hass: HomeAssistant):
     """Read all printer telemetry (runs blocking USB in executor)."""
@@ -73,48 +103,44 @@ async def _read_printer_state(hass: HomeAssistant):
 def _do_read_printer_state():
     """Blocking: connect to printer and read telemetry.
 
-    Always reads battery + status (dynamic).
-    Static fields (voltage, temperature, firmware, etc.) are read once
-    on first connect or reconnect, then cached until disconnection.
+    Dynamic values (battery, status): read every poll.  If None, keep
+    the last known value so gaps don't show as unavailable.
+
+    Static values (voltage, temperature, firmware, etc.): read every
+    poll until a non-None value is obtained; thereafter reuse cache.
+
     Retries up to 3 times on failure; logs warning if all fail.
     """
     for attempt in range(1, _RETRIES + 1):
-        data = {"available": False}
+        data: dict[str, object] = {"available": False}
         printer = PaperangP2()
         try:
             printer.connect()
 
-            data["battery"] = printer.get_battery()
+            # ── Dynamic: always read, fall back to last known ──────
+            battery = printer.get_battery()
             time.sleep(0.2)
-            data["status"] = printer.get_status()
+            status = printer.get_status()
+            data["battery"] = (
+                battery if battery is not None
+                else _get_or_fallback(_dynamic_data, "battery")
+            )
+            data["status"] = (
+                status if status is not None
+                else _get_or_fallback(_dynamic_data, "status")
+            )
+            _update_if_not_none(_dynamic_data, "battery", battery)
+            _update_if_not_none(_dynamic_data, "status", status)
 
-            if _static_data:
-                data.update(_static_data)
-            else:
+            # ── Static: always read, update cache if non-None ─────
+            for key, reader in _STATIC_READERS:
                 time.sleep(0.2)
-                data["voltage"] = printer.get_voltage()
-                time.sleep(0.2)
-                data["temperature"] = printer.get_temperature()
-                time.sleep(0.2)
-                data["heat_density"] = printer.get_heat_density()
-                time.sleep(0.2)
-                data["paper_type"] = printer.get_paper_type()
-                time.sleep(0.2)
-                data["version"] = printer.get_version()
-                time.sleep(0.2)
-                data["model"] = printer.get_model()
-                time.sleep(0.2)
-                data["serial"] = printer.get_sn()
-                time.sleep(0.2)
-                data["board"] = printer.get_board_version()
-                time.sleep(0.2)
-                data["hw_info"] = printer.get_hw_info()
+                val = reader(printer)
+                _update_if_not_none(_static_data, key, val)
 
-                _static_data.clear()
-                _static_data.update({
-                    k: v for k, v in data.items()
-                    if k not in ("battery", "status", "available")
-                })
+            # Merge all cached values into data
+            for key in _STATIC_KEYS:
+                data[key] = _get_or_fallback(_static_data, key)
 
             data["available"] = True
             return data
@@ -130,6 +156,7 @@ def _do_read_printer_state():
                     _RETRIES, err,
                 )
                 _static_data.clear()
+                _dynamic_data.clear()
         finally:
             if printer.dev:
                 try:
