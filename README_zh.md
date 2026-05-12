@@ -1,8 +1,16 @@
 # Paperang P2 打印机 - Home Assistant 集成
 
-通过 Home Assistant 控制 Paperang P2 热敏打印机，支持文本、图片、QR 码和取件码打印。
+通过 Home Assistant 控制和监控 Paperang P2 热敏打印机。支持从设备页面交互式打印文本、图片、QR 码、取件码，以及实时打印机遥测数据。
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=paperang-hacs&category=integration&url=https%3A%2F%2Fgithub.com%2Fmdj2812%2Fpaperang-hacs)
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mdj2812&repository=paperang-hacs&category=integration)
+
+## 功能
+
+- 🔌 **USB 自动发现** — 插入 USB 后自动检测打印机
+- 🎛️ **设备页面控制** — 交互式打印面板，含模式选择器、文本输入、参数滑杆、打印按钮
+- 📊 **11 个传感器** — 电池、状态、电压、温度、加热浓度、纸张类型、固件版本、型号、序列号、板版本、硬件信息
+- 🖨️ **7 个服务** — 打印文本、图片、QR 码、取件码、测试页、获取状态、进纸
+- 📦 **单一设备** — 所有实体归入一个「Paperang P2 Printer」设备
 
 ## 安装
 
@@ -16,17 +24,73 @@
 
 ### 方式二：手动安装
 
-1. 克隆并复制组件：
-   ```bash
-   git clone https://github.com/mdj2812/paperang-hacs.git
-   cp -r paperang-hacs/custom_components/paperang /config/custom_components/paperang
-   ```
-2. 重启 Home Assistant（HA 会自动安装依赖）
+```bash
+git clone https://github.com/mdj2812/paperang-hacs.git
+cp -r paperang-hacs/custom_components/paperang /config/custom_components/paperang
+```
+
+安装后重启 Home Assistant。
+
+## 设置
+
+### USB 自动发现
+
+将 Paperang P2 插入 USB。Home Assistant 会自动检测并弹出通知 — 点击确认即可完成设置。
+
+### 手动设置
+
+**设置 → 设备与服务 → 添加集成 → 搜索「Paperang P2 Printer」**
+
+### YAML 导入
+
+如果更喜欢通过 `configuration.yaml` 配置，添加：
+
+```yaml
+paperang:
+```
+
+重启后 HA 会自动将其导入为配置条目。
 
 ## 前提条件
 
 - Paperang P2 打印机通过 USB 连接到 HA 主机
 - USB 设备已直通到 HA VM（如果在虚拟机中运行）
+
+## 设备控制
+
+设备页面提供交互式打印面板：
+
+| 实体 | 类型 | 说明 |
+|------|------|------|
+| Print Mode | 选择器 | text / image / qr / pickup_code |
+| Print Content | 文本输入 | 输入文字、URL、QR 数据或取件码 |
+| Font Size | 数字 (12–96) | 文本打印字体大小 |
+| Heat Density | 数字 (0–100%) | 打印浓度 |
+| QR Size | 数字 (100–576px) | QR 码尺寸 |
+| Image Profile | 选择器 | portrait / landscape / document / high_contrast / light |
+| Feed Lines | 数字 (10–500) | 进纸行数 |
+
+| 按钮 | 动作 |
+|------|------|
+| Print | 读取当前所有设置并执行对应的打印操作 |
+| Feed Paper | 按 Feed Lines 值进纸 |
+| Test Print | 打印测试页 |
+
+## 传感器
+
+| 传感器 | 描述 | 单位 |
+|--------|------|------|
+| Battery | 电池电量 | % |
+| Status | 打印机状态码 | — |
+| Voltage | 电池电压 | mV |
+| Temperature | 打印头温度 | °C |
+| Heat Density | 当前加热浓度设置 | % |
+| Paper Type | 检测到的纸张类型 | — |
+| Firmware Version | 打印机固件版本 | — |
+| Model | 打印机型号标识 | — |
+| Serial Number | 打印机序列号 | — |
+| Board Version | 硬件板版本 | — |
+| Hardware Info | 原始硬件信息 | — |
 
 ## 服务
 
@@ -36,17 +100,19 @@
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| text | string | - | 要打印的文本 |
-| font_size | number | 24 | 字体大小（12-96） |
-| heat_density | number | 75 | 加热浓度（0-100） |
+| text | string | — | 要打印的文本 |
+| font_size | number | 24 | 字体大小（12–96） |
+| heat_density | number | 75 | 加热浓度（0–100） |
 
-### paperang.print_pickup_code
+### paperang.print_image
 
-打印大号取件码（如快递柜取件码）。
+打印图片（支持本地文件路径或远程 URL）。
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| pickup_code | string | - | 取件码，如 "19-4308" |
+| image_url | string | — | 图片 URL 或本地文件路径 |
+| profile | select | document | portrait / landscape / document / high_contrast / light |
+| heat_density | number | 75 | 加热浓度（0–100） |
 
 ### paperang.print_qr
 
@@ -54,21 +120,35 @@
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| qr_content | string | - | QR 码内容 |
-| qr_size | number | 500 | QR 码大小（100-576） |
-| heat_density | number | 75 | 加热浓度（0-100） |
+| qr_content | string | — | QR 码内容 |
+| qr_size | number | 500 | QR 码大小（100–576） |
+| heat_density | number | 75 | 加热浓度（0–100） |
 
-### paperang.print_image
+### paperang.print_pickup_code
 
-打印图片。
+打印大号取件码。
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| image_url | string | - | 图片 URL 或本地路径 |
-| profile | select | document | 打印配置：portrait/landscape/document/high_contrast/light |
-| heat_density | number | 75 | 加热浓度（0-100） |
+| pickup_code | string | — | 取件码，如 "19-4308" |
 
-## Automation 示例
+### paperang.print_test_page
+
+打印内置测试页（无参数）。
+
+### paperang.get_status
+
+查询当前电池和状态，结果记录在 INFO 日志中。
+
+### paperang.feed_paper
+
+按指定行数进纸。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| lines | number | 100 | 进纸行数 |
+
+## 自动化示例
 
 ### 快递到站自动打印取件码
 
@@ -102,23 +182,41 @@ automation:
           heat_density: 60
 ```
 
-### 门铃通知打印
+### 低电量告警
 
 ```yaml
 automation:
-  - alias: "门铃通知打印"
+  - alias: "低电量告警"
     trigger:
-      platform: state
-      entity_id: binary_sensor.doorbell
-      to: "on"
+      - platform: numeric_state
+        entity_id: sensor.paperang_p2_battery
+        below: 20
     action:
       - service: paperang.print_text
         data:
-          text: "有人按门铃！"
-          font_size: 32
-          heat_density: 80
+          text: >
+            ⚠️ 打印机电量过低！
+            {{ states('sensor.paperang_p2_battery') }}%
+          font_size: 24
+```
+
+### 打印机恢复在线时打印
+
+```yaml
+automation:
+  - alias: "打印机恢复在线通知"
+    trigger:
+      - platform: state
+        entity_id: sensor.paperang_p2_status
+        from: "unavailable"
+    action:
+      - service: paperang.print_text
+        data:
+          text: "🟢 Paperang P2 已上线"
+          font_size: 24
+          heat_density: 50
 ```
 
 ## 许可证
 
-MIT License - Copyright (c) 2026 Martin Ma
+MIT License — Copyright (c) 2026 Martin Ma
