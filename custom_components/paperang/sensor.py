@@ -169,6 +169,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class PaperangSensor(CoordinatorEntity, SensorEntity):
     """Generic Paperang sensor. Reads a key from coordinator data."""
 
+    _attr_has_entity_name = True
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -181,7 +183,7 @@ class PaperangSensor(CoordinatorEntity, SensorEntity):
         unit: str | None = None,
         state_class: str | None = None,
     ) -> None:
-        self._attr_name = f"Paperang P2 {name}"
+        self._attr_name = name
         self._attr_unique_id = f"paperang_p2_{key}"
         super().__init__(coordinator)
         self._key = key
