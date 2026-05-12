@@ -62,6 +62,8 @@ SCAN_INTERVAL = timedelta(seconds=60)
 _static_data: dict[str, object] = {}
 
 # pylint: disable=duplicate-code
+_RETRIES = 3
+
 async def _read_printer_state(hass: HomeAssistant):
     """Read all printer telemetry (runs blocking USB in executor)."""
     return await hass.async_add_executor_job(_do_read_printer_state)
@@ -73,55 +75,68 @@ def _do_read_printer_state():
     Always reads battery + status (dynamic).
     Static fields (voltage, temperature, firmware, etc.) are read once
     on first connect or reconnect, then cached until disconnection.
+    Retries up to 3 times on failure; logs warning if all fail.
     """
-    data = {"available": False}
-    printer = PaperangP2()
-    try:
-        printer.connect()
+    for attempt in range(1, _RETRIES + 1):
+        data = {"available": False}
+        printer = PaperangP2()
+        try:
+            printer.connect()
 
-        data["battery"] = printer.get_battery()
-        time.sleep(0.2)
-        data["status"] = printer.get_status()
+            data["battery"] = printer.get_battery()
+            time.sleep(0.2)
+            data["status"] = printer.get_status()
 
-        if _static_data:
-            data.update(_static_data)
-        else:
-            time.sleep(0.2)
-            data["voltage"] = printer.get_voltage()
-            time.sleep(0.2)
-            data["temperature"] = printer.get_temperature()
-            time.sleep(0.2)
-            data["heat_density"] = printer.get_heat_density()
-            time.sleep(0.2)
-            data["paper_type"] = printer.get_paper_type()
-            time.sleep(0.2)
-            data["version"] = printer.get_version()
-            time.sleep(0.2)
-            data["model"] = printer.get_model()
-            time.sleep(0.2)
-            data["serial"] = printer.get_sn()
-            time.sleep(0.2)
-            data["board"] = printer.get_board_version()
-            time.sleep(0.2)
-            data["hw_info"] = printer.get_hw_info()
+            if _static_data:
+                data.update(_static_data)
+            else:
+                time.sleep(0.2)
+                data["voltage"] = printer.get_voltage()
+                time.sleep(0.2)
+                data["temperature"] = printer.get_temperature()
+                time.sleep(0.2)
+                data["heat_density"] = printer.get_heat_density()
+                time.sleep(0.2)
+                data["paper_type"] = printer.get_paper_type()
+                time.sleep(0.2)
+                data["version"] = printer.get_version()
+                time.sleep(0.2)
+                data["model"] = printer.get_model()
+                time.sleep(0.2)
+                data["serial"] = printer.get_sn()
+                time.sleep(0.2)
+                data["board"] = printer.get_board_version()
+                time.sleep(0.2)
+                data["hw_info"] = printer.get_hw_info()
 
-            _static_data.clear()
-            _static_data.update({
-                k: v for k, v in data.items()
-                if k not in ("battery", "status", "available")
-            })
+                _static_data.clear()
+                _static_data.update({
+                    k: v for k, v in data.items()
+                    if k not in ("battery", "status", "available")
+                })
 
-        data["available"] = True
-    except Exception as err:
-        _LOGGER.debug("Printer not available: %s", err)
-        _static_data.clear()
-    finally:
-        if printer.dev:
-            try:
-                usb.util.dispose_resources(printer.dev)
-            except Exception:
-                pass
-    return data
+            data["available"] = True
+            return data
+        except Exception as err:
+            if attempt < _RETRIES:
+                _LOGGER.debug(
+                    "Printer read attempt %d/%d failed: %s",
+                    attempt, _RETRIES, err,
+                )
+            else:
+                _LOGGER.warning(
+                    "Printer not available after %d attempts: %s",
+                    _RETRIES, err,
+                )
+                _static_data.clear()
+        finally:
+            if printer.dev:
+                try:
+                    usb.util.dispose_resources(printer.dev)
+                except Exception:
+                    pass
+
+    return {"available": False}
 # pylint: enable=duplicate-code
 
 _LOGGER = logging.getLogger(__name__)
