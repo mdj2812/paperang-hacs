@@ -131,8 +131,10 @@ def _do_feed_paper(lines):
         _safe_cleanup(printer)
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylint: disable=unused-argument
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Paperang P2 Printer component."""
+    # Register services
+
 
     async def handle_print_text(call: ServiceCall) -> None:
         """Handle print text service call."""
@@ -191,15 +193,49 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylin
     hass.services.async_register(DOMAIN, SERVICE_FEED_PAPER, handle_feed_paper)
 
     _LOGGER.info("Paperang P2 Printer integration loaded")
+
+    if DOMAIN in config:
+        hass.async_create_task(
+            hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": "import"},
+                data=config[DOMAIN],
+            )
+        )
+
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry):
-    """Set up from config entry (for future config flow support)."""
+    """Set up from config entry (also called after YAML import)."""
+    from datetime import timedelta
+    from functools import partial
+
+    from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+    from .sensor import _read_printer_state
+
+    SCAN_INTERVAL = timedelta(seconds=60)
+
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="paperang",
+        update_method=partial(_read_printer_state, hass),
+        update_interval=SCAN_INTERVAL,
+    )
+    await coordinator.async_config_entry_first_refresh()
+    _LOGGER.info("Paperang coordinator data: %s", coordinator.data)
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coordinator
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def async_unload_entry(hass, entry):
+async def async_unload_entry(hass: HomeAssistant, entry):
     """Unload a config entry."""
+    coordinator = hass.data[DOMAIN].pop(entry.entry_id)
+    await coordinator.async_shutdown()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

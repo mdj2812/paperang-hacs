@@ -28,6 +28,8 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 # Handle paperang module path conflict (lib shares name with this integration)
@@ -163,7 +165,8 @@ async def async_setup_platform(
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up from config entry."""
-    await async_setup_platform(hass, {}, async_add_entities)
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities(
 
 
 class PaperangSensor(CoordinatorEntity, SensorEntity):

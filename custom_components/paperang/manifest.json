@@ -2,7 +2,7 @@
   "domain": "paperang",
   "name": "Paperang P2 Printer",
   "codeowners": ["@mdj2812"],
-  "config_flow": false,
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/mdj2812/paperang-hacs",
   "iot_class": "local_polling",
