@@ -22,6 +22,24 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         """Get the options flow."""
         return PaperangOptionsFlow(config_entry)
 
+    async def async_step_usb(self, discovery_info):  # pylint: disable=unused-argument
+        """Handle USB discovery."""
+        await self.async_set_unique_id("paperang_p2_usb")
+        self._abort_if_unique_id_configured()
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ):
+        """Confirm USB discovery."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="Paperang P2 Printer",
+                data={},
+            )
+
+        return self.async_show_form(step_id="confirm")
+
     async def async_step_import(self, user_input: dict[str, Any] | None = None):
         """Handle import from configuration.yaml."""
         return await self.async_step_user(user_input)
@@ -29,7 +47,9 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ):
-        """Handle the initial step (auto-detect or confirm)."""
+        """Handle the initial step (manual add)."""
+        await self.async_set_unique_id("paperang_p2_usb")
+        self._abort_if_unique_id_configured()
         if user_input is not None:
             return self.async_create_entry(
                 title="Paperang P2 Printer",
