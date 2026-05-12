@@ -47,7 +47,7 @@ from .const import (  # pylint: disable=wrong-import-position
     ATTR_LINES,
 )
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
+PLATFORMS = [Platform.SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
 
