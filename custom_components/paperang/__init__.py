@@ -194,7 +194,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     _LOGGER.info("Paperang P2 Printer integration loaded")
 
-    if DOMAIN in config:
+    if DOMAIN in config and not hass.config_entries.async_entries(DOMAIN):
         hass.async_create_task(
             hass.config_entries.flow.async_init(
                 DOMAIN,
