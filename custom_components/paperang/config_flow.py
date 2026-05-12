@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """Config flow for Paperang P2 Printer integration."""
 
 from __future__ import annotations
@@ -38,7 +39,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         return self.async_show_form(step_id="user")
 
 
-class PaperangOptionsFlow(config_entries.OptionsFlow):
+class PaperangOptionsFlow(config_entries.OptionsFlow):  # pylint: disable=too-few-public-methods
     """Handle options flow."""
 
     def __init__(self, config_entry) -> None:
@@ -46,7 +47,7 @@ class PaperangOptionsFlow(config_entries.OptionsFlow):
         self._config_entry = config_entry
 
     async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
+        self, user_input: dict[str, Any] | None = None  # pylint: disable=unused-argument
     ):
         """Manage the options."""
         return self.async_show_form(step_id="init")

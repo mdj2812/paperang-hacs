@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """Paperang P2 Printer integration for Home Assistant.
 
 Powered by paperang-p2-lib for core printer logic.

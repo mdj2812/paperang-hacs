@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """Paperang P2 Printer - Sensor platform.
 
 Provides battery, status, voltage, temperature, and other printer telemetry
@@ -37,9 +38,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
                        device_class="battery", unit=PERCENTAGE, state_class="measurement"),
         PaperangSensor(coordinator, "status", "Status", "mdi:printer"),
         PaperangSensor(coordinator, "voltage", "Voltage", "mdi:flash",
-                       device_class="voltage", unit=UnitOfElectricPotential.MILLIVOLT, state_class="measurement"),
+                       device_class="voltage",
+                       unit=UnitOfElectricPotential.MILLIVOLT,
+                       state_class="measurement"),
         PaperangSensor(coordinator, "temperature", "Temperature", "mdi:thermometer",
-                       device_class="temperature", unit=UnitOfTemperature.CELSIUS, state_class="measurement"),
+                       device_class="temperature",
+                       unit=UnitOfTemperature.CELSIUS,
+                       state_class="measurement"),
         PaperangSensor(coordinator, "heat_density", "Heat Density", "mdi:thermometer-lines",
                        device_class=None, unit=PERCENTAGE, state_class="measurement"),
         PaperangSensor(coordinator, "paper_type", "Paper Type", "mdi:paper-roll"),
@@ -80,6 +85,7 @@ class PaperangSensor(CoordinatorEntity, SensorEntity):  # pylint: disable=too-ma
 
     @property
     def native_value(self):
+        """Return current sensor value from coordinator data."""
         data = self.coordinator.data
         if data and data.get("available"):
             return data.get(self._key)
@@ -87,5 +93,6 @@ class PaperangSensor(CoordinatorEntity, SensorEntity):  # pylint: disable=too-ma
 
     @property
     def available(self) -> bool:
+        """Return True if printer is available."""
         data = self.coordinator.data
         return data is not None and data.get("available", False)
