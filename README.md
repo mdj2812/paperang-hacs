@@ -10,8 +10,6 @@ Control and monitor your Paperang P2 thermal printer through Home Assistant. Sup
 - 📊 **11 telemetry sensors** — battery, status, voltage, temperature, heat density, paper type, firmware version, model, serial number, board version, hardware info
 - 🖨️ **6 services** — print text, images, QR codes, pickup codes, get status, feed paper
 - 📦 **Single device** — all sensors grouped under one "Paperang P2 Printer" device
-- ⚡ **Smart polling** — dynamic values (battery, status) polled every 60s; static values cached after first read
-- 🔄 **Retry logic** — 3 retries on USB read failure before logging a warning
 
 ## Installation
 
