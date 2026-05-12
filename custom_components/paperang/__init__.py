@@ -10,7 +10,6 @@ import time
 from datetime import timedelta
 from functools import partial
 
-import usb.util
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -158,25 +157,12 @@ def _do_read_printer_state():
                 _static_data.clear()
                 _dynamic_data.clear()
         finally:
-            if printer.dev:
-                try:
-                    usb.util.dispose_resources(printer.dev)
-                except Exception:
-                    pass
+            printer.disconnect()
 
     return {"available": False}
 # pylint: enable=duplicate-code
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _safe_cleanup(printer):
-    """Safely release USB resources."""
-    if hasattr(printer, "dev") and printer.dev:
-        try:
-            usb.util.dispose_resources(printer.dev)
-        except Exception:
-            pass
 
 
 def _do_print_text(text, font_size, heat_density):
@@ -186,7 +172,7 @@ def _do_print_text(text, font_size, heat_density):
         printer.connect()
         printer.print_text(text, font_size=font_size, heat_density=heat_density)
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
@@ -202,7 +188,7 @@ def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
             contrast=contrast,
         )
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 def _do_print_qr(qr_content, qr_size, heat_density):
@@ -212,7 +198,7 @@ def _do_print_qr(qr_content, qr_size, heat_density):
         printer.connect()
         printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 def _do_print_pickup_code(pickup_code):
@@ -222,7 +208,7 @@ def _do_print_pickup_code(pickup_code):
         printer.connect()
         printer.print_pickup_code(pickup_code)
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 def _do_print_test_page():
@@ -232,7 +218,7 @@ def _do_print_test_page():
         printer.connect()
         printer.print_test_page()
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 def _do_get_status():
@@ -246,7 +232,7 @@ def _do_get_status():
     except Exception as err:
         return {"battery": None, "status": None, "available": False, "error": str(err)}
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 def _do_feed_paper(lines):
@@ -256,7 +242,7 @@ def _do_feed_paper(lines):
         printer.connect()
         printer.feed(lines)
     finally:
-        _safe_cleanup(printer)
+        printer.disconnect()
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
