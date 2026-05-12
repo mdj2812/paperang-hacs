@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.2.3 (2026-05-12)
+
+### Added
+- Expanded sensor platform: voltage, temperature, heat_density, paper_type, firmware version, model, serial number, board version, hardware info
+- All sensors grouped under single "Paperang P2 Printer" device via `DeviceInfo`
+
+### Fixed
+- Resolved pylint `too-many-positional-arguments` warning by making optional `__init__` params keyword-only
+- Fixed coordinator `update_method` to use `functools.partial` instead of lambda for reliable `hass` binding
+- Removed `__pycache__` from git tracking
+
 ## v1.2.2 (2026-05-12)
 
 ### Changed
