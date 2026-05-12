@@ -250,7 +250,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        profiles = load_profiles()
+        profiles = await hass.async_add_executor_job(load_profiles)
         profile_settings = profiles.get(profile, {}) if profile else {}
 
         threshold = profile_settings.get("threshold", 128)
