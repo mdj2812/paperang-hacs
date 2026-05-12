@@ -59,38 +59,61 @@ async def _read_printer_state(hass):
 
 
 # pylint: disable=duplicate-code
+_static_data: dict[str, object] = {}
+
+
 def _do_read_printer_state():
-    """Blocking: connect to printer and read all telemetry."""
+    """Blocking: connect to printer and read telemetry.
+
+    Always reads battery + status (dynamic).
+    Static fields (voltage, temperature, firmware, etc.) are read once
+    on first connect or reconnect, then cached until disconnection.
+    """
+    global _static_data
     data = {"available": False}
     printer = PaperangP2()
     try:
         printer.connect()
 
+        # Always read dynamic values
         data["battery"] = printer.get_battery()
         time.sleep(0.2)
         data["status"] = printer.get_status()
-        time.sleep(0.2)
-        data["voltage"] = printer.get_voltage()
-        time.sleep(0.2)
-        data["temperature"] = printer.get_temperature()
-        time.sleep(0.2)
-        data["heat_density"] = printer.get_heat_density()
-        time.sleep(0.2)
-        data["paper_type"] = printer.get_paper_type()
-        time.sleep(0.2)
-        data["version"] = printer.get_version()
-        time.sleep(0.2)
-        data["model"] = printer.get_model()
-        time.sleep(0.2)
-        data["serial"] = printer.get_sn()
-        time.sleep(0.2)
-        data["board"] = printer.get_board_version()
-        time.sleep(0.2)
-        data["hw_info"] = printer.get_hw_info()
+
+        if _static_data:
+            # Device already online: reuse cached static values
+            data.update(_static_data)
+        else:
+            # First connect or reconnecting after failure: read everything
+            time.sleep(0.2)
+            data["voltage"] = printer.get_voltage()
+            time.sleep(0.2)
+            data["temperature"] = printer.get_temperature()
+            time.sleep(0.2)
+            data["heat_density"] = printer.get_heat_density()
+            time.sleep(0.2)
+            data["paper_type"] = printer.get_paper_type()
+            time.sleep(0.2)
+            data["version"] = printer.get_version()
+            time.sleep(0.2)
+            data["model"] = printer.get_model()
+            time.sleep(0.2)
+            data["serial"] = printer.get_sn()
+            time.sleep(0.2)
+            data["board"] = printer.get_board_version()
+            time.sleep(0.2)
+            data["hw_info"] = printer.get_hw_info()
+
+            # Cache static fields for subsequent polls
+            _static_data = {
+                k: v for k, v in data.items()
+                if k not in ("battery", "status", "available")
+            }
 
         data["available"] = True
     except Exception as err:
         _LOGGER.debug("Printer not available: %s", err)
+        _static_data = {}  # Clear cache to force re-read on next connect
     finally:
         if printer.dev:
             try:
