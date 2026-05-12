@@ -1,4 +1,4 @@
-# pylint: disable=import-error
+# pylint: disable=import-error,duplicate-code
 """Paperang P2 Printer - Button platform.
 
 Provides pressable buttons on the device page for printer actions.

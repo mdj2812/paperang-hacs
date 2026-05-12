@@ -1,4 +1,4 @@
-# pylint: disable=import-error
+# pylint: disable=import-error,duplicate-code
 """Paperang P2 Printer - Number platform.
 
 Provides configurable numeric controls for print parameters.
@@ -39,12 +39,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class PaperangNumber(CoordinatorEntity, NumberEntity):  # pylint: disable=too-many-instance-attributes
+class PaperangNumber(CoordinatorEntity, NumberEntity):  # pylint: disable=too-many-instance-attributes,too-many-arguments
     """Configurable numeric control for print parameters."""
 
     _attr_has_entity_name = True
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         coordinator,
         key: str,
