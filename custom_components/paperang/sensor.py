@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import sys
 from datetime import timedelta
+from functools import partial
 
 import usb.util
 from homeassistant.components.sensor import SensorEntity
@@ -100,7 +101,7 @@ async def async_setup_platform(
         hass,
         _LOGGER,
         name="paperang",
-        update_method=lambda: _read_printer_state(hass),
+        update_method=partial(_read_printer_state, hass),
         update_interval=SCAN_INTERVAL,
     )
 
