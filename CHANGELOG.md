@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.3.0 (2026-05-12)
+
+### Added
+- USB discovery: auto-detect Paperang P2 when plugged in (VID 0x4348, PID 0x5584)
+- Config flow: UI-based setup with import from YAML, unique_id to prevent duplicates
+- All 11 sensors now grouped under single "Paperang P2 Printer" device
+
+### Changed
+- `integration_type` set to `device`
+- Coordinator logic moved to `__init__.py` for proper config entry lifecycle
+- Sensor platform now uses `async_setup_entry` instead of YAML-based `async_setup_platform`
+- Each sensor read now has 200ms delay to avoid USB communication conflicts
+
+### Performance
+- Static sensor values (voltage, temperature, firmware version, model, serial, etc.)
+  are cached after first read, only re-read on device disconnect/reconnect
+- Each poll cycle now reads only battery + status (0.4s vs 2.4s for full scan)
+
+### Fixed
+- Firmware version binary-to-int decoding (`\x00\x01` → `"1"`)
+- Proper device association via `_attr_device_info` (was silently ignored by HA's `cached_property`)
+- Coordinator `update_method` now uses `functools.partial` for reliable `hass` binding
+- Pylint score improved to 9.83/10
+- Removed non-existent `binary_sensor` and `button` platforms from `PLATFORMS`
+
+### Dependencies
+- `paperang-p2-lib >= 0.3.5`
+
 ## v1.2.3 (2026-05-12)
 
 ### Added
