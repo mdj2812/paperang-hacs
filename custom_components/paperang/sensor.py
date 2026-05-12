@@ -140,6 +140,7 @@ class PaperangSensor(CoordinatorEntity, SensorEntity):
         key: str,
         name: str,
         icon: str,
+        *,
         device_class: str | None = None,
         unit: str | None = None,
         state_class: str | None = None,
