@@ -181,10 +181,11 @@ class PaperangSensor(CoordinatorEntity, SensorEntity):
         unit: str | None = None,
         state_class: str | None = None,
     ) -> None:
-        super().__init__(coordinator)
-        self._key = key
         self._attr_name = f"Paperang P2 {name}"
         self._attr_unique_id = f"paperang_p2_{key}"
+        self._attr_device_info = DEVICE_INFO
+        super().__init__(coordinator)
+        self._key = key
         self._attr_icon = icon
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
