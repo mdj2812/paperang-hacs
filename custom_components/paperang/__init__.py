@@ -42,6 +42,7 @@ from .const import (  # pylint: disable=wrong-import-position
     SERVICE_PRINT_PICKUP_CODE,
     SERVICE_GET_STATUS,
     SERVICE_FEED_PAPER,
+    SERVICE_PRINT_TEST_PAGE,
     ATTR_TEXT,
     ATTR_FONT_SIZE,
     ATTR_HEAT_DENSITY,
@@ -53,7 +54,7 @@ from .const import (  # pylint: disable=wrong-import-position
     ATTR_LINES,
 )
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BUTTON]
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
@@ -197,6 +198,16 @@ def _do_print_pickup_code(pickup_code):
         _safe_cleanup(printer)
 
 
+def _do_print_test_page():
+    """Blocking: print test page."""
+    printer = PaperangP2()
+    try:
+        printer.connect()
+        printer.print_test()
+    finally:
+        _safe_cleanup(printer)
+
+
 def _do_get_status():
     """Blocking: get printer battery and status."""
     printer = PaperangP2()
@@ -274,6 +285,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         lines = call.data.get(ATTR_LINES, 100)
         await hass.async_add_executor_job(_do_feed_paper, lines)
 
+    async def handle_print_test_page(call: ServiceCall) -> None:  # pylint: disable=unused-argument
+        """Handle print test page service call."""
+        await hass.async_add_executor_job(_do_print_test_page)
+
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
     hass.services.async_register(DOMAIN, SERVICE_PRINT_IMAGE, handle_print_image)
@@ -281,6 +296,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_PRINT_PICKUP_CODE, handle_print_pickup_code)
     hass.services.async_register(DOMAIN, SERVICE_GET_STATUS, handle_get_status)
     hass.services.async_register(DOMAIN, SERVICE_FEED_PAPER, handle_feed_paper)
+    hass.services.async_register(DOMAIN, SERVICE_PRINT_TEST_PAGE, handle_print_test_page)
 
     _LOGGER.info("Paperang P2 Printer integration loaded")
 
