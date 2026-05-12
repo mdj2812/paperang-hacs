@@ -54,7 +54,7 @@ from .const import (  # pylint: disable=wrong-import-position
     ATTR_LINES,
 )
 
-PLATFORMS = [Platform.SENSOR, Platform.BUTTON]
+PLATFORMS = [Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.NUMBER, Platform.TEXT]
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
