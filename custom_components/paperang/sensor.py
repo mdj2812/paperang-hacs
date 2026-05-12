@@ -69,7 +69,6 @@ def _do_read_printer_state():
     Static fields (voltage, temperature, firmware, etc.) are read once
     on first connect or reconnect, then cached until disconnection.
     """
-    global _static_data
     data = {"available": False}
     printer = PaperangP2()
     try:
@@ -105,15 +104,16 @@ def _do_read_printer_state():
             data["hw_info"] = printer.get_hw_info()
 
             # Cache static fields for subsequent polls
-            _static_data = {
+            _static_data.clear()
+            _static_data.update({
                 k: v for k, v in data.items()
                 if k not in ("battery", "status", "available")
-            }
+            })
 
         data["available"] = True
     except Exception as err:
         _LOGGER.debug("Printer not available: %s", err)
-        _static_data = {}  # Clear cache to force re-read on next connect
+        _static_data.clear()  # Clear cache to force re-read on next connect
     finally:
         if printer.dev:
             try:
