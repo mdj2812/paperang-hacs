@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.3.1 (2026-05-12)
+
+### Added
+- Device controls: Print button, Print Mode selector (text/image/qr/pickup_code),
+  Image Profile selector, Print Content text input
+- Configurable parameters: Font Size (12–96), Heat Density (0–100%),
+  QR Size (100–576px), Feed Lines (10–500)
+- Feed Paper and Test Print buttons on device page
+- Brand logo with @2x assets for device page
+
+### Fixed
+- `print_image()` now supports remote URLs (http/https)
+- `load_profiles()` wrapped in executor to avoid blocking event loop
+- Polling: static values read every poll until non-None; dynamic values
+  keep last known value on None (no more "unavailable" gaps)
+- Method name fix: `print_test()` → `print_test_page()`
+- Pylint 9.91/10
+
+### Changed
+- 3-retry loop on USB read failure with warning on final attempt
+
+### Dependencies
+- `paperang-p2-lib >= 0.3.6`
+
 ## v1.3.0 (2026-05-12)
 
 ### Added
