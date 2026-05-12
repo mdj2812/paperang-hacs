@@ -1,15 +1,16 @@
 # Paperang P2 Printer - Home Assistant Integration
 
-Control and monitor your Paperang P2 thermal printer through Home Assistant. Supports printing text, images, QR codes, pickup codes, and real-time printer telemetry via USB.
+Control and monitor your Paperang P2 thermal printer through Home Assistant. Print text, images, QR codes, pickup codes — all from the device page with interactive controls, plus real-time printer telemetry via USB.
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mdj2812&repository=paperang-hacs&category=integration)
 
 ## Features
 
 - 🔌 **USB auto-discovery** — printer detected automatically when plugged in
+- 🎛️ **Device page controls** — interactive print panel with mode selector, text input, parameter sliders, and print button
 - 📊 **11 telemetry sensors** — battery, status, voltage, temperature, heat density, paper type, firmware version, model, serial number, board version, hardware info
-- 🖨️ **6 services** — print text, images, QR codes, pickup codes, get status, feed paper
-- 📦 **Single device** — all sensors grouped under one "Paperang P2 Printer" device
+- 🖨️ **7 services** — print text, images, QR codes, pickup codes, test page, get status, feed paper
+- 📦 **Single device** — all entities grouped under one "Paperang P2 Printer" device
 
 ## Installation
 
@@ -55,6 +56,26 @@ On restart, HA will automatically import this as a config entry.
 - Paperang P2 printer connected via USB to the HA host
 - USB device passed through to the HA VM (if running in a VM)
 
+## Device Controls
+
+The device page provides an interactive print panel:
+
+| Entity | Type | Description |
+|--------|------|-------------|
+| Print Mode | select | text / image / qr / pickup_code |
+| Print Content | text | Enter text, URL, QR data, or pickup code |
+| Font Size | number (12–96) | Text print font size |
+| Heat Density | number (0–100%) | Print darkness |
+| QR Size | number (100–576px) | QR code dimensions |
+| Image Profile | select | portrait / landscape / document / high_contrast / light |
+| Feed Lines | number (10–500) | Lines to feed |
+
+| Button | Action |
+|--------|--------|
+| Print | Reads all current settings and prints accordingly |
+| Feed Paper | Advances paper by Feed Lines |
+| Test Print | Prints a test page |
+
 ## Sensors
 
 | Sensor | Description | Unit |
@@ -83,13 +104,15 @@ Print text content.
 | font_size | number | 24 | Font size in pixels (12–96) |
 | heat_density | number | 75 | Print heat density (0–100) |
 
-### paperang.print_pickup_code
+### paperang.print_image
 
-Print large pickup codes (e.g., for package lockers).
+Print an image from a local file path or remote URL.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| pickup_code | string | — | Pickup code, e.g. "19-4308" |
+| image_url | string | — | Image URL or local file path |
+| profile | select | document | portrait / landscape / document / high_contrast / light |
+| heat_density | number | 75 | Print heat density (0–100) |
 
 ### paperang.print_qr
 
@@ -101,15 +124,17 @@ Print a QR code.
 | qr_size | number | 500 | QR code size in pixels (100–576) |
 | heat_density | number | 75 | Print heat density (0–100) |
 
-### paperang.print_image
+### paperang.print_pickup_code
 
-Print an image.
+Print large pickup codes (e.g., for package lockers).
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| image_url | string | — | Image URL or local file path |
-| profile | select | document | Print profile: portrait / landscape / document / high_contrast / light |
-| heat_density | number | 75 | Print heat density (0–100) |
+| pickup_code | string | — | Pickup code, e.g. "19-4308" |
+
+### paperang.print_test_page
+
+Print a built-in test page (no parameters).
 
 ### paperang.get_status
 
