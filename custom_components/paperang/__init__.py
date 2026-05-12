@@ -5,11 +5,16 @@ Powered by paperang-p2-lib for core printer logic.
 
 import logging
 import sys
+import time
+from datetime import timedelta
+from functools import partial
+
 import usb.util
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 # The pip-installed paperang-p2-lib shares the module name 'paperang'
 # with this HA component. HA puts custom_components/ first in sys.path,
@@ -48,6 +53,75 @@ from .const import (  # pylint: disable=wrong-import-position
 )
 
 PLATFORMS = [Platform.SENSOR]
+
+SCAN_INTERVAL = timedelta(seconds=60)
+
+# ── Coordinator update logic ───────────────────────────────────
+
+_static_data: dict[str, object] = {}
+
+# pylint: disable=duplicate-code
+async def _read_printer_state(hass: HomeAssistant):
+    """Read all printer telemetry (runs blocking USB in executor)."""
+    return await hass.async_add_executor_job(_do_read_printer_state)
+
+
+def _do_read_printer_state():
+    """Blocking: connect to printer and read telemetry.
+
+    Always reads battery + status (dynamic).
+    Static fields (voltage, temperature, firmware, etc.) are read once
+    on first connect or reconnect, then cached until disconnection.
+    """
+    data = {"available": False}
+    printer = PaperangP2()
+    try:
+        printer.connect()
+
+        data["battery"] = printer.get_battery()
+        time.sleep(0.2)
+        data["status"] = printer.get_status()
+
+        if _static_data:
+            data.update(_static_data)
+        else:
+            time.sleep(0.2)
+            data["voltage"] = printer.get_voltage()
+            time.sleep(0.2)
+            data["temperature"] = printer.get_temperature()
+            time.sleep(0.2)
+            data["heat_density"] = printer.get_heat_density()
+            time.sleep(0.2)
+            data["paper_type"] = printer.get_paper_type()
+            time.sleep(0.2)
+            data["version"] = printer.get_version()
+            time.sleep(0.2)
+            data["model"] = printer.get_model()
+            time.sleep(0.2)
+            data["serial"] = printer.get_sn()
+            time.sleep(0.2)
+            data["board"] = printer.get_board_version()
+            time.sleep(0.2)
+            data["hw_info"] = printer.get_hw_info()
+
+            _static_data.clear()
+            _static_data.update({
+                k: v for k, v in data.items()
+                if k not in ("battery", "status", "available")
+            })
+
+        data["available"] = True
+    except Exception as err:
+        _LOGGER.debug("Printer not available: %s", err)
+        _static_data.clear()
+    finally:
+        if printer.dev:
+            try:
+                usb.util.dispose_resources(printer.dev)
+            except Exception:
+                pass
+    return data
+# pylint: enable=duplicate-code
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -208,15 +282,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up from config entry (also called after YAML import)."""
-    from datetime import timedelta
-    from functools import partial
-
-    from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-    from .sensor import _read_printer_state
-
-    SCAN_INTERVAL = timedelta(seconds=60)
-
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,

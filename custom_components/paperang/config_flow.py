@@ -10,7 +10,7 @@ from homeassistant.core import callback
 from .const import DOMAIN
 
 
-class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: disable=too-few-public-methods
     """Handle a config flow for Paperang P2 Printer."""
 
     VERSION = 1
