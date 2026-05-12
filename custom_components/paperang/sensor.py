@@ -10,7 +10,6 @@ import logging
 import sys
 import time
 from datetime import timedelta
-from functools import partial
 
 import usb.util
 from homeassistant.components.sensor import SensorEntity
@@ -21,8 +20,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -126,24 +123,9 @@ def _do_read_printer_state():
 # pylint: enable=duplicate-code
 
 
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """Set up Paperang sensors."""
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name="paperang",
-        update_method=partial(_read_printer_state, hass),
-        update_interval=SCAN_INTERVAL,
-    )
-
-    await coordinator.async_refresh()
-    _LOGGER.info("Paperang coordinator data: %s", coordinator.data)
-
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up from config entry."""
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([
         PaperangSensor(coordinator, "battery", "Battery", "mdi:battery",
                        device_class="battery", unit=PERCENTAGE, state_class="measurement"),
@@ -161,12 +143,6 @@ async def async_setup_platform(
         PaperangSensor(coordinator, "board", "Board Version", "mdi:chip"),
         PaperangSensor(coordinator, "hw_info", "Hardware Info", "mdi:memory"),
     ])
-
-
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up from config entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
 
 
 class PaperangSensor(CoordinatorEntity, SensorEntity):
