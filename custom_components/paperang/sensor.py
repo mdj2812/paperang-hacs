@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import time
 from datetime import timedelta
 from functools import partial
 
@@ -64,19 +65,29 @@ def _do_read_printer_state():
     printer = PaperangP2()
     try:
         printer.connect()
-        data.update({
-            "battery": printer.get_battery(),
-            "status": printer.get_status(),
-            "voltage": printer.get_voltage(),
-            "temperature": printer.get_temperature(),
-            "heat_density": printer.get_heat_density(),
-            "paper_type": printer.get_paper_type(),
-            "version": printer.get_version(),
-            "model": printer.get_model(),
-            "serial": printer.get_sn(),
-            "board": printer.get_board_version(),
-            "hw_info": printer.get_hw_info(),
-        })
+
+        data["battery"] = printer.get_battery()
+        time.sleep(0.2)
+        data["status"] = printer.get_status()
+        time.sleep(0.2)
+        data["voltage"] = printer.get_voltage()
+        time.sleep(0.2)
+        data["temperature"] = printer.get_temperature()
+        time.sleep(0.2)
+        data["heat_density"] = printer.get_heat_density()
+        time.sleep(0.2)
+        data["paper_type"] = printer.get_paper_type()
+        time.sleep(0.2)
+        data["version"] = printer.get_version()
+        time.sleep(0.2)
+        data["model"] = printer.get_model()
+        time.sleep(0.2)
+        data["serial"] = printer.get_sn()
+        time.sleep(0.2)
+        data["board"] = printer.get_board_version()
+        time.sleep(0.2)
+        data["hw_info"] = printer.get_hw_info()
+
         data["available"] = True
     except Exception as err:
         _LOGGER.debug("Printer not available: %s", err)
