@@ -183,17 +183,13 @@ class PaperangSensor(CoordinatorEntity, SensorEntity):
     ) -> None:
         self._attr_name = f"Paperang P2 {name}"
         self._attr_unique_id = f"paperang_p2_{key}"
-        self._attr_device_info = DEVICE_INFO
         super().__init__(coordinator)
         self._key = key
+        self._attr_device_info = DEVICE_INFO
         self._attr_icon = icon
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
         self._attr_state_class = state_class
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DEVICE_INFO
 
     @property
     def native_value(self):
