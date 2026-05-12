@@ -203,7 +203,7 @@ def _do_print_test_page():
     printer = PaperangP2()
     try:
         printer.connect()
-        printer.print_test()
+        printer.print_test_page()
     finally:
         _safe_cleanup(printer)
 
