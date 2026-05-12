@@ -109,14 +109,14 @@ async def async_setup_platform(
 
     async_add_entities([
         PaperangSensor(coordinator, "battery", "Battery", "mdi:battery",
-                       "battery", PERCENTAGE, "measurement"),
+                       device_class="battery", unit=PERCENTAGE, state_class="measurement"),
         PaperangSensor(coordinator, "status", "Status", "mdi:printer"),
         PaperangSensor(coordinator, "voltage", "Voltage", "mdi:flash",
-                       "voltage", UnitOfElectricPotential.MILLIVOLT, "measurement"),
+                       device_class="voltage", unit=UnitOfElectricPotential.MILLIVOLT, state_class="measurement"),
         PaperangSensor(coordinator, "temperature", "Temperature", "mdi:thermometer",
-                       "temperature", UnitOfTemperature.CELSIUS, "measurement"),
+                       device_class="temperature", unit=UnitOfTemperature.CELSIUS, state_class="measurement"),
         PaperangSensor(coordinator, "heat_density", "Heat Density", "mdi:thermometer-lines",
-                       None, PERCENTAGE, "measurement"),
+                       device_class=None, unit=PERCENTAGE, state_class="measurement"),
         PaperangSensor(coordinator, "paper_type", "Paper Type", "mdi:paper-roll"),
         PaperangSensor(coordinator, "version", "Firmware Version", "mdi:information-outline"),
         PaperangSensor(coordinator, "model", "Model", "mdi:printer-3d-nozzle"),
@@ -134,6 +134,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class PaperangSensor(CoordinatorEntity, SensorEntity):
     """Generic Paperang sensor. Reads a key from coordinator data."""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
