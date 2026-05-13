@@ -7,7 +7,7 @@ import pytest
 
 class TestGetPrinter:
     def test_usb_creates_printer_without_transport(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mod._transport_config = {"transport": "usb"}
 
         with patch.object(mod, "PaperangP2") as mock_p2:
@@ -16,7 +16,7 @@ class TestGetPrinter:
             assert mock_p2.call_args[1] == {}
 
     def test_ble_with_address(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mod._transport_config = {"transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF"}
 
         with (
@@ -30,7 +30,7 @@ class TestGetPrinter:
             mock_p2.assert_called_once_with(transport=mock_ble)
 
     def test_ble_without_address(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mod._transport_config = {"transport": "ble"}
 
         with (
@@ -44,7 +44,7 @@ class TestGetPrinter:
             mock_p2.assert_called_once_with(transport=mock_ble)
 
     def test_no_transport_config_defaults_to_usb(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mod._transport_config = {}
 
         with patch.object(mod, "PaperangP2") as mock_p2:
@@ -53,7 +53,7 @@ class TestGetPrinter:
             assert mock_p2.call_args[1] == {}
 
     def test_ble_not_installed_falls_back_to_usb(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mod._transport_config = {"transport": "ble"}
         mod.BleTransport = None
 
@@ -67,7 +67,7 @@ class TestGetPrinter:
 
 class TestWithPrinter:
     def test_calls_fn_and_disconnects(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mock_printer = MagicMock()
 
         with patch.object(mod, "_get_printer", return_value=mock_printer):
@@ -77,7 +77,7 @@ class TestWithPrinter:
             mock_printer.disconnect.assert_called_once()
 
     def test_disconnects_on_exception(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mock_printer = MagicMock()
 
         with patch.object(mod, "_get_printer", return_value=mock_printer):
@@ -87,7 +87,7 @@ class TestWithPrinter:
             mock_printer.disconnect.assert_called_once()
 
     def test_returns_fn_result(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         mock_printer = MagicMock()
 
         with patch.object(mod, "_get_printer", return_value=mock_printer):
@@ -96,7 +96,7 @@ class TestWithPrinter:
 
 class TestDoFunctions:
     def test_do_print_text_uses_with_printer(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_text("hello", 24, 75)
             fn = mock_with.call_args[0][0]
@@ -105,7 +105,7 @@ class TestDoFunctions:
             mock_p.print_text.assert_called_once_with("hello", font_size=24, heat_density=75)
 
     def test_do_print_qr_uses_with_printer(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_qr("https://example.com", 500, 50)
             fn = mock_with.call_args[0][0]
@@ -114,7 +114,7 @@ class TestDoFunctions:
             mock_p.print_qr.assert_called_once_with("https://example.com", heat_density=50, max_width=500)
 
     def test_do_print_pickup_code_uses_with_printer(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_pickup_code("19-4308")
             fn = mock_with.call_args[0][0]
@@ -123,7 +123,7 @@ class TestDoFunctions:
             mock_p.print_pickup_code.assert_called_once_with("19-4308")
 
     def test_do_print_test_page_uses_with_printer(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_test_page()
             fn = mock_with.call_args[0][0]
@@ -132,7 +132,7 @@ class TestDoFunctions:
             mock_p.print_test_page.assert_called_once()
 
     def test_do_feed_paper_uses_with_printer(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_feed_paper(200)
             fn = mock_with.call_args[0][0]
@@ -141,7 +141,7 @@ class TestDoFunctions:
             mock_p.feed.assert_called_once_with(200)
 
     def test_do_get_status_success(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         def fake_with(fn):
             mock_p = MagicMock()
             mock_p.get_battery.return_value = 85
@@ -153,7 +153,7 @@ class TestDoFunctions:
             assert result == {"battery": 85, "status": "ok", "available": True}
 
     def test_do_get_status_failure(self):
-        from custom_components.paperang import __init__ as mod
+        import custom_components.paperang as mod
         def fake_with(fn):
             raise RuntimeError("printer offline")
 
