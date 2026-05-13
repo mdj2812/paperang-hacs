@@ -69,7 +69,7 @@ jobs:
     name: Coverage Badge
     runs-on: ubuntu-latest
     needs: test
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: "${{ github.ref == 'refs/heads/main' }}"
     steps:
       - uses: actions/checkout@v4
 
