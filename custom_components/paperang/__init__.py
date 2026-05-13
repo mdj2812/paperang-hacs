@@ -185,85 +185,69 @@ def _do_read_printer_state():
 
 _LOGGER = logging.getLogger(__name__)
 
+def _with_printer(fn):
+    """Create a printer, connect, run *fn(printer)*, disconnect.
 
-def _do_print_text(text, font_size, heat_density):
-    """Blocking: print text."""
+    Returns whatever *fn* returns.  Exceptions propagate to caller.
+    """
     printer = _get_printer()
     try:
         printer.connect()
-        printer.print_text(text, font_size=font_size, heat_density=heat_density)
+        return fn(printer)
     finally:
         printer.disconnect()
 
 
+def _do_print_text(text, font_size, heat_density):
+    """Blocking: print text."""
+    _with_printer(lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density))
+
+
 def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
     """Blocking: print image."""
-    printer = _get_printer()
-    try:
-        printer.connect()
-        printer.print_image(
+    _with_printer(
+        lambda p: p.print_image(
             image_url,
             heat_density=heat_density,
             threshold=threshold,
             brightness=brightness,
             contrast=contrast,
         )
-    finally:
-        printer.disconnect()
+    )
 
 
 def _do_print_qr(qr_content, qr_size, heat_density):
     """Blocking: print QR code."""
-    printer = _get_printer()
-    try:
-        printer.connect()
-        printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
-    finally:
-        printer.disconnect()
+    _with_printer(lambda p: p.print_qr(qr_content, heat_density=heat_density, max_width=qr_size))
 
 
 def _do_print_pickup_code(pickup_code):
     """Blocking: print pickup code."""
-    printer = _get_printer()
-    try:
-        printer.connect()
-        printer.print_pickup_code(pickup_code)
-    finally:
-        printer.disconnect()
+    _with_printer(lambda p: p.print_pickup_code(pickup_code))
 
 
 def _do_print_test_page():
     """Blocking: print test page."""
-    printer = _get_printer()
-    try:
-        printer.connect()
-        printer.print_test_page()
-    finally:
-        printer.disconnect()
-
-
-def _do_get_status():
-    """Blocking: get printer battery and status."""
-    printer = _get_printer()
-    try:
-        printer.connect()
-        battery = printer.get_battery()
-        status = printer.get_status()
-        return {"battery": battery, "status": status, "available": True}
-    except Exception as err:
-        return {"battery": None, "status": None, "available": False, "error": str(err)}
-    finally:
-        printer.disconnect()
+    _with_printer(lambda p: p.print_test_page())
 
 
 def _do_feed_paper(lines):
     """Blocking: feed paper."""
-    printer = _get_printer()
+    _with_printer(lambda p: p.feed(lines))
+
+
+def _do_get_status():
+    """Blocking: get printer battery and status."""
     try:
-        printer.connect()
-        printer.feed(lines)
-    finally:
-        printer.disconnect()
+        return _with_printer(
+            lambda p: {
+                "battery": p.get_battery(),
+                "status": p.get_status(),
+                "available": True,
+            }
+        )
+    except Exception as err:
+        return {"battery": None, "status": None, "available": False, "error": str(err)}
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
