@@ -1,5 +1,5 @@
 """Tests for paperang config flow — using hass fixture from pytest plugin."""
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import voluptuous as vol
@@ -74,7 +74,7 @@ class TestConfigFlowHass:
         )
         assert result["type"] == "create_entry"
         assert result["data"][TRANSPORT_USB] == TRANSPORT_USB
-    
+
     async def test_user_step_creates_ble_entry(self, hass):
         """Submitting BLE creates entry with transport=ble + address."""
         result = await hass.config_entries.flow.async_init(
