@@ -1,6 +1,5 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["custom_components/paperang"]
@@ -12,3 +11,7 @@ exclude_also = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.ruff.lint]
+# E402: deliberate non-top-level imports due to HA module name conflict
+ignore = ["E402"]

@@ -13,7 +13,7 @@ class TestGetPrinter:
         mod._transport_config = {"transport": "usb"}
 
         with patch.object(mod, "PaperangP2") as mock_p2:
-            result = mod._get_printer()
+            mod._get_printer()
             mock_p2.assert_called_once()
             # Should be called with no transport arg (uses default USB)
             assert mock_p2.call_args[1] == {}
