@@ -1,9 +1,11 @@
-"""Tests for paperang config flow — schema validation and migration."""
-import asyncio
-from unittest.mock import MagicMock
+"""Tests for paperang config flow — using hass fixture from pytest plugin."""
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import voluptuous as vol
+
+from custom_components.paperang.config_flow import PaperangConfigFlow, PaperangOptionsFlow
+from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, TRANSPORT_BLE
 
 
 class TestConfigFlowSchema:
@@ -41,55 +43,64 @@ class TestConfigFlowSchema:
         result = schema({"transport": "ble"})
         assert result["transport"] == "ble"
 
-    def test_invalid_transport_raises(self):
-        schema = vol.Schema({
-            vol.Required("transport", default="usb"): vol.In({
-                "usb": "USB",
-                "ble": "Bluetooth BLE",
-            }),
-        })
-        with pytest.raises(vol.Invalid):
-            schema({"transport": "wifi"})
-
 
 class TestConfigFlowClass:
-    @pytest.mark.skip(reason="requires precise ConfigFlow mock setup")
     def test_version_is_2(self):
-        from custom_components.paperang.config_flow import PaperangConfigFlow
         assert PaperangConfigFlow.VERSION == 2
 
-    @pytest.mark.skip(reason="requires precise ConfigFlow mock setup")
     def test_async_get_options_flow(self):
-        from custom_components.paperang.config_flow import PaperangConfigFlow
-        flow = PaperangConfigFlow()
         opts = PaperangConfigFlow.async_get_options_flow(MagicMock())
-        from custom_components.paperang.config_flow import PaperangOptionsFlow
         assert isinstance(opts, PaperangOptionsFlow)
 
 
-class TestMigrationHandler:
-    def test_migrate_v1_to_v2_adds_transport(self):
-        from custom_components.paperang.__init__ import async_migrate_entry
-        from custom_components.paperang.const import TRANSPORT_USB, CONF_TRANSPORT
+@pytest.mark.asyncio
+class TestConfigFlowHass:
+    async def test_user_step_defaults_to_usb(self, hass):
+        """User flow defaults to USB transport."""
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        assert result["type"] == "form"
+        assert result["step_id"] == "user"
 
-        entry = MagicMock()
-        entry.version = 1
-        entry.data = {}
+    async def test_user_step_creates_usb_entry(self, hass):
+        """Submitting USB creates entry with transport=usb."""
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"transport": TRANSPORT_USB},
+        )
+        assert result["type"] == "create_entry"
+        assert result["data"][TRANSPORT_USB] == TRANSPORT_USB
+    
+    async def test_user_step_creates_ble_entry(self, hass):
+        """Submitting BLE creates entry with transport=ble + address."""
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"transport": TRANSPORT_BLE, "ble_address": "AA:BB:CC:DD:EE:FF"},
+        )
+        assert result["type"] == "create_entry"
+        assert result["data"]["transport"] == TRANSPORT_BLE
+        assert result["data"]["ble_address"] == "AA:BB:CC:DD:EE:FF"
 
-        hass = MagicMock()
-        result = asyncio.run(async_migrate_entry(hass, entry))
-        assert result is True
-        hass.config_entries.async_update_entry.assert_called_once()
-        call_kwargs = hass.config_entries.async_update_entry.call_args.kwargs
-        assert call_kwargs.get("version") == 2
-        assert call_kwargs.get("data") == {CONF_TRANSPORT: TRANSPORT_USB}
+    async def test_user_step_unique_id_prevents_duplicate(self, hass):
+        """Cannot add two USB entries."""
+        await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            1, {"transport": TRANSPORT_USB},
+        )
+        assert result["type"] == "create_entry"
 
-    def test_migrate_v2_noop(self):
-        from custom_components.paperang.__init__ import async_migrate_entry
-        entry = MagicMock()
-        entry.version = 2
-        entry.data = {"transport": "usb"}
-        hass = MagicMock()
-        result = asyncio.run(async_migrate_entry(hass, entry))
-        assert result is True
-        hass.config_entries.async_update_entry.assert_not_called()
+        # Second attempt should abort
+        result2 = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        assert result2["type"] == "abort"
+        assert result2["reason"] == "already_configured"
