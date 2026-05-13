@@ -1,4 +1,5 @@
 """Stub homeassistant so tests run without a full HA installation."""
+# pylint: disable=unused-import
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
