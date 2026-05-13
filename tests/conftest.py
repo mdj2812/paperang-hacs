@@ -15,17 +15,34 @@ _ha.const.Platform.NUMBER = "number"
 _ha.const.Platform.TEXT = "text"
 setattr(_ha.const, "__all__", [])
 
-# config_entries
-_ha.config_entries = MagicMock()
-_ha.config_entries.ConfigFlow = object
+# config_entries — use real module object so subclassing works
+class _ConfigFlowBase:
+    """Fake ConfigFlow that accepts domain= kwarg."""
+    VERSION = 1
 
-class FakeConfigEntry:
-    """Minimal config entry for testing migration."""
-    def __init__(self, version=1, data=None):
-        self.version = version
-        self.data = data or {}
+    def __init_subclass__(cls, domain=None, **kwargs):
+        super().__init_subclass__(**kwargs)
 
-_ha.config_entries.ConfigEntry = FakeConfigEntry
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        return None
+
+    async def async_set_unique_id(self, unique_id):
+        pass
+
+    def _abort_if_unique_id_configured(self):
+        pass
+
+    def async_create_entry(self, title, data):
+        return MagicMock()
+
+    def async_show_form(self, step_id, data_schema=None):
+        return {}
+
+_ce_mod = type(sys)("homeassistant.config_entries")
+_ce_mod.ConfigFlow = _ConfigFlowBase
+_ce_mod.OptionsFlow = object
+sys.modules["homeassistant.config_entries"] = _ce_mod
 
 # core
 _ha.core = MagicMock()
@@ -40,13 +57,9 @@ _ha.helpers.update_coordinator = MagicMock()
 # util
 _ha.util = MagicMock()
 
-# request
+# auth
 _ha.auth.permissions.const = MagicMock()
 _ha.auth.permissions.const.POLICY_READ = "read"
-
-# ── voluptuous (real) ────────────────────────────────────────────
-# Already installed — imported normally by config_flow
-
 
 # ── paperang-p2-lib stubs ────────────────────────────────────────
 
@@ -64,12 +77,10 @@ _transport.UsbTransport = MagicMock
 _transport.BleTransport = MagicMock
 _paperang.transport = _transport
 
-
 # ── Inject into sys.modules ──────────────────────────────────────
 
 sys.modules["homeassistant"] = _ha
 sys.modules["homeassistant.const"] = _ha.const
-sys.modules["homeassistant.config_entries"] = _ha.config_entries
 sys.modules["homeassistant.core"] = _ha.core
 sys.modules["homeassistant.helpers"] = _ha.helpers
 sys.modules["homeassistant.helpers.typing"] = _ha.helpers.typing
