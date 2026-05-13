@@ -1,12 +1,13 @@
 # Paperang P2 Printer - Home Assistant Integration
 
-Control and monitor your Paperang P2 thermal printer through Home Assistant. Print text, images, QR codes, pickup codes — all from the device page with interactive controls, plus real-time printer telemetry via USB.
+Control and monitor your Paperang P2 thermal printer through Home Assistant. Print text, images, QR codes, pickup codes — all from the device page with interactive controls, plus real-time printer telemetry via USB or Bluetooth BLE.
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mdj2812&repository=paperang-hacs&category=integration)
 
 ## Features
 
 - 🔌 **USB auto-discovery** — printer detected automatically when plugged in
+- 📡 **Bluetooth BLE** — connect wirelessly (auto-scan or specify MAC address)
 - 🎛️ **Device page controls** — interactive print panel with mode selector, text input, parameter sliders, and print button
 - 📊 **11 telemetry sensors** — battery, status, voltage, temperature, heat density, paper type, firmware version, model, serial number, board version, hardware info
 - 🖨️ **7 services** — print text, images, QR codes, pickup codes, test page, get status, feed paper
@@ -37,9 +38,17 @@ Restart Home Assistant after installation.
 
 Plug in your Paperang P2 via USB. Home Assistant will detect it automatically and show a notification — click to confirm and the integration is ready.
 
-### Manual Setup
+### Bluetooth BLE Setup
 
 **Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"**
+
+In the config dialog:
+- Select **Bluetooth BLE** as the transport
+- Enter the printer's BLE MAC address (e.g. `AA:BB:CC:DD:EE:FF`) — leave empty for auto-scan
+
+### Manual Setup
+
+**Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **USB** or **Bluetooth BLE**.
 
 ### YAML Import
 
@@ -53,8 +62,11 @@ On restart, HA will automatically import this as a config entry.
 
 ## Prerequisites
 
-- Paperang P2 printer connected via USB to the HA host
-- USB device passed through to the HA VM (if running in a VM)
+**USB:** Paperang P2 printer connected via USB to the HA host. USB device must be passed through to the HA VM (if running in a VM).
+
+**BLE:** Bluetooth adapter on the HA host. Printer must be powered on and within range. Works with both `Paperang` and `MiaoMiaoJi` (喵喵机) branded devices.
+
+> 📦 Requires `paperang-p2-lib>=0.4.0rc1` (installed automatically by HA).
 
 ## Device Controls
 
