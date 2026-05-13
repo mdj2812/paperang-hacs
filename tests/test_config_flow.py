@@ -1,6 +1,6 @@
 """Tests for paperang config flow — schema validation and migration."""
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import voluptuous as vol
