@@ -18,16 +18,6 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
 
     VERSION = 2
 
-    async def async_migrate_entry(self, hass, config_entry):
-        """Migrate v1 → v2: add transport key."""
-        if config_entry.version == 1:
-            data = dict(config_entry.data)
-            data.setdefault(CONF_TRANSPORT, TRANSPORT_USB)
-            hass.config_entries.async_update_entry(
-                config_entry, data=data, version=2
-            )
-        return True
-
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):

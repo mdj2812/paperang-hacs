@@ -330,14 +330,19 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry):
-    """Set up from config entry (also called after YAML import)."""
-    # Migrate old entries (no transport key)
-    if CONF_TRANSPORT not in entry.data:
+async def async_migrate_entry(hass: HomeAssistant, entry):
+    """Migrate config entry v1 → v2: add transport key."""
+    if entry.version == 1:
         data = dict(entry.data)
         data.setdefault(CONF_TRANSPORT, TRANSPORT_USB)
-        hass.config_entries.async_update_entry(entry, data=data)
+        hass.config_entries.async_update_entry(
+            entry, data=data, version=2,
+        )
+    return True
 
+
+async def async_setup_entry(hass: HomeAssistant, entry):
+    """Set up from config entry (also called after YAML import)."""
     # Populate transport config for blocking functions
     _transport_config.clear()
     _transport_config.update(entry.data)
