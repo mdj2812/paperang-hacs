@@ -66,13 +66,7 @@ jobs:
           path: coverage.svg
 
       - name: Import test
-        run: python3 -c "
-import sys; sys.path.insert(0, 'tests')
-import conftest
-from custom_components.paperang.const import DOMAIN
-assert DOMAIN == 'paperang'
-print('Import OK')
-"
+        run: python3 -c "import sys; sys.path.insert(0, 'tests'); import conftest; from custom_components.paperang.const import DOMAIN; assert DOMAIN == 'paperang'; print('Import OK')"
 
   coverage-badge:
     name: Coverage Badge
