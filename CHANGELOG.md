@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.4.0rc1 (2026-05-13)
+
+### Added
+- Bluetooth BLE transport support via `BleTransport` from `paperang-p2-lib>=0.4.0rc1`
+- Config flow: transport selection (USB / Bluetooth BLE) with optional BLE MAC address
+- Options flow: change transport type and BLE address without re-adding device
+- BLE auto-discovery when MAC address is left empty
+
+### Changed
+- `_safe_cleanup()` replaced with `printer.disconnect()` (new Transport API)
+- `paperang-p2-lib` bumped to `>=0.4.0rc1` with `[qr,cjk,ble]` extras
+- Config entry schema version 2 (auto-migrated from version 1)
+
 ## v1.3.1 (2026-05-12)
 
 ### Added

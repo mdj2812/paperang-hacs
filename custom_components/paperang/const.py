@@ -2,6 +2,14 @@
 
 DOMAIN = "paperang"
 
+# Transport types
+TRANSPORT_USB = "usb"
+TRANSPORT_BLE = "ble"
+
+# Config entry keys
+CONF_TRANSPORT = "transport"
+CONF_BLE_ADDRESS = "ble_address"
+
 # Services
 SERVICE_PRINT_TEXT = "print_text"
 SERVICE_PRINT_IMAGE = "print_image"

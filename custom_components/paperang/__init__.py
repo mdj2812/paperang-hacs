@@ -32,6 +32,10 @@ PaperangP2 = _lib.PaperangP2  # pylint: disable=no-member
 load_profiles = _lib.load_profiles  # pylint: disable=no-member
 crc32_paperang = _lib.crc32_paperang  # pylint: disable=no-member
 pack_packet = _lib.pack_packet  # pylint: disable=no-member
+try:
+    from paperang.transport import BleTransport  # pylint: disable=no-member
+except ImportError:
+    BleTransport = None
 
 from .const import (  # pylint: disable=wrong-import-position
     DOMAIN,
@@ -51,11 +55,28 @@ from .const import (  # pylint: disable=wrong-import-position
     ATTR_QR_SIZE,
     ATTR_PICKUP_CODE,
     ATTR_LINES,
+    CONF_TRANSPORT,
+    CONF_BLE_ADDRESS,
+    TRANSPORT_USB,
+    TRANSPORT_BLE,
 )
 
 PLATFORMS = [Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.NUMBER, Platform.TEXT]
 
 SCAN_INTERVAL = timedelta(seconds=60)
+
+# ── Transport config (stored at module level for blocking functions) ─────
+
+_transport_config: dict[str, object] = {}
+
+def _get_printer():
+    """Create a PaperangP2 with the configured transport."""
+    transport_type = _transport_config.get(CONF_TRANSPORT, "")
+    if transport_type == TRANSPORT_BLE and BleTransport is not None:
+        ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
+        ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
+        return PaperangP2(transport=ble)
+    return PaperangP2()
 
 # ── Coordinator update logic ───────────────────────────────────
 
@@ -112,7 +133,7 @@ def _do_read_printer_state():
     """
     for attempt in range(1, _RETRIES + 1):
         data: dict[str, object] = {"available": False}
-        printer = PaperangP2()
+        printer = _get_printer()
         try:
             printer.connect()
 
@@ -167,7 +188,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def _do_print_text(text, font_size, heat_density):
     """Blocking: print text."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         printer.print_text(text, font_size=font_size, heat_density=heat_density)
@@ -177,7 +198,7 @@ def _do_print_text(text, font_size, heat_density):
 
 def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
     """Blocking: print image."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         printer.print_image(
@@ -193,7 +214,7 @@ def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
 
 def _do_print_qr(qr_content, qr_size, heat_density):
     """Blocking: print QR code."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         printer.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
@@ -203,7 +224,7 @@ def _do_print_qr(qr_content, qr_size, heat_density):
 
 def _do_print_pickup_code(pickup_code):
     """Blocking: print pickup code."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         printer.print_pickup_code(pickup_code)
@@ -213,7 +234,7 @@ def _do_print_pickup_code(pickup_code):
 
 def _do_print_test_page():
     """Blocking: print test page."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         printer.print_test_page()
@@ -223,7 +244,7 @@ def _do_print_test_page():
 
 def _do_get_status():
     """Blocking: get printer battery and status."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         battery = printer.get_battery()
@@ -237,7 +258,7 @@ def _do_get_status():
 
 def _do_feed_paper(lines):
     """Blocking: feed paper."""
-    printer = PaperangP2()
+    printer = _get_printer()
     try:
         printer.connect()
         printer.feed(lines)
@@ -327,6 +348,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up from config entry (also called after YAML import)."""
+    # Migrate old entries (no transport key)
+    if CONF_TRANSPORT not in entry.data:
+        data = dict(entry.data)
+        data.setdefault(CONF_TRANSPORT, TRANSPORT_USB)
+        hass.config_entries.async_update_entry(entry, data=data)
+
+    # Populate transport config for blocking functions
+    _transport_config.clear()
+    _transport_config.update(entry.data)
+
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
