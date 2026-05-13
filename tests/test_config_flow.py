@@ -1,7 +1,7 @@
 """Tests for paperang config flow — schema and class constants."""
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 import voluptuous as vol
 
 from custom_components.paperang.config_flow import (
