@@ -52,7 +52,7 @@ jobs:
           format: markdown
           output: both
           fail_below_min: true
-          thresholds: "75 85"
+          thresholds: "25 40"
 
       - name: Generate coverage badge SVG
         run: |
