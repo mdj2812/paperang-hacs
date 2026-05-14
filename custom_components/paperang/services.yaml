@@ -1,0 +1,69 @@
+print_text:
+  name: Print Text
+  description: Print text to Paperang P2 printer
+  fields:
+    text:
+      name: Text
+      description: Text content to print
+      required: true
+      example: "Hello World"
+    font_size:
+      name: Font Size
+      description: "Font size in pixels (default: 24)"
+      default: 24
+      example: 24
+    heat_density:
+      name: Heat Density
+      description: "Print heat density 0-100 (default: 75)"
+      default: 75
+      example: 75
+
+print_image:
+  name: Print Image
+  description: Print an image to Paperang P2 printer
+  fields:
+    image_url:
+      name: Image URL
+      description: URL or local path of the image to print
+      required: true
+      example: "http://example.com/photo.jpg"
+    profile:
+      name: Profile
+      description: "Print profile (portrait, landscape, document, high_contrast, light)"
+      default: document
+      example: document
+    heat_density:
+      name: Heat Density
+      description: "Print heat density 0-100 (default: 75)"
+      default: 75
+      example: 75
+
+print_qr:
+  name: Print QR Code
+  description: Print a QR code to Paperang P2 printer
+  fields:
+    qr_content:
+      name: QR Content
+      description: Content to encode in QR code
+      required: true
+      example: "https://example.com"
+    qr_size:
+      name: QR Size
+      description: "QR code size in pixels (default: 500)"
+      default: 500
+      example: 500
+    heat_density:
+      name: Heat Density
+      description: "Print heat density 0-100 (default: 75)"
+      default: 75
+      example: 75
+
+print_pickup_code:
+  name: Print Pickup Code
+  description: "Print a large pickup code (e.g., for package lockers)"
+  fields:
+    pickup_code:
+      name: Pickup Code
+      description: "Pickup code in format like '19-4308'"
+      required: true
+      example: "19-4308"

@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Paperang P2 Printer",
+        "description": "Connect your Paperang P2 via USB to auto-detect, or add manually."
+      },
+      "confirm": {
+        "title": "Paperang P2 Detected",
+        "description": "Paperang P2 printer found via USB. Do you want to set it up?"
+      }
+    }
+  }
+}
