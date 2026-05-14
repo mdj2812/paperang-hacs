@@ -185,7 +185,7 @@ async def _run_ble(hass, fn, *args):
     ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
     if not ble_addr:
         raise RuntimeError("BLE address not configured")
-    _ble_device = await async_ble_device_from_address(hass, ble_addr, connectable=True)
+    _ble_device = async_ble_device_from_address(hass, ble_addr, connectable=True)
     if _ble_device is None:
         raise RuntimeError(f"BLE device {ble_addr} not found by HA Bluetooth")
 
