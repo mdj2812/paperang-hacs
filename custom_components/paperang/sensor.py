@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 """Paperang P2 Printer - Sensor platform.
 
 Provides battery, status, voltage, temperature, and other printer telemetry
@@ -7,27 +6,26 @@ via periodic USB polling.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import (
     PERCENTAGE,
     UnitOfElectricPotential,
     UnitOfTemperature,
 )
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-)
 
 from .const import DOMAIN
+from .entity import PaperangEntity
 
-DEVICE_ID = "paperang_p2_printer"
-DEVICE_INFO = DeviceInfo(
-    identifiers={("paperang", DEVICE_ID)},
-    name="Paperang P2 Printer",
-    manufacturer="Paperang",
-    model="P2",
-)
+
+@dataclass(frozen=True)
+class SensorConfig:
+    """Optional sensor configuration."""
+
+    device_class: str | None = None
+    unit: str | None = None
+    state_class: str | None = None
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -35,18 +33,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([
         PaperangSensor(coordinator, "battery", "Battery", "mdi:battery",
-                       device_class="battery", unit=PERCENTAGE, state_class="measurement"),
+                       config=SensorConfig(device_class="battery", unit=PERCENTAGE,
+                                           state_class="measurement")),
         PaperangSensor(coordinator, "status", "Status", "mdi:printer"),
         PaperangSensor(coordinator, "voltage", "Voltage", "mdi:flash",
-                       device_class="voltage",
-                       unit=UnitOfElectricPotential.MILLIVOLT,
-                       state_class="measurement"),
+                       config=SensorConfig(device_class="voltage",
+                                           unit=UnitOfElectricPotential.MILLIVOLT,
+                                           state_class="measurement")),
         PaperangSensor(coordinator, "temperature", "Temperature", "mdi:thermometer",
-                       device_class="temperature",
-                       unit=UnitOfTemperature.CELSIUS,
-                       state_class="measurement"),
+                       config=SensorConfig(device_class="temperature",
+                                           unit=UnitOfTemperature.CELSIUS,
+                                           state_class="measurement")),
         PaperangSensor(coordinator, "heat_density", "Heat Density", "mdi:thermometer-lines",
-                       device_class=None, unit=PERCENTAGE, state_class="measurement"),
+                       config=SensorConfig(unit=PERCENTAGE, state_class="measurement")),
         PaperangSensor(coordinator, "paper_type", "Paper Type", "mdi:paper-roll"),
         PaperangSensor(coordinator, "version", "Firmware Version", "mdi:information-outline"),
         PaperangSensor(coordinator, "model", "Model", "mdi:printer-3d-nozzle"),
@@ -56,32 +55,26 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class PaperangSensor(CoordinatorEntity, SensorEntity):  # pylint: disable=too-many-instance-attributes
+class PaperangSensor(PaperangEntity, SensorEntity):
     """Generic Paperang sensor. Reads a key from coordinator data."""
 
-    _attr_has_entity_name = True
-
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
+        coordinator,
         key: str,
         name: str,
         icon: str,
         *,
-        device_class: str | None = None,
-        unit: str | None = None,
-        state_class: str | None = None,
+        config: SensorConfig | None = None,
     ) -> None:
-        self._attr_name = name
-        self._attr_unique_id = f"paperang_p2_{key}"
-        super().__init__(coordinator)
+        """Initialize."""
+        super().__init__(coordinator, name, f"paperang_p2_{key}", icon)
         self._key = key
-        self._attr_device_info = DEVICE_INFO
-        self._attr_icon = icon
-        self._attr_device_class = device_class
-        self._attr_native_unit_of_measurement = unit
-        self._attr_state_class = state_class
+        if config is None:
+            config = SensorConfig()
+        self._attr_device_class = config.device_class
+        self._attr_native_unit_of_measurement = config.unit
+        self._attr_state_class = config.state_class
 
     @property
     def native_value(self):

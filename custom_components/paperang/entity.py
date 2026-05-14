@@ -12,6 +12,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 DEVICE_ID = "paperang_p2_printer"
 DEVICE_INFO = DeviceInfo(
     identifiers={("paperang", DEVICE_ID)},
+    name="Paperang P2 Printer",
+    manufacturer="Paperang",
+    model="P2",
 )
 
 
