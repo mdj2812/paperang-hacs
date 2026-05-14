@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """Base entity mixin for Paperang P2 Printer entities.
 
 Provides common patterns used across all entity platforms:
@@ -18,7 +19,7 @@ DEVICE_INFO = DeviceInfo(  # pylint: disable=invalid-name
 )
 
 
-class PaperangEntity(CoordinatorEntity):
+class PaperangEntity(CoordinatorEntity):  # pylint: disable=too-few-public-methods
     """Base class for all Paperang entities."""
 
     _attr_has_entity_name = True

@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """Paperang P2 Printer - Number platform.
 
 Provides configurable numeric controls for print parameters.

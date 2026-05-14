@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 """Paperang P2 Printer - Sensor platform.
 
 Provides battery, status, voltage, temperature, and other printer telemetry
