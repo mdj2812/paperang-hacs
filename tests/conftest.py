@@ -1,51 +1,13 @@
-"""Test fixtures for paperang custom component tests."""
+"""Test fixtures for paperang custom component — HA core style."""
 import sys
-from unittest.mock import MagicMock
+from collections.abc import Generator
+from unittest.mock import MagicMock, patch
 
-# ── homeassistant stubs ───────────────────────────────────────────
-_ha = MagicMock()
-_ha.setup = MagicMock()
-_ha.const.Platform = MagicMock()
-_ha.const.Platform.SENSOR = "sensor"
-_ha.const.Platform.BUTTON = "button"
-_ha.const.Platform.SELECT = "select"
-_ha.const.Platform.NUMBER = "number"
-_ha.const.Platform.TEXT = "text"
-setattr(_ha.const, "__all__", [])
+import pytest
 
-_ce_mod = type(sys)("homeassistant.config_entries")
-class _ConfigFlowBase:
-    VERSION = 1
-    def __init_subclass__(cls, domain=None, **kwargs):
-        super().__init_subclass__(**kwargs)
-_ce_mod.ConfigFlow = _ConfigFlowBase
-_ce_mod.OptionsFlow = object
-sys.modules["homeassistant.config_entries"] = _ce_mod
+# ── paperang-p2-lib stubs (needed since lib isn't installed with extras) ──
+# Must be set up at module level BEFORE any test files import custom_components.
 
-_ha.core = MagicMock()
-_ha.core.HomeAssistant = MagicMock
-_ha.core.callback = lambda f: f
-_ha.helpers.typing = MagicMock()
-_ha.helpers.typing.ConfigType = dict
-_ha.helpers.update_coordinator = MagicMock()
-_ha.util = MagicMock()
-_ha.auth.permissions.const = MagicMock()
-_ha.auth.permissions.const.POLICY_READ = "read"
-
-_MODULES = [
-    ("homeassistant", _ha),
-    ("homeassistant.const", _ha.const),
-    ("homeassistant.core", _ha.core),
-    ("homeassistant.helpers", _ha.helpers),
-    ("homeassistant.helpers.typing", _ha.helpers.typing),
-    ("homeassistant.helpers.update_coordinator", _ha.helpers.update_coordinator),
-    ("homeassistant.util", _ha.util),
-    ("homeassistant.auth", _ha.auth),
-    ("homeassistant.auth.permissions", _ha.auth.permissions),
-    ("homeassistant.auth.permissions.const", _ha.auth.permissions.const),
-]
-
-# ── paperang-p2-lib stubs ────────────────────────────────────────
 _paperang = MagicMock()
 _paperang.PaperangP2 = MagicMock
 _paperang.PaperangPrinter = MagicMock
@@ -58,10 +20,21 @@ _paperang.transport.Transport = object
 _paperang.transport.UsbTransport = MagicMock
 _paperang.transport.BleTransport = MagicMock
 
-_MODULES += [
-    ("paperang", _paperang),
-    ("paperang.transport", _paperang.transport),
-]
+sys.modules["paperang"] = _paperang
+sys.modules["paperang.transport"] = _paperang.transport
 
-for mod_name, stub in _MODULES:
-    sys.modules[mod_name] = stub
+
+@pytest.fixture(autouse=True)
+def _mock_paperang() -> Generator[None]:
+    """Re-apply paperang stubs per test (already set at module level)."""
+    yield
+
+
+@pytest.fixture
+def mock_setup_entry() -> Generator[MagicMock]:
+    """Override async_setup_entry."""
+    with patch(
+        "custom_components.paperang.async_setup_entry",
+        return_value=True,
+    ) as mock_setup:
+        yield mock_setup
