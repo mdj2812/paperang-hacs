@@ -16,8 +16,9 @@ from .entity import PaperangEntity
 
 @dataclass(frozen=True)
 class NumberRange:
-    """Numeric range configuration for a PaperangNumber entity."""
+    """Numeric range + icon configuration for a PaperangNumber entity."""
 
+    icon: str
     minimum: float
     maximum: float
     default: float
@@ -31,19 +32,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities([
         PaperangNumber(coordinator, "font_size", "Font Size",
-                       icon="mdi:format-size",
-                       num_range=NumberRange(minimum=12, maximum=96, default=24, step=1)),
+                       num_range=NumberRange(icon="mdi:format-size",
+                                             minimum=12, maximum=96, default=24, step=1)),
         PaperangNumber(coordinator, "heat_density", "Heat Density",
-                       icon="mdi:thermometer",
-                       num_range=NumberRange(minimum=0, maximum=100, default=75, step=5,
+                       num_range=NumberRange(icon="mdi:thermometer",
+                                             minimum=0, maximum=100, default=75, step=5,
                                              unit=PERCENTAGE)),
         PaperangNumber(coordinator, "qr_size", "QR Size",
-                       icon="mdi:qrcode",
-                       num_range=NumberRange(minimum=100, maximum=576, default=500, step=10,
+                       num_range=NumberRange(icon="mdi:qrcode",
+                                             minimum=100, maximum=576, default=500, step=10,
                                              unit="px")),
         PaperangNumber(coordinator, "feed_lines", "Feed Lines",
-                       icon="mdi:format-line-spacing",
-                       num_range=NumberRange(minimum=10, maximum=500, default=50, step=10,
+                       num_range=NumberRange(icon="mdi:format-line-spacing",
+                                             minimum=10, maximum=500, default=50, step=10,
                                              unit="lines")),
     ])
 
@@ -57,11 +58,10 @@ class PaperangNumber(PaperangEntity, NumberEntity):
         key: str,
         name: str,
         *,
-        icon: str,
         num_range: NumberRange,
     ) -> None:
         """Initialize."""
-        super().__init__(coordinator, name, f"paperang_p2_num_{key}", icon)
+        super().__init__(coordinator, name, f"paperang_p2_num_{key}", num_range.icon)
         self._key = key
         self._attr_native_min_value = num_range.minimum
         self._attr_native_max_value = num_range.maximum
