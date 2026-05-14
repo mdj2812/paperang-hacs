@@ -15,14 +15,29 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (ATTR_FONT_SIZE, ATTR_HEAT_DENSITY, ATTR_IMAGE_URL,
-                    ATTR_LINES, ATTR_PICKUP_CODE, ATTR_PROFILE,
-                    ATTR_QR_CONTENT, ATTR_QR_SIZE, ATTR_TEXT, CONF_BLE_ADDRESS,
-                    CONF_TRANSPORT, DOMAIN, SERVICE_FEED_PAPER,
-                    SERVICE_GET_STATUS, SERVICE_PRINT_IMAGE,
-                    SERVICE_PRINT_PICKUP_CODE, SERVICE_PRINT_QR,
-                    SERVICE_PRINT_TEST_PAGE, SERVICE_PRINT_TEXT, TRANSPORT_BLE,
-                    TRANSPORT_USB)
+from .const import (
+    ATTR_FONT_SIZE,
+    ATTR_HEAT_DENSITY,
+    ATTR_IMAGE_URL,
+    ATTR_LINES,
+    ATTR_PICKUP_CODE,
+    ATTR_PROFILE,
+    ATTR_QR_CONTENT,
+    ATTR_QR_SIZE,
+    ATTR_TEXT,
+    CONF_BLE_ADDRESS,
+    CONF_TRANSPORT,
+    DOMAIN,
+    SERVICE_FEED_PAPER,
+    SERVICE_GET_STATUS,
+    SERVICE_PRINT_IMAGE,
+    SERVICE_PRINT_PICKUP_CODE,
+    SERVICE_PRINT_QR,
+    SERVICE_PRINT_TEST_PAGE,
+    SERVICE_PRINT_TEXT,
+    TRANSPORT_BLE,
+    TRANSPORT_USB,
+)
 
 # The pip-installed paperang-p2-lib shares the module name 'paperang'
 # with this HA component. HA puts custom_components/ first in sys.path,

@@ -9,8 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import (PERCENTAGE, UnitOfElectricPotential,
-                                 UnitOfTemperature)
+from homeassistant.const import PERCENTAGE, UnitOfElectricPotential, UnitOfTemperature
 
 from .const import DOMAIN
 from .entity import PaperangEntity
