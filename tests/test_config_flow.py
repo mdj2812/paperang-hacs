@@ -18,7 +18,7 @@ from custom_components.paperang.const import (
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from tests.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
@@ -111,11 +111,18 @@ async def test_duplicate_usb_aborts(hass: HomeAssistant) -> None:
 
 
 async def test_duplicate_ble_aborts(hass: HomeAssistant) -> None:
-    """Second BLE entry aborts."""
+    """Second BLE entry aborts when user selects BLE."""
     MockConfigEntry(domain=DOMAIN, unique_id="paperang_p2_ble").add_to_hass(hass)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
+    )
+    # First step shows form (USB is still available)
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_TRANSPORT: TRANSPORT_BLE, CONF_BLE_ADDRESS: "AA:BB:CC:DD:EE:FF"},
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"

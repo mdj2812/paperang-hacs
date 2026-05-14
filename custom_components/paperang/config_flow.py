@@ -50,6 +50,20 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         self, user_input: dict[str, Any] | None = None
     ):
         """Handle the initial step (manual add)."""
+        if user_input is None:
+            # Check for existing entries before showing the form.
+            # If both USB and BLE are already configured, abort early.
+            usb_exists = any(
+                e.unique_id == "paperang_p2_usb"
+                for e in self._async_current_entries()
+            )
+            ble_exists = any(
+                e.unique_id == "paperang_p2_ble"
+                for e in self._async_current_entries()
+            )
+            if usb_exists and ble_exists:
+                return self.async_abort(reason="already_configured")
+
         transport = user_input.get(CONF_TRANSPORT, TRANSPORT_USB) if user_input else TRANSPORT_USB
         unique_id = f"paperang_p2_{transport}"
         await self.async_set_unique_id(unique_id)
