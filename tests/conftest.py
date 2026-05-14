@@ -1,10 +1,12 @@
 """Test fixtures for paperang custom component — HA core style."""
+import sys
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 # ── paperang-p2-lib stubs (needed since lib isn't installed with extras) ──
+# Must be set up at module level BEFORE any test files import custom_components.
 
 _paperang = MagicMock()
 _paperang.PaperangP2 = MagicMock
@@ -18,16 +20,14 @@ _paperang.transport.Transport = object
 _paperang.transport.UsbTransport = MagicMock
 _paperang.transport.BleTransport = MagicMock
 
+sys.modules["paperang"] = _paperang
+sys.modules["paperang.transport"] = _paperang.transport
+
 
 @pytest.fixture(autouse=True)
 def _mock_paperang() -> Generator[None]:
-    """Stub paperang-p2-lib so tests run without USB/BLE hardware."""
-    import sys
-    with (
-        patch.dict(sys.modules, {"paperang": _paperang}),
-        patch.dict(sys.modules, {"paperang.transport": _paperang.transport}),
-    ):
-        yield
+    """Re-apply paperang stubs per test (already set at module level)."""
+    yield
 
 
 @pytest.fixture
