@@ -1,6 +1,12 @@
 {
   "domain": "paperang",
   "name": "Paperang P2 Printer",
+  "bluetooth": [
+    {
+      "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb",
+      "connectable": true
+    }
+  ],
   "codeowners": ["@mdj2812"],
   "config_flow": true,
   "dependencies": [],

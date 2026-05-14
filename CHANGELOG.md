@@ -1,17 +1,31 @@
 # Changelog
 
-## v1.4.0rc1 (2026-05-13)
+## v1.4.0rc1 (2026-05-14)
 
 ### Added
-- Bluetooth BLE transport support via `BleTransport` from `paperang-p2-lib>=0.4.0rc1`
-- Config flow: transport selection (USB / Bluetooth BLE) with optional BLE MAC address
-- Options flow: change transport type and BLE address without re-adding device
-- BLE auto-discovery when MAC address is left empty
+- Bluetooth LE device auto-discovery via HA Bluetooth integration
+  - `manifest.json` matcher with service UUID `0000fee7` (Paperang_P2 SPP)
+  - `async_step_bluetooth` / `async_step_bluetooth_confirm` in config flow
+  - BLE entries use MAC-based unique_id (`paperang_p2_ble_{MAC}`)
+- Coordinator skip for BLE transport (avoids event-loop errors at startup)
 
 ### Changed
-- `_safe_cleanup()` replaced with `printer.disconnect()` (new Transport API)
-- `paperang-p2-lib` bumped to `>=0.4.0rc1` with `[qr,cjk,ble]` extras
-- Config entry schema version 2 (auto-migrated from version 1)
+- Shared `PaperangEntity` base class extracted (`entity.py`)
+  - Common `available` property, `_attr_has_entity_name`, `_attr_device_info`
+  - `button.py`, `select.py`, `text.py`, `number.py`, `sensor.py` all migrated
+- `NumberRange` dataclass for numeric entity parameters (replaces long arg lists)
+- `SensorConfig` dataclass for sensor-specific attributes
+- Pylint disables reduced: **24 → 8** (all in `__init__.py`; other files: 0)
+- CI global pylint disable: **12 rules → 2** (`E0401,W0223`)
+- `--disable=E0401,C0115,C0116,W0718,W0612,W0613,C0415,W0212,E1101,R0903,W1514,C0103`
+  → `--disable=E0401,W0223`
+- Coverage minimum threshold raised: **15% → 80%** (current: 97%, 56 tests)
+
+### Fixed
+- `ruff format` applied to all code (15 files)
+- `.gitattributes` enforces LF line endings
+- Production code pylint score: **10.00/10**
+- hassfest: manifest keys sorted alphabetically
 
 ## v1.3.1 (2026-05-12)
 

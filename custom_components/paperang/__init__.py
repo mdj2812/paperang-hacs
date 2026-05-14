@@ -129,7 +129,13 @@ def _get_or_fallback(cache: dict[str, object], key: str) -> object:
 
 
 async def _read_printer_state(hass: HomeAssistant):
-    """Read all printer telemetry (runs blocking USB in executor)."""
+    """Read all printer telemetry.
+
+    USB: blocking I/O in executor thread.
+    BLE: skip polling — BLE only connects during on-demand operations.
+    """
+    if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
+        return {"available": True}
     return await hass.async_add_executor_job(_do_read_printer_state)
 
 

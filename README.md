@@ -10,11 +10,12 @@ Control and monitor your Paperang P2 thermal printer through Home Assistant. Pri
 ## Features
 
 - 🔌 **USB auto-discovery** — printer detected automatically when plugged in
-- 📡 **Bluetooth BLE** — connect wirelessly (auto-scan or specify MAC address)
+- 📡 **Bluetooth BLE** — auto-discovered or specify MAC address
 - 🎛️ **Device page controls** — interactive print panel with mode selector, text input, parameter sliders, and print button
 - 📊 **11 telemetry sensors** — battery, status, voltage, temperature, heat density, paper type, firmware version, model, serial number, board version, hardware info
 - 🖨️ **7 services** — print text, images, QR codes, pickup codes, test page, get status, feed paper
 - 📦 **Single device** — all entities grouped under one "Paperang P2 Printer" device
+- ✅ **High coverage** — 56 tests, 97% code coverage, pylint 10.00/10
 
 ## Installation
 
@@ -43,11 +44,9 @@ Plug in your Paperang P2 via USB. Home Assistant will detect it automatically an
 
 ### Bluetooth BLE Setup
 
-**Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"**
+**Settings → Devices & Services** — if your Paperang P2 is powered on and within BLE range, HA will auto-discover it and show a notification.
 
-In the config dialog:
-- Select **Bluetooth BLE** as the transport
-- Enter the printer's BLE MAC address (e.g. `AA:BB:CC:DD:EE:FF`) — leave empty for auto-scan
+Or add manually: **Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **Bluetooth BLE** and enter the MAC address (e.g. `00:15:83:EB:05:17`).
 
 ### Manual Setup
 

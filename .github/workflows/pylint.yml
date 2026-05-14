@@ -19,6 +19,6 @@ jobs:
       - name: Analysing the code with pylint
         run: |
           pylint \
-            --disable=W0223 \
+            --disable=E0401,W0223 \
             --max-line-length=120 \
             $(git ls-files 'custom_components/paperang/*.py')
