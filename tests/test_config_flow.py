@@ -1,8 +1,13 @@
 """Tests for paperang config flow — HA core style."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import voluptuous as vol
+
+from homeassistant.config_entries import SOURCE_USER
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.paperang.config_flow import (
     PaperangConfigFlow,
@@ -15,10 +20,6 @@ from custom_components.paperang.const import (
     CONF_TRANSPORT,
     CONF_BLE_ADDRESS,
 )
-from homeassistant.config_entries import SOURCE_USER
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
