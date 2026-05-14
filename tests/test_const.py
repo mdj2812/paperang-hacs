@@ -4,19 +4,24 @@
 class TestConstants:
     def test_domain(self):
         from custom_components.paperang.const import DOMAIN
+
         assert DOMAIN == "paperang"
 
     def test_transport_types(self):
         from custom_components.paperang.const import (
-            TRANSPORT_USB, TRANSPORT_BLE,
+            TRANSPORT_USB,
+            TRANSPORT_BLE,
         )
+
         assert TRANSPORT_USB == "usb"
         assert TRANSPORT_BLE == "ble"
 
     def test_config_keys(self):
         from custom_components.paperang.const import (
-            CONF_TRANSPORT, CONF_BLE_ADDRESS,
+            CONF_TRANSPORT,
+            CONF_BLE_ADDRESS,
         )
+
         assert CONF_TRANSPORT == "transport"
         assert CONF_BLE_ADDRESS == "ble_address"
 
@@ -30,6 +35,7 @@ class TestConstants:
             SERVICE_GET_STATUS,
             SERVICE_FEED_PAPER,
         )
+
         assert SERVICE_PRINT_TEXT == "print_text"
         assert SERVICE_PRINT_IMAGE == "print_image"
         assert SERVICE_PRINT_QR == "print_qr"
@@ -40,10 +46,17 @@ class TestConstants:
 
     def test_attribute_names(self):
         from custom_components.paperang.const import (
-            ATTR_TEXT, ATTR_FONT_SIZE, ATTR_HEAT_DENSITY,
-            ATTR_IMAGE_URL, ATTR_PROFILE, ATTR_QR_CONTENT,
-            ATTR_QR_SIZE, ATTR_PICKUP_CODE, ATTR_LINES,
+            ATTR_TEXT,
+            ATTR_FONT_SIZE,
+            ATTR_HEAT_DENSITY,
+            ATTR_IMAGE_URL,
+            ATTR_PROFILE,
+            ATTR_QR_CONTENT,
+            ATTR_QR_SIZE,
+            ATTR_PICKUP_CODE,
+            ATTR_LINES,
         )
+
         assert ATTR_TEXT == "text"
         assert ATTR_FONT_SIZE == "font_size"
         assert ATTR_HEAT_DENSITY == "heat_density"
@@ -56,7 +69,9 @@ class TestConstants:
 
     def test_sensor_names(self):
         from custom_components.paperang.const import (
-            SENSOR_BATTERY, SENSOR_STATUS,
+            SENSOR_BATTERY,
+            SENSOR_STATUS,
         )
+
         assert SENSOR_BATTERY == "battery"
         assert SENSOR_STATUS == "status"

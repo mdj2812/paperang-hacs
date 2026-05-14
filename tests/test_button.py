@@ -1,4 +1,5 @@
 """Tests for paperang button platform — HA core style."""
+
 import pytest
 
 from homeassistant.core import HomeAssistant
@@ -40,12 +41,15 @@ class TestPrintButton:
         await _setup_coordinator(hass, entry)
 
         from custom_components.paperang.button import PaperangPrintButton
+
         btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         for svc in ("print_text", "print_image", "print_qr", "print_pickup_code"):
             hass.services.async_register(DOMAIN, svc, _spy)
 
@@ -66,12 +70,15 @@ class TestPrintButton:
         hass.states.async_set("number.paperang_p2_printer_heat_density", "75")
 
         from custom_components.paperang.button import PaperangPrintButton
+
         btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "print_text", _spy)
 
         await btn.async_press()
@@ -94,12 +101,15 @@ class TestPrintButton:
         hass.states.async_set("select.paperang_p2_printer_image_profile", "photo")
 
         from custom_components.paperang.button import PaperangPrintButton
+
         btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "print_image", _spy)
 
         await btn.async_press()
@@ -122,12 +132,15 @@ class TestPrintButton:
         hass.states.async_set("number.paperang_p2_printer_heat_density", "60")
 
         from custom_components.paperang.button import PaperangPrintButton
+
         btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "print_qr", _spy)
 
         await btn.async_press()
@@ -148,12 +161,15 @@ class TestPrintButton:
         hass.states.async_set("text.paperang_p2_printer_print_content", "19-4308")
 
         from custom_components.paperang.button import PaperangPrintButton
+
         btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "print_pickup_code", _spy)
 
         await btn.async_press()
@@ -173,12 +189,15 @@ class TestFeedButton:
         hass.states.async_set("number.paperang_p2_printer_feed_lines", "10")
 
         from custom_components.paperang.button import PaperangFeedButton
+
         btn = PaperangFeedButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "feed_paper", _spy)
 
         await btn.async_press()
@@ -194,12 +213,15 @@ class TestFeedButton:
         await _setup_coordinator(hass, entry)
 
         from custom_components.paperang.button import PaperangFeedButton
+
         btn = PaperangFeedButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "feed_paper", _spy)
 
         await btn.async_press()
@@ -217,12 +239,15 @@ class TestTestPrintButton:
         await _setup_coordinator(hass, entry)
 
         from custom_components.paperang.button import PaperangTestPrintButton
+
         btn = PaperangTestPrintButton(hass.data[DOMAIN][entry.entry_id])
         btn.hass = hass
 
         calls = []
+
         async def _spy(call):
             calls.append(call.data)
+
         hass.services.async_register(DOMAIN, "print_test_page", _spy)
 
         await btn.async_press()

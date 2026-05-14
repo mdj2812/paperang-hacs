@@ -1,4 +1,5 @@
 """Test fixtures for paperang custom component — HA core style."""
+
 import sys
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
