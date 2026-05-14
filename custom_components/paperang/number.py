@@ -1,4 +1,3 @@
-# pylint: disable=import-error,duplicate-code
 """Paperang P2 Printer - Number platform.
 
 Provides configurable numeric controls for print parameters.
@@ -8,15 +7,9 @@ from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity
 from homeassistant.const import PERCENTAGE
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-
-DEVICE_ID = "paperang_p2_printer"
-DEVICE_INFO = DeviceInfo(
-    identifiers={("paperang", DEVICE_ID)},
-)
+from .entity import PaperangEntity
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -39,12 +32,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class PaperangNumber(CoordinatorEntity, NumberEntity):  # pylint: disable=too-many-instance-attributes,too-many-arguments
+class PaperangNumber(PaperangEntity, NumberEntity):
     """Configurable numeric control for print parameters."""
 
-    _attr_has_entity_name = True
-
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         coordinator,
         key: str,
@@ -58,24 +49,15 @@ class PaperangNumber(CoordinatorEntity, NumberEntity):  # pylint: disable=too-ma
         unit: str | None,
     ) -> None:
         """Initialize."""
+        super().__init__(coordinator, name, f"paperang_p2_num_{key}", icon)
         self._key = key
-        self._attr_name = name
-        self._attr_unique_id = f"paperang_p2_num_{key}"
-        self._attr_device_info = DEVICE_INFO
-        self._attr_icon = icon
         self._attr_native_min_value = minimum
         self._attr_native_max_value = maximum
         self._attr_native_step = step
         self._attr_native_unit_of_measurement = unit
         self._attr_native_value = default
-        super().__init__(coordinator)
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
         self._attr_native_value = value
         self.async_write_ha_state()
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.last_update_success

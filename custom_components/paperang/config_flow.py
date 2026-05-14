@@ -24,7 +24,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         """Get the options flow."""
         return PaperangOptionsFlow(config_entry)
 
-    async def async_step_usb(self, discovery_info):  # pylint: disable=unused-argument
+    async def async_step_usb(self, _discovery_info):
         """Handle USB discovery."""
         await self.async_set_unique_id("paperang_p2_usb")
         self._abort_if_unique_id_configured()
@@ -98,11 +98,11 @@ class PaperangOptionsFlow(config_entries.OptionsFlow):  # pylint: disable=too-fe
         self._config_entry = config_entry
 
     async def async_step_init(
-        self, user_input: dict[str, Any] | None = None  # pylint: disable=unused-argument
+        self, _user_input: dict[str, Any] | None = None
     ):
         """Manage the options."""
-        if user_input is not None:
-            return self.async_create_entry(data=user_input)
+        if _user_input is not None:
+            return self.async_create_entry(data=_user_input)
 
         current = self._config_entry.data
         return self.async_show_form(

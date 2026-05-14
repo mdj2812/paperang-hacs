@@ -1,4 +1,3 @@
-# pylint: disable=import-error,duplicate-code
 """Paperang P2 Printer - Button platform.
 
 Provides pressable buttons on the device page for printer actions.
@@ -9,17 +8,11 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.button import ButtonEntity
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .entity import PaperangEntity
 
 _LOGGER = logging.getLogger(__name__)
-
-DEVICE_ID = "paperang_p2_printer"
-DEVICE_INFO = DeviceInfo(
-    identifiers={("paperang", DEVICE_ID)},
-)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -33,23 +26,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class PaperangPrintButton(CoordinatorEntity, ButtonEntity):
+class PaperangPrintButton(PaperangEntity, ButtonEntity):
     """Print button — reads mode/content/params and fires the correct service."""
-
-    _attr_has_entity_name = True
 
     def __init__(self, coordinator) -> None:
         """Initialize."""
-        self._attr_name = "Print"
-        self._attr_unique_id = "paperang_p2_btn_print"
-        self._attr_device_info = DEVICE_INFO
-        self._attr_icon = "mdi:printer"
-        super().__init__(coordinator)
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.last_update_success
+        super().__init__(coordinator, "Print", "paperang_p2_btn_print", "mdi:printer")
 
     async def async_press(self) -> None:
         """Read entity states and dispatch the appropriate print service."""
@@ -106,18 +88,12 @@ class PaperangPrintButton(CoordinatorEntity, ButtonEntity):
             )
 
 
-class PaperangFeedButton(CoordinatorEntity, ButtonEntity):
+class PaperangFeedButton(PaperangEntity, ButtonEntity):
     """Feed paper button."""
-
-    _attr_has_entity_name = True
 
     def __init__(self, coordinator) -> None:
         """Initialize."""
-        self._attr_name = "Feed Paper"
-        self._attr_unique_id = "paperang_p2_btn_feed_paper"
-        self._attr_device_info = DEVICE_INFO
-        self._attr_icon = "mdi:arrow-down-bold"
-        super().__init__(coordinator)
+        super().__init__(coordinator, "Feed Paper", "paperang_p2_btn_feed_paper", "mdi:arrow-down-bold")
 
     async def async_press(self) -> None:
         """Feed paper."""
@@ -130,32 +106,16 @@ class PaperangFeedButton(CoordinatorEntity, ButtonEntity):
             DOMAIN, "feed_paper", {"lines": lines}, blocking=False,
         )
 
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.last_update_success
 
-
-class PaperangTestPrintButton(CoordinatorEntity, ButtonEntity):
+class PaperangTestPrintButton(PaperangEntity, ButtonEntity):
     """Test print button."""
-
-    _attr_has_entity_name = True
 
     def __init__(self, coordinator) -> None:
         """Initialize."""
-        self._attr_name = "Test Print"
-        self._attr_unique_id = "paperang_p2_btn_test_print"
-        self._attr_device_info = DEVICE_INFO
-        self._attr_icon = "mdi:printer-check"
-        super().__init__(coordinator)
+        super().__init__(coordinator, "Test Print", "paperang_p2_btn_test_print", "mdi:printer-check")
 
     async def async_press(self) -> None:
         """Print test page."""
         await self.hass.services.async_call(
             DOMAIN, "print_test_page", {}, blocking=False,
         )
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.last_update_success

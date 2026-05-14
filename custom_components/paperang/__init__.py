@@ -293,7 +293,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
         await hass.async_add_executor_job(_do_print_pickup_code, pickup_code)
 
-    async def handle_get_status(call: ServiceCall) -> None:  # pylint: disable=unused-argument
+    async def handle_get_status(_call: ServiceCall) -> None:
         """Handle get status service call."""
         result = await hass.async_add_executor_job(_do_get_status)
         _LOGGER.info("Paperang P2 status: %s", result)
@@ -303,7 +303,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         lines = call.data.get(ATTR_LINES, 100)
         await hass.async_add_executor_job(_do_feed_paper, lines)
 
-    async def handle_print_test_page(call: ServiceCall) -> None:  # pylint: disable=unused-argument
+    async def handle_print_test_page(_call: ServiceCall) -> None:
         """Handle print test page service call."""
         await hass.async_add_executor_job(_do_print_test_page)
 
