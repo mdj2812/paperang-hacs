@@ -1,4 +1,5 @@
 """Tests for paperang config flow — HA core style."""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -27,36 +28,48 @@ pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
 class TestConfigFlowSchema:
     def test_user_step_schema_valid_usb(self):
-        schema = vol.Schema({
-            vol.Required("transport", default="usb"): vol.In({
-                "usb": "USB",
-                "ble": "Bluetooth BLE",
-            }),
-            vol.Optional("ble_address"): str,
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("transport", default="usb"): vol.In(
+                    {
+                        "usb": "USB",
+                        "ble": "Bluetooth BLE",
+                    }
+                ),
+                vol.Optional("ble_address"): str,
+            }
+        )
         result = schema({"transport": "usb"})
         assert result["transport"] == "usb"
 
     def test_user_step_schema_valid_ble(self):
-        schema = vol.Schema({
-            vol.Required("transport", default="usb"): vol.In({
-                "usb": "USB",
-                "ble": "Bluetooth BLE",
-            }),
-            vol.Optional("ble_address"): str,
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("transport", default="usb"): vol.In(
+                    {
+                        "usb": "USB",
+                        "ble": "Bluetooth BLE",
+                    }
+                ),
+                vol.Optional("ble_address"): str,
+            }
+        )
         result = schema({"transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF"})
         assert result["transport"] == "ble"
         assert result["ble_address"] == "AA:BB:CC:DD:EE:FF"
 
     def test_ble_without_address_valid(self):
-        schema = vol.Schema({
-            vol.Required("transport", default="usb"): vol.In({
-                "usb": "USB",
-                "ble": "Bluetooth BLE",
-            }),
-            vol.Optional("ble_address"): str,
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("transport", default="usb"): vol.In(
+                    {
+                        "usb": "USB",
+                        "ble": "Bluetooth BLE",
+                    }
+                ),
+                vol.Optional("ble_address"): str,
+            }
+        )
         result = schema({"transport": "ble"})
         assert result["transport"] == "ble"
 
@@ -131,6 +144,7 @@ async def test_duplicate_ble_aborts(hass: HomeAssistant) -> None:
 
 # ── USB discovery, import, both-configured, options flow ──────────
 
+
 async def test_both_transports_configured_aborts(hass: HomeAssistant) -> None:
     """When both USB and BLE are configured, abort immediately."""
     MockConfigEntry(domain=DOMAIN, unique_id="paperang_p2_usb").add_to_hass(hass)
@@ -157,9 +171,7 @@ async def test_usb_discovery_confirm_creates_entry(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "usb"}
     )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {}
-    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_TRANSPORT] == TRANSPORT_USB
 

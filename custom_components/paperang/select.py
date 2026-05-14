@@ -19,10 +19,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up select platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities([
-        PaperangPrintModeSelect(coordinator),
-        PaperangImageProfileSelect(coordinator),
-    ])
+    async_add_entities(
+        [
+            PaperangPrintModeSelect(coordinator),
+            PaperangImageProfileSelect(coordinator),
+        ]
+    )
 
 
 class PaperangPrintModeSelect(PaperangEntity, SelectEntity):
@@ -32,8 +34,12 @@ class PaperangPrintModeSelect(PaperangEntity, SelectEntity):
 
     def __init__(self, coordinator) -> None:
         """Initialize."""
-        super().__init__(coordinator, "Print Mode", "paperang_p2_print_mode",
-                         "mdi:file-document-multiple-outline")
+        super().__init__(
+            coordinator,
+            "Print Mode",
+            "paperang_p2_print_mode",
+            "mdi:file-document-multiple-outline",
+        )
         self._attr_current_option = "text"
 
     async def async_select_option(self, option: str) -> None:
@@ -49,8 +55,12 @@ class PaperangImageProfileSelect(PaperangEntity, SelectEntity):
 
     def __init__(self, coordinator) -> None:
         """Initialize."""
-        super().__init__(coordinator, "Image Profile", "paperang_p2_image_profile",
-                         "mdi:image-edit-outline")
+        super().__init__(
+            coordinator,
+            "Image Profile",
+            "paperang_p2_image_profile",
+            "mdi:image-edit-outline",
+        )
         self._attr_current_option = "document"
 
     async def async_select_option(self, option: str) -> None:

@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 # The pip-installed paperang-p2-lib shares the module name 'paperang'
 # with this HA component. HA puts custom_components/ first in sys.path,
 # so temporarily remove it to import the library correctly.
-_custom_paths = [p for p in sys.path if 'custom_components' in p]
+_custom_paths = [p for p in sys.path if "custom_components" in p]
 for _p in _custom_paths:
     sys.path.remove(_p)
 
@@ -61,13 +61,20 @@ from .const import (  # pylint: disable=wrong-import-position
     TRANSPORT_BLE,
 )
 
-PLATFORMS = [Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.NUMBER, Platform.TEXT]
+PLATFORMS = [
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.SELECT,
+    Platform.NUMBER,
+    Platform.TEXT,
+]
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
 # ── Transport config (stored at module level for blocking functions) ─────
 
 _transport_config: dict[str, object] = {}
+
 
 def _get_printer():
     """Create a PaperangP2 with the configured transport."""
@@ -78,6 +85,7 @@ def _get_printer():
         return PaperangP2(transport=ble)
     return PaperangP2()
 
+
 # ── Coordinator update logic ───────────────────────────────────
 
 _static_data: dict[str, object] = {}
@@ -87,8 +95,15 @@ _dynamic_data: dict[str, object] = {}
 _RETRIES = 3
 
 _STATIC_KEYS = [
-    "voltage", "temperature", "heat_density", "paper_type",
-    "version", "model", "serial", "board", "hw_info",
+    "voltage",
+    "temperature",
+    "heat_density",
+    "paper_type",
+    "version",
+    "model",
+    "serial",
+    "board",
+    "hw_info",
 ]
 
 _STATIC_READERS = [
@@ -142,11 +157,13 @@ def _do_read_printer_state():
             time.sleep(0.2)
             status = printer.get_status()
             data["battery"] = (
-                battery if battery is not None
+                battery
+                if battery is not None
                 else _get_or_fallback(_dynamic_data, "battery")
             )
             data["status"] = (
-                status if status is not None
+                status
+                if status is not None
                 else _get_or_fallback(_dynamic_data, "status")
             )
             _update_if_not_none(_dynamic_data, "battery", battery)
@@ -168,12 +185,15 @@ def _do_read_printer_state():
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",
-                    attempt, _RETRIES, err,
+                    attempt,
+                    _RETRIES,
+                    err,
                 )
             else:
                 _LOGGER.warning(
                     "Printer not available after %d attempts: %s",
-                    _RETRIES, err,
+                    _RETRIES,
+                    err,
                 )
                 _static_data.clear()
                 _dynamic_data.clear()
@@ -181,9 +201,12 @@ def _do_read_printer_state():
             printer.disconnect()
 
     return {"available": False}
+
+
 # pylint: enable=duplicate-code
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def _with_printer(fn):
     """Create a printer, connect, run *fn(printer)*, disconnect.
@@ -200,7 +223,9 @@ def _with_printer(fn):
 
 def _do_print_text(text, font_size, heat_density):
     """Blocking: print text."""
-    _with_printer(lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density))
+    _with_printer(
+        lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density)
+    )
 
 
 def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
@@ -218,7 +243,9 @@ def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
 
 def _do_print_qr(qr_content, qr_size, heat_density):
     """Blocking: print QR code."""
-    _with_printer(lambda p: p.print_qr(qr_content, heat_density=heat_density, max_width=qr_size))
+    _with_printer(
+        lambda p: p.print_qr(qr_content, heat_density=heat_density, max_width=qr_size)
+    )
 
 
 def _do_print_pickup_code(pickup_code):
@@ -254,7 +281,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Paperang P2 Printer component."""
     # Register services
 
-
     async def handle_print_text(call: ServiceCall) -> None:
         """Handle print text service call."""
         text = call.data.get(ATTR_TEXT, "")
@@ -286,7 +312,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         qr_content = call.data.get(ATTR_QR_CONTENT, "")
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await hass.async_add_executor_job(_do_print_qr, qr_content, qr_size, heat_density)
+        await hass.async_add_executor_job(
+            _do_print_qr, qr_content, qr_size, heat_density
+        )
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
         """Handle print pickup code service call."""
@@ -311,10 +339,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
     hass.services.async_register(DOMAIN, SERVICE_PRINT_IMAGE, handle_print_image)
     hass.services.async_register(DOMAIN, SERVICE_PRINT_QR, handle_print_qr)
-    hass.services.async_register(DOMAIN, SERVICE_PRINT_PICKUP_CODE, handle_print_pickup_code)
+    hass.services.async_register(
+        DOMAIN, SERVICE_PRINT_PICKUP_CODE, handle_print_pickup_code
+    )
     hass.services.async_register(DOMAIN, SERVICE_GET_STATUS, handle_get_status)
     hass.services.async_register(DOMAIN, SERVICE_FEED_PAPER, handle_feed_paper)
-    hass.services.async_register(DOMAIN, SERVICE_PRINT_TEST_PAGE, handle_print_test_page)
+    hass.services.async_register(
+        DOMAIN, SERVICE_PRINT_TEST_PAGE, handle_print_test_page
+    )
 
     _LOGGER.info("Paperang P2 Printer integration loaded")
 
@@ -336,7 +368,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry):
         data = dict(entry.data)
         data.setdefault(CONF_TRANSPORT, TRANSPORT_USB)
         hass.config_entries.async_update_entry(
-            entry, data=data, version=2,
+            entry,
+            data=data,
+            version=2,
         )
     return True
 

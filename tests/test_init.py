@@ -1,4 +1,5 @@
 """Tests for paperang __init__.py — factory functions, helpers, migration."""
+
 import asyncio
 from unittest.mock import MagicMock, patch
 
@@ -8,6 +9,7 @@ import pytest
 class TestGetPrinter:
     def test_usb_creates_printer_without_transport(self):
         import custom_components.paperang as mod
+
         mod._transport_config = {"transport": "usb"}
 
         with patch.object(mod, "PaperangP2") as mock_p2:
@@ -17,6 +19,7 @@ class TestGetPrinter:
 
     def test_ble_with_address(self):
         import custom_components.paperang as mod
+
         mod._transport_config = {"transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF"}
 
         with (
@@ -31,6 +34,7 @@ class TestGetPrinter:
 
     def test_ble_without_address(self):
         import custom_components.paperang as mod
+
         mod._transport_config = {"transport": "ble"}
 
         with (
@@ -45,6 +49,7 @@ class TestGetPrinter:
 
     def test_no_transport_config_defaults_to_usb(self):
         import custom_components.paperang as mod
+
         mod._transport_config = {}
 
         with patch.object(mod, "PaperangP2") as mock_p2:
@@ -54,6 +59,7 @@ class TestGetPrinter:
 
     def test_ble_not_installed_falls_back_to_usb(self):
         import custom_components.paperang as mod
+
         mod._transport_config = {"transport": "ble"}
         mod.BleTransport = None
 
@@ -68,6 +74,7 @@ class TestGetPrinter:
 class TestWithPrinter:
     def test_calls_fn_and_disconnects(self):
         import custom_components.paperang as mod
+
         mock_printer = MagicMock()
 
         with patch.object(mod, "_get_printer", return_value=mock_printer):
@@ -78,6 +85,7 @@ class TestWithPrinter:
 
     def test_disconnects_on_exception(self):
         import custom_components.paperang as mod
+
         mock_printer = MagicMock()
 
         with patch.object(mod, "_get_printer", return_value=mock_printer):
@@ -88,6 +96,7 @@ class TestWithPrinter:
 
     def test_returns_fn_result(self):
         import custom_components.paperang as mod
+
         mock_printer = MagicMock()
 
         with patch.object(mod, "_get_printer", return_value=mock_printer):
@@ -97,24 +106,31 @@ class TestWithPrinter:
 class TestDoFunctions:
     def test_do_print_text_uses_with_printer(self):
         import custom_components.paperang as mod
+
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_text("hello", 24, 75)
             fn = mock_with.call_args[0][0]
             mock_p = MagicMock()
             fn(mock_p)
-            mock_p.print_text.assert_called_once_with("hello", font_size=24, heat_density=75)
+            mock_p.print_text.assert_called_once_with(
+                "hello", font_size=24, heat_density=75
+            )
 
     def test_do_print_qr_uses_with_printer(self):
         import custom_components.paperang as mod
+
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_qr("https://example.com", 500, 50)
             fn = mock_with.call_args[0][0]
             mock_p = MagicMock()
             fn(mock_p)
-            mock_p.print_qr.assert_called_once_with("https://example.com", heat_density=50, max_width=500)
+            mock_p.print_qr.assert_called_once_with(
+                "https://example.com", heat_density=50, max_width=500
+            )
 
     def test_do_print_pickup_code_uses_with_printer(self):
         import custom_components.paperang as mod
+
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_pickup_code("19-4308")
             fn = mock_with.call_args[0][0]
@@ -124,6 +140,7 @@ class TestDoFunctions:
 
     def test_do_print_test_page_uses_with_printer(self):
         import custom_components.paperang as mod
+
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_print_test_page()
             fn = mock_with.call_args[0][0]
@@ -133,6 +150,7 @@ class TestDoFunctions:
 
     def test_do_feed_paper_uses_with_printer(self):
         import custom_components.paperang as mod
+
         with patch.object(mod, "_with_printer") as mock_with:
             mod._do_feed_paper(200)
             fn = mock_with.call_args[0][0]
@@ -142,6 +160,7 @@ class TestDoFunctions:
 
     def test_do_get_status_success(self):
         import custom_components.paperang as mod
+
         def fake_with(fn):
             mock_p = MagicMock()
             mock_p.get_battery.return_value = 85
@@ -154,12 +173,18 @@ class TestDoFunctions:
 
     def test_do_get_status_failure(self):
         import custom_components.paperang as mod
+
         def fake_with(fn):
             raise RuntimeError("printer offline")
 
         with patch.object(mod, "_with_printer", side_effect=fake_with):
             result = mod._do_get_status()
-            assert result == {"battery": None, "status": None, "available": False, "error": "printer offline"}
+            assert result == {
+                "battery": None,
+                "status": None,
+                "available": False,
+                "error": "printer offline",
+            }
 
 
 class TestMigrationHandler:
@@ -181,6 +206,7 @@ class TestMigrationHandler:
 
     def test_migrate_v2_noop(self):
         from custom_components.paperang.__init__ import async_migrate_entry
+
         entry = MagicMock()
         entry.version = 2
         entry.data = {"transport": "usb"}
@@ -197,10 +223,12 @@ class TestServiceHandlers:
     async def test_print_text_service(self, hass, enable_custom_integrations):
         """print_text service handler calls _do_print_text."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
         with patch.object(mod, "_do_print_text") as mock_fn:
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_PRINT_TEXT,
+                mod.DOMAIN,
+                mod.SERVICE_PRINT_TEXT,
                 {"text": "hello", "font_size": 24, "heat_density": 75},
                 blocking=True,
             )
@@ -209,29 +237,37 @@ class TestServiceHandlers:
     async def test_print_image_service(self, hass, enable_custom_integrations):
         """print_image service handler calls _do_print_image."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
-        mock_profiles = {"photo": {"threshold": 100, "brightness": 1.2, "contrast": 0.8}}
+        mock_profiles = {
+            "photo": {"threshold": 100, "brightness": 1.2, "contrast": 0.8}
+        }
         with (
             patch.object(mod, "_do_print_image") as mock_fn,
             patch.object(mod, "load_profiles", return_value=mock_profiles),
         ):
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_PRINT_IMAGE,
+                mod.DOMAIN,
+                mod.SERVICE_PRINT_IMAGE,
                 {"image_url": "http://img", "heat_density": 80, "profile": "photo"},
                 blocking=True,
             )
             mock_fn.assert_called_once_with("http://img", 80, 100, 1.2, 0.8)
 
-    async def test_print_image_service_no_profile(self, hass, enable_custom_integrations):
+    async def test_print_image_service_no_profile(
+        self, hass, enable_custom_integrations
+    ):
         """print_image service without profile uses defaults."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
         with (
             patch.object(mod, "_do_print_image") as mock_fn,
             patch.object(mod, "load_profiles", return_value={}),
         ):
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_PRINT_IMAGE,
+                mod.DOMAIN,
+                mod.SERVICE_PRINT_IMAGE,
                 {"image_url": "http://img"},
                 blocking=True,
             )
@@ -240,10 +276,12 @@ class TestServiceHandlers:
     async def test_print_qr_service(self, hass, enable_custom_integrations):
         """print_qr service handler calls _do_print_qr."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
         with patch.object(mod, "_do_print_qr") as mock_fn:
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_PRINT_QR,
+                mod.DOMAIN,
+                mod.SERVICE_PRINT_QR,
                 {"qr_content": "https://x.com", "qr_size": 400, "heat_density": 60},
                 blocking=True,
             )
@@ -252,10 +290,12 @@ class TestServiceHandlers:
     async def test_print_pickup_code_service(self, hass, enable_custom_integrations):
         """print_pickup_code service handler calls _do_print_pickup_code."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
         with patch.object(mod, "_do_print_pickup_code") as mock_fn:
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_PRINT_PICKUP_CODE,
+                mod.DOMAIN,
+                mod.SERVICE_PRINT_PICKUP_CODE,
                 {"pickup_code": "19-4308"},
                 blocking=True,
             )
@@ -264,10 +304,14 @@ class TestServiceHandlers:
     async def test_get_status_service(self, hass, enable_custom_integrations):
         """get_status service handler calls _do_get_status."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
-        with patch.object(mod, "_do_get_status", return_value={"battery": 100}) as mock_fn:
+        with patch.object(
+            mod, "_do_get_status", return_value={"battery": 100}
+        ) as mock_fn:
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_GET_STATUS,
+                mod.DOMAIN,
+                mod.SERVICE_GET_STATUS,
                 {},
                 blocking=True,
             )
@@ -276,10 +320,12 @@ class TestServiceHandlers:
     async def test_feed_paper_service(self, hass, enable_custom_integrations):
         """feed_paper service handler calls _do_feed_paper."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
         with patch.object(mod, "_do_feed_paper") as mock_fn:
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_FEED_PAPER,
+                mod.DOMAIN,
+                mod.SERVICE_FEED_PAPER,
                 {"lines": 10},
                 blocking=True,
             )
@@ -288,10 +334,12 @@ class TestServiceHandlers:
     async def test_print_test_page_service(self, hass, enable_custom_integrations):
         """print_test_page service handler calls _do_print_test_page."""
         import custom_components.paperang as mod
+
         await mod.async_setup(hass, {})
         with patch.object(mod, "_do_print_test_page") as mock_fn:
             await hass.services.async_call(
-                mod.DOMAIN, mod.SERVICE_PRINT_TEST_PAGE,
+                mod.DOMAIN,
+                mod.SERVICE_PRINT_TEST_PAGE,
                 {},
                 blocking=True,
             )
@@ -304,6 +352,7 @@ class TestReadPrinterState:
     def test_read_printer_state_all_retries_fail(self):
         """After all retries fail, return {available: False}."""
         import custom_components.paperang as mod
+
         mock_printer = MagicMock()
         mock_printer.connect.side_effect = RuntimeError("printer offline")
 
@@ -316,6 +365,7 @@ class TestReadPrinterState:
     def test_read_printer_state_single_retry(self):
         """First attempt fails, second succeeds."""
         import custom_components.paperang as mod
+
         mock_printer = MagicMock()
         mock_printer.connect.side_effect = [
             RuntimeError("attempt 1 fail"),

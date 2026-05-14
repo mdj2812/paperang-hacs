@@ -31,23 +31,57 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up number platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities([
-        PaperangNumber(coordinator, "font_size", "Font Size",
-                       num_range=NumberRange(icon="mdi:format-size",
-                                             minimum=12, maximum=96, default=24, step=1)),
-        PaperangNumber(coordinator, "heat_density", "Heat Density",
-                       num_range=NumberRange(icon="mdi:thermometer",
-                                             minimum=0, maximum=100, default=75, step=5,
-                                             unit=PERCENTAGE)),
-        PaperangNumber(coordinator, "qr_size", "QR Size",
-                       num_range=NumberRange(icon="mdi:qrcode",
-                                             minimum=100, maximum=576, default=500, step=10,
-                                             unit="px")),
-        PaperangNumber(coordinator, "feed_lines", "Feed Lines",
-                       num_range=NumberRange(icon="mdi:format-line-spacing",
-                                             minimum=10, maximum=500, default=50, step=10,
-                                             unit="lines")),
-    ])
+    async_add_entities(
+        [
+            PaperangNumber(
+                coordinator,
+                "font_size",
+                "Font Size",
+                num_range=NumberRange(
+                    icon="mdi:format-size", minimum=12, maximum=96, default=24, step=1
+                ),
+            ),
+            PaperangNumber(
+                coordinator,
+                "heat_density",
+                "Heat Density",
+                num_range=NumberRange(
+                    icon="mdi:thermometer",
+                    minimum=0,
+                    maximum=100,
+                    default=75,
+                    step=5,
+                    unit=PERCENTAGE,
+                ),
+            ),
+            PaperangNumber(
+                coordinator,
+                "qr_size",
+                "QR Size",
+                num_range=NumberRange(
+                    icon="mdi:qrcode",
+                    minimum=100,
+                    maximum=576,
+                    default=500,
+                    step=10,
+                    unit="px",
+                ),
+            ),
+            PaperangNumber(
+                coordinator,
+                "feed_lines",
+                "Feed Lines",
+                num_range=NumberRange(
+                    icon="mdi:format-line-spacing",
+                    minimum=10,
+                    maximum=500,
+                    default=50,
+                    step=10,
+                    unit="lines",
+                ),
+            ),
+        ]
+    )
 
 
 class PaperangNumber(PaperangEntity, NumberEntity):

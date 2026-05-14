@@ -27,6 +27,9 @@ jobs:
       - name: Run ruff
         run: ruff check custom_components/paperang/
 
+      - name: Check formatting
+        run: ruff format --check custom_components/paperang/
+
   test:
     name: Test
     runs-on: ubuntu-latest
