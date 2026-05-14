@@ -35,7 +35,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class PaperangNumber(PaperangEntity, NumberEntity):
     """Configurable numeric control for print parameters."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         coordinator,
         key: str,
