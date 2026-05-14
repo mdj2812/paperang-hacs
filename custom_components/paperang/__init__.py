@@ -74,6 +74,9 @@ SCAN_INTERVAL = timedelta(seconds=60)
 
 _transport_config: dict[str, object] = {}
 
+# Cached BLEDevice resolved from HA's BLE manager (set by _run_in_executor)
+_ble_device: object | None = None
+
 
 def _get_printer():
     """Create a PaperangP2 with the configured transport."""
@@ -81,20 +84,14 @@ def _get_printer():
     if transport_type == TRANSPORT_BLE and BleTransport is not None:
         ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
         ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
-        printer = PaperangP2(transport=ble)
-        _patch_ble_connect(ble)
-        return printer
+        if _ble_device is not None:
+            _patch_ble_connect(ble, _ble_device)
+        return PaperangP2(transport=ble)
     return PaperangP2()
 
 
-def _patch_ble_connect(transport):
-    """Patch BleTransport.connect to use HA's bleak_retry_connector.
-
-    In HA, direct BleakClient connections bypass the BLE manager
-    and may conflict with HA's own scanning.  Using establish_connection
-    from bleak-retry-connector (a HA dependency) ensures the connection
-    goes through HA's managed BLE stack.
-    """
+def _patch_ble_connect(transport, ble_device):
+    """Patch BleTransport.connect to use HA-managed BLE connection."""
     try:
         from bleak import BleakClient
         from bleak_retry_connector import establish_connection
@@ -106,14 +103,8 @@ def _patch_ble_connect(transport):
 
         loop = _asyncio.get_event_loop()
         client = loop.run_until_complete(
-            establish_connection(
-                BleakClient,
-                transport.address or transport.name,
-                transport.name,
-                max_attempts=3,
-            )
+            establish_connection(BleakClient, ble_device, transport.name, max_attempts=3)
         )
-        # Inject the HA-managed client into the transport
         transport._client = client
         return True
 
@@ -178,22 +169,37 @@ def _run_in_executor(hass, fn, *args):
     """Run a blocking printer function.
 
     USB: defer to executor thread (HA manages the thread pool).
-    BLE: same, but also creates a thread-local event loop first
-         (BleTransport requires an event loop, but cannot share HA's).
+    BLE: resolve BLEDevice from HA first, then run in worker thread
+         with its own event loop.
     """
     if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
+        return _run_ble(hass, fn, *args)
+    return hass.async_add_executor_job(fn, *args)
+
+
+async def _run_ble(hass, fn, *args):
+    """Resolve BLEDevice from HA, then run fn in a worker thread."""
+    from homeassistant.components.bluetooth import async_ble_device_from_address
+
+    global _ble_device
+    ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
+    if not ble_addr:
+        raise RuntimeError("BLE address not configured")
+    _ble_device = await async_ble_device_from_address(hass, ble_addr, connectable=True)
+    if _ble_device is None:
+        raise RuntimeError(f"BLE device {ble_addr} not found by HA Bluetooth")
+
+    def _run_with_loop():
         import asyncio as _asyncio
 
-        def _run_with_loop():
-            loop = _asyncio.new_event_loop()
-            _asyncio.set_event_loop(loop)
-            try:
-                return fn(*args)
-            finally:
-                loop.close()
+        loop = _asyncio.new_event_loop()
+        _asyncio.set_event_loop(loop)
+        try:
+            return fn(*args)
+        finally:
+            loop.close()
 
-        return hass.async_add_executor_job(_run_with_loop)
-    return hass.async_add_executor_job(fn, *args)
+    return await hass.async_add_executor_job(_run_with_loop)
 
 
 def _do_read_printer_state():
