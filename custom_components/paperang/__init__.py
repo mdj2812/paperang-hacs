@@ -74,9 +74,6 @@ SCAN_INTERVAL = timedelta(seconds=60)
 
 _transport_config: dict[str, object] = {}
 
-# Cached BLEDevice resolved from HA's BLE manager (set by _run_in_executor)
-_ble_device: object | None = None
-
 
 def _get_printer():
     """Create a PaperangP2 with the configured transport."""
@@ -84,34 +81,8 @@ def _get_printer():
     if transport_type == TRANSPORT_BLE and BleTransport is not None:
         ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
         ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
-        if _ble_device is not None:
-            _patch_ble_connect(ble, _ble_device)
         return PaperangP2(transport=ble)
     return PaperangP2()
-
-
-def _patch_ble_connect(transport, ble_device):
-    """Patch BleTransport.connect to use HA-managed BLE connection."""
-    try:
-        from bleak import BleakClient
-        from bleak_retry_connector import establish_connection
-    except ImportError:
-        return
-
-    def _ha_connect():
-        import asyncio as _asyncio
-        import time
-
-        # BlueZ may be busy with a scan cycle — wait briefly for it to pause
-        time.sleep(1.5)
-        loop = _asyncio.get_event_loop()
-        client = loop.run_until_complete(
-            establish_connection(BleakClient, ble_device, transport.name, max_attempts=5)
-        )
-        transport._client = client
-        return True
-
-    transport.connect = _ha_connect
 
 
 # ── Coordinator update logic ───────────────────────────────────
@@ -166,43 +137,6 @@ async def _read_printer_state(hass: HomeAssistant):
     if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
         return {"available": True}
     return await hass.async_add_executor_job(_do_read_printer_state)
-
-
-def _run_in_executor(hass, fn, *args):
-    """Run a blocking printer function.
-
-    USB: defer to executor thread (HA manages the thread pool).
-    BLE: resolve BLEDevice from HA first, then run in worker thread
-         with its own event loop.
-    """
-    if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
-        return _run_ble(hass, fn, *args)
-    return hass.async_add_executor_job(fn, *args)
-
-
-async def _run_ble(hass, fn, *args):
-    """Resolve BLEDevice from HA, then run fn in a worker thread."""
-    from homeassistant.components.bluetooth import async_ble_device_from_address
-
-    global _ble_device
-    ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
-    if not ble_addr:
-        raise RuntimeError("BLE address not configured")
-    _ble_device = async_ble_device_from_address(hass, ble_addr, connectable=True)
-    if _ble_device is None:
-        raise RuntimeError(f"BLE device {ble_addr} not found by HA Bluetooth")
-
-    def _run_with_loop():
-        import asyncio as _asyncio
-
-        loop = _asyncio.new_event_loop()
-        _asyncio.set_event_loop(loop)
-        try:
-            return fn(*args)
-        finally:
-            loop.close()
-
-    return await hass.async_add_executor_job(_run_with_loop)
 
 
 def _do_read_printer_state():
@@ -356,7 +290,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         text = call.data.get(ATTR_TEXT, "")
         font_size = call.data.get(ATTR_FONT_SIZE, 24)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await _run_in_executor(hass, _do_print_text, text, font_size, heat_density)
+        await hass.async_add_executor_job(_do_print_text, text, font_size, heat_density)
 
     async def handle_print_image(call: ServiceCall) -> None:
         """Handle print image service call."""
@@ -364,7 +298,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        profiles = await _run_in_executor(hass, load_profiles)
+        profiles = await hass.async_add_executor_job(load_profiles)
         profile_settings = profiles.get(profile, {}) if profile else {}
 
         threshold = profile_settings.get("threshold", 128)
@@ -373,8 +307,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if "heat_density" in profile_settings:
             heat_density = profile_settings["heat_density"]
 
-        await _run_in_executor(
-            hass, _do_print_image, image_url, heat_density, threshold, brightness, contrast
+        await hass.async_add_executor_job(
+            _do_print_image, image_url, heat_density, threshold, brightness, contrast
         )
 
     async def handle_print_qr(call: ServiceCall) -> None:
@@ -382,28 +316,28 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         qr_content = call.data.get(ATTR_QR_CONTENT, "")
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await _run_in_executor(
-            hass, _do_print_qr, qr_content, qr_size, heat_density
+        await hass.async_add_executor_job(
+            _do_print_qr, qr_content, qr_size, heat_density
         )
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
         """Handle print pickup code service call."""
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
-        await _run_in_executor(hass, _do_print_pickup_code, pickup_code)
+        await hass.async_add_executor_job(_do_print_pickup_code, pickup_code)
 
     async def handle_get_status(_call: ServiceCall) -> None:
         """Handle get status service call."""
-        result = await _run_in_executor(hass, _do_get_status)
+        result = await hass.async_add_executor_job(_do_get_status)
         _LOGGER.info("Paperang P2 status: %s", result)
 
     async def handle_feed_paper(call: ServiceCall) -> None:
         """Handle feed paper service call."""
         lines = call.data.get(ATTR_LINES, 100)
-        await _run_in_executor(hass, _do_feed_paper, lines)
+        await hass.async_add_executor_job(_do_feed_paper, lines)
 
     async def handle_print_test_page(_call: ServiceCall) -> None:
         """Handle print test page service call."""
-        await _run_in_executor(hass, _do_print_test_page)
+        await hass.async_add_executor_job(_do_print_test_page)
 
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
