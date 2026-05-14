@@ -164,7 +164,7 @@ def _do_read_printer_state():
 
             data["available"] = True
             return data
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",
@@ -246,7 +246,7 @@ def _do_get_status():
                 "available": True,
             }
         )
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-exception-caught
         return {"battery": None, "status": None, "available": False, "error": str(err)}
 
 

@@ -10,7 +10,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 DEVICE_ID = "paperang_p2_printer"
-DEVICE_INFO = DeviceInfo(
+DEVICE_INFO = DeviceInfo(  # pylint: disable=invalid-name
     identifiers={("paperang", DEVICE_ID)},
     name="Paperang P2 Printer",
     manufacturer="Paperang",
