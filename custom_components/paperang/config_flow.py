@@ -17,7 +17,7 @@ from .const import (
 )
 
 
-class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: disable=attribute-defined-outside-init
+class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Paperang P2 Printer."""
 
     VERSION = 2
@@ -39,9 +39,9 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         address = discovery_info.address
         await self.async_set_unique_id(f"paperang_p2_ble_{address}")
         self._abort_if_unique_id_configured()
-        self._ble_address = address
-        self._ble_name = discovery_info.name
-        self._discovery_type = "bluetooth"
+        self._ble_address = address  # pylint: disable=attribute-defined-outside-init
+        self._ble_name = discovery_info.name  # pylint: disable=attribute-defined-outside-init
+        self._discovery_type = "bluetooth"  # pylint: disable=attribute-defined-outside-init
         return await self.async_step_bluetooth_confirm()
 
     async def async_step_bluetooth_confirm(
