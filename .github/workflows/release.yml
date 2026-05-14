@@ -1,23 +1,18 @@
 name: Release
-
 on:
   release:
     types: [published]
-
 permissions:
   contents: write
-
 jobs:
   release-zip:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: ZIP Component Dir
         run: |
           cd ${{ github.workspace }}/custom_components/paperang
           zip -r paperang.zip ./
-
       - name: Upload zip to release
         uses: svenstaro/upload-release-action@v2
         with:
@@ -26,3 +21,4 @@ jobs:
           asset_name: paperang.zip
           tag: ${{ github.ref }}
           overwrite: true
+
