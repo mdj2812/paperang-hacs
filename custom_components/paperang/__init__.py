@@ -81,8 +81,43 @@ def _get_printer():
     if transport_type == TRANSPORT_BLE and BleTransport is not None:
         ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
         ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
-        return PaperangP2(transport=ble)
+        printer = PaperangP2(transport=ble)
+        _patch_ble_connect(ble)
+        return printer
     return PaperangP2()
+
+
+def _patch_ble_connect(transport):
+    """Patch BleTransport.connect to use HA's bleak_retry_connector.
+
+    In HA, direct BleakClient connections bypass the BLE manager
+    and may conflict with HA's own scanning.  Using establish_connection
+    from bleak-retry-connector (a HA dependency) ensures the connection
+    goes through HA's managed BLE stack.
+    """
+    try:
+        from bleak import BleakClient
+        from bleak_retry_connector import establish_connection
+    except ImportError:
+        return
+
+    def _ha_connect():
+        import asyncio as _asyncio
+
+        loop = _asyncio.get_event_loop()
+        client = loop.run_until_complete(
+            establish_connection(
+                BleakClient,
+                transport.address or transport.name,
+                transport.name,
+                max_attempts=3,
+            )
+        )
+        # Inject the HA-managed client into the transport
+        transport._client = client
+        return True
+
+    transport.connect = _ha_connect
 
 
 # ── Coordinator update logic ───────────────────────────────────
