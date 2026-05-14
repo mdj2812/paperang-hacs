@@ -17,7 +17,7 @@ from .const import (
 )
 
 
-class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: disable=attribute-defined-outside-init
     """Handle a config flow for Paperang P2 Printer."""
 
     VERSION = 2
