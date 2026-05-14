@@ -142,34 +142,22 @@ async def _read_printer_state(hass: HomeAssistant):
 def _run_in_executor(hass, fn, *args):
     """Run a blocking printer function.
 
-    USB: defer to executor thread.
-    BLE: run in a dedicated background thread with its own event loop
+    USB: defer to executor thread (HA manages the thread pool).
+    BLE: same, but also creates a thread-local event loop first
          (BleTransport requires an event loop, but cannot share HA's).
     """
     if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
         import asyncio as _asyncio
-        from concurrent import futures
 
-        result = None
-        exception = None
-
-        def _run():
-            nonlocal result, exception
+        def _run_with_loop():
             loop = _asyncio.new_event_loop()
             _asyncio.set_event_loop(loop)
             try:
-                result = fn(*args)
-            except Exception as exc:
-                exception = exc
+                return fn(*args)
             finally:
                 loop.close()
 
-        with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_run)
-            future.result(timeout=120)
-        if exception is not None:
-            raise exception
-        return result
+        return hass.async_add_executor_job(_run_with_loop)
     return hass.async_add_executor_job(fn, *args)
 
 
