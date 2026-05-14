@@ -143,19 +143,33 @@ def _run_in_executor(hass, fn, *args):
     """Run a blocking printer function.
 
     USB: defer to executor thread.
-    BLE: run in a new event loop in the current thread
-         (BleTransport requires an event loop).
+    BLE: run in a dedicated background thread with its own event loop
+         (BleTransport requires an event loop, but cannot share HA's).
     """
     if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
         import asyncio as _asyncio
+        from concurrent import futures
 
-        loop = _asyncio.new_event_loop()
-        try:
+        result = None
+        exception = None
+
+        def _run():
+            nonlocal result, exception
+            loop = _asyncio.new_event_loop()
             _asyncio.set_event_loop(loop)
-            return fn(*args)
-        finally:
-            loop.close()
-            _asyncio.set_event_loop(None)
+            try:
+                result = fn(*args)
+            except Exception as exc:
+                exception = exc
+            finally:
+                loop.close()
+
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run)
+            future.result(timeout=120)
+        if exception is not None:
+            raise exception
+        return result
     return hass.async_add_executor_job(fn, *args)
 
 
