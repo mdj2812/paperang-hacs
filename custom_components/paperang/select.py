@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 """Paperang P2 Printer - Select platform.
 
 Provides dropdown selectors for print mode and image profile.

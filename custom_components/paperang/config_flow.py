@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 """Config flow for Paperang P2 Printer integration."""
 
 from __future__ import annotations
@@ -6,20 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import callback
 
-from .const import (
-    DOMAIN,
-    TRANSPORT_USB,
-    TRANSPORT_BLE,
-    CONF_TRANSPORT,
-    CONF_BLE_ADDRESS,
-)
+from .const import (CONF_BLE_ADDRESS, CONF_TRANSPORT, DOMAIN, TRANSPORT_BLE,
+                    TRANSPORT_USB)
 
 
-class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: disable=too-few-public-methods
+class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Paperang P2 Printer."""
 
     VERSION = 2
@@ -30,8 +23,9 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         """Get the options flow."""
         return PaperangOptionsFlow(config_entry)
 
-    async def async_step_usb(self, _discovery_info):
+    async def async_step_usb(self, discovery_info):
         """Handle USB discovery."""
+        print(discovery_info)
         await self.async_set_unique_id("paperang_p2_usb")
         self._abort_if_unique_id_configured()
         return await self.async_step_confirm()
@@ -99,7 +93,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # pylint: d
         )
 
 
-class PaperangOptionsFlow(config_entries.OptionsFlow):  # pylint: disable=too-few-public-methods
+class PaperangOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow."""
 
     def __init__(self, config_entry) -> None:

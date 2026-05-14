@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 """Paperang P2 Printer - Sensor platform.
 
 Provides battery, status, voltage, temperature, and other printer telemetry
@@ -10,11 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfElectricPotential,
-    UnitOfTemperature,
-)
+from homeassistant.const import (PERCENTAGE, UnitOfElectricPotential,
+                                 UnitOfTemperature)
 
 from .const import DOMAIN
 from .entity import PaperangEntity

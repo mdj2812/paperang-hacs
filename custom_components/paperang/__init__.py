@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 """Paperang P2 Printer integration for Home Assistant.
 
 Powered by paperang-p2-lib for core printer logic.
@@ -10,11 +9,20 @@ import time
 from datetime import timedelta
 from functools import partial
 
-
+import paperang as _lib  # pylint: disable=import-self
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+from .const import (ATTR_FONT_SIZE, ATTR_HEAT_DENSITY, ATTR_IMAGE_URL,
+                    ATTR_LINES, ATTR_PICKUP_CODE, ATTR_PROFILE,
+                    ATTR_QR_CONTENT, ATTR_QR_SIZE, ATTR_TEXT, CONF_BLE_ADDRESS,
+                    CONF_TRANSPORT, DOMAIN, SERVICE_FEED_PAPER,
+                    SERVICE_GET_STATUS, SERVICE_PRINT_IMAGE,
+                    SERVICE_PRINT_PICKUP_CODE, SERVICE_PRINT_QR,
+                    SERVICE_PRINT_TEST_PAGE, SERVICE_PRINT_TEXT, TRANSPORT_BLE,
+                    TRANSPORT_USB)
 
 # The pip-installed paperang-p2-lib shares the module name 'paperang'
 # with this HA component. HA puts custom_components/ first in sys.path,
@@ -23,7 +31,6 @@ _custom_paths = [p for p in sys.path if "custom_components" in p]
 for _p in _custom_paths:
     sys.path.remove(_p)
 
-import paperang as _lib  # pylint: disable=wrong-import-position,import-self
 
 for _p in _custom_paths:
     sys.path.insert(0, _p)
@@ -33,33 +40,10 @@ load_profiles = _lib.load_profiles  # pylint: disable=no-member
 crc32_paperang = _lib.crc32_paperang  # pylint: disable=no-member
 pack_packet = _lib.pack_packet  # pylint: disable=no-member
 try:
-    from paperang.transport import BleTransport  # pylint: disable=no-member
+    from paperang.transport import BleTransport
 except ImportError:
     BleTransport = None
 
-from .const import (  # pylint: disable=wrong-import-position
-    DOMAIN,
-    SERVICE_PRINT_TEXT,
-    SERVICE_PRINT_IMAGE,
-    SERVICE_PRINT_QR,
-    SERVICE_PRINT_PICKUP_CODE,
-    SERVICE_GET_STATUS,
-    SERVICE_FEED_PAPER,
-    SERVICE_PRINT_TEST_PAGE,
-    ATTR_TEXT,
-    ATTR_FONT_SIZE,
-    ATTR_HEAT_DENSITY,
-    ATTR_IMAGE_URL,
-    ATTR_PROFILE,
-    ATTR_QR_CONTENT,
-    ATTR_QR_SIZE,
-    ATTR_PICKUP_CODE,
-    ATTR_LINES,
-    CONF_TRANSPORT,
-    CONF_BLE_ADDRESS,
-    TRANSPORT_USB,
-    TRANSPORT_BLE,
-)
 
 PLATFORMS = [
     Platform.SENSOR,
@@ -91,7 +75,6 @@ def _get_printer():
 _static_data: dict[str, object] = {}
 _dynamic_data: dict[str, object] = {}
 
-# pylint: disable=duplicate-code
 _RETRIES = 3
 
 _STATIC_KEYS = [

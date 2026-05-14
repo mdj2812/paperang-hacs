@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 """Paperang P2 Printer - Text platform.
 
 Provides a text input entity for print content.
