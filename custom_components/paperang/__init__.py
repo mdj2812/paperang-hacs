@@ -139,6 +139,26 @@ async def _read_printer_state(hass: HomeAssistant):
     return await hass.async_add_executor_job(_do_read_printer_state)
 
 
+def _run_in_executor(hass, fn, *args):
+    """Run a blocking printer function.
+
+    USB: defer to executor thread.
+    BLE: run in a new event loop in the current thread
+         (BleTransport requires an event loop).
+    """
+    if _transport_config.get(CONF_TRANSPORT) == TRANSPORT_BLE:
+        import asyncio as _asyncio
+
+        loop = _asyncio.new_event_loop()
+        try:
+            _asyncio.set_event_loop(loop)
+            return fn(*args)
+        finally:
+            loop.close()
+            _asyncio.set_event_loop(None)
+    return hass.async_add_executor_job(fn, *args)
+
+
 def _do_read_printer_state():
     """Blocking: connect to printer and read telemetry.
 
@@ -290,7 +310,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         text = call.data.get(ATTR_TEXT, "")
         font_size = call.data.get(ATTR_FONT_SIZE, 24)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await hass.async_add_executor_job(_do_print_text, text, font_size, heat_density)
+        await _run_in_executor(hass, _do_print_text, text, font_size, heat_density)
 
     async def handle_print_image(call: ServiceCall) -> None:
         """Handle print image service call."""
@@ -298,7 +318,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
 
-        profiles = await hass.async_add_executor_job(load_profiles)
+        profiles = await _run_in_executor(hass, load_profiles)
         profile_settings = profiles.get(profile, {}) if profile else {}
 
         threshold = profile_settings.get("threshold", 128)
@@ -307,8 +327,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if "heat_density" in profile_settings:
             heat_density = profile_settings["heat_density"]
 
-        await hass.async_add_executor_job(
-            _do_print_image, image_url, heat_density, threshold, brightness, contrast
+        await _run_in_executor(
+            hass, _do_print_image, image_url, heat_density, threshold, brightness, contrast
         )
 
     async def handle_print_qr(call: ServiceCall) -> None:
@@ -316,28 +336,28 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         qr_content = call.data.get(ATTR_QR_CONTENT, "")
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await hass.async_add_executor_job(
-            _do_print_qr, qr_content, qr_size, heat_density
+        await _run_in_executor(
+            hass, _do_print_qr, qr_content, qr_size, heat_density
         )
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
         """Handle print pickup code service call."""
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
-        await hass.async_add_executor_job(_do_print_pickup_code, pickup_code)
+        await _run_in_executor(hass, _do_print_pickup_code, pickup_code)
 
     async def handle_get_status(_call: ServiceCall) -> None:
         """Handle get status service call."""
-        result = await hass.async_add_executor_job(_do_get_status)
+        result = await _run_in_executor(hass, _do_get_status)
         _LOGGER.info("Paperang P2 status: %s", result)
 
     async def handle_feed_paper(call: ServiceCall) -> None:
         """Handle feed paper service call."""
         lines = call.data.get(ATTR_LINES, 100)
-        await hass.async_add_executor_job(_do_feed_paper, lines)
+        await _run_in_executor(hass, _do_feed_paper, lines)
 
     async def handle_print_test_page(_call: ServiceCall) -> None:
         """Handle print test page service call."""
-        await hass.async_add_executor_job(_do_print_test_page)
+        await _run_in_executor(hass, _do_print_test_page)
 
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
