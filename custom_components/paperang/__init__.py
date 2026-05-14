@@ -100,10 +100,13 @@ def _patch_ble_connect(transport, ble_device):
 
     def _ha_connect():
         import asyncio as _asyncio
+        import time
 
+        # BlueZ may be busy with a scan cycle — wait briefly for it to pause
+        time.sleep(1.5)
         loop = _asyncio.get_event_loop()
         client = loop.run_until_complete(
-            establish_connection(BleakClient, ble_device, transport.name, max_attempts=3)
+            establish_connection(BleakClient, ble_device, transport.name, max_attempts=5)
         )
         transport._client = client
         return True
