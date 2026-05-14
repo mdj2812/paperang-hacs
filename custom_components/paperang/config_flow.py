@@ -30,10 +30,36 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_usb(self, discovery_info):
         """Handle USB discovery."""
-        print(discovery_info)
         await self.async_set_unique_id("paperang_p2_usb")
         self._abort_if_unique_id_configured()
         return await self.async_step_confirm()
+
+    async def async_step_bluetooth(self, discovery_info):
+        """Handle Bluetooth discovery."""
+        address = discovery_info.address
+        await self.async_set_unique_id(f"paperang_p2_ble_{address}")
+        self._abort_if_unique_id_configured()
+        self._ble_address = address
+        self._ble_name = discovery_info.name
+        self._discovery_type = "bluetooth"
+        return await self.async_step_bluetooth_confirm()
+
+    async def async_step_bluetooth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ):
+        """Confirm Bluetooth discovery."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title=f"Paperang P2 ({self._ble_name or 'BLE'})",
+                data={
+                    CONF_TRANSPORT: TRANSPORT_BLE,
+                    CONF_BLE_ADDRESS: self._ble_address,
+                },
+            )
+        return self.async_show_form(
+            step_id="bluetooth_confirm",
+            description_placeholders={"name": self._ble_name or "Paperang P2"},
+        )
 
     async def async_step_confirm(self, user_input: dict[str, Any] | None = None):
         """Confirm USB discovery."""

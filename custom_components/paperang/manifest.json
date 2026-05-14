@@ -17,5 +17,11 @@
       "description": "*paperang*"
     }
   ],
+  "bluetooth": [
+    {
+      "service_uuid": "00001101-0000-1000-8000-00805f9b34fb",
+      "connectable": true
+    }
+  ],
   "version": "1.4.0rc1"
 }
