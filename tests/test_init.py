@@ -311,7 +311,7 @@ class TestReadPrinterState:
             result = mod._do_read_printer_state()
             assert result == {"available": False}
             assert mock_printer.connect.call_count == 3
-            mock_printer.disconnect.call_count == 3
+            assert mock_printer.disconnect.call_count == 3
 
     def test_read_printer_state_single_retry(self):
         """First attempt fails, second succeeds."""
