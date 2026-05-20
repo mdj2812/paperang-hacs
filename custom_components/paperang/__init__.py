@@ -69,7 +69,7 @@ SCAN_INTERVAL = timedelta(seconds=60)
 
 # ── UsbTransport with USB path targeting ────────────────────────
 
-class UsbTransportWithPath(_lib.UsbTransport):
+class UsbTransportWithPath(_lib.transport.UsbTransport):
     """UsbTransport that connects to a specific device by bus/port.
 
     The default *UsbTransport* always picks the first matching VID/PID
