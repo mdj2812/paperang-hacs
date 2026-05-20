@@ -578,7 +578,7 @@ async def async_get_config_entry_diagnostics(
     serial, paper type) are read once and cached; they belong in
     diagnostics rather than as live sensors.
     """
-    coordinator = hass.data[DOMAIN].get(entry.entry_id)
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     if not coordinator or not coordinator.data:
         return {}
     data = coordinator.data
