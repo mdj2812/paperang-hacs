@@ -35,8 +35,12 @@ class PaperangPrintModeSelect(PaperangEntity, SelectEntity):
     def __init__(self, coordinator, entry_id, device_info) -> None:
         """Initialize."""
         super().__init__(
-            coordinator, entry_id, "Print Mode", "print_mode",
-            "mdi:file-document-multiple-outline", device_info=device_info,
+            coordinator,
+            entry_id,
+            "Print Mode",
+            "print_mode",
+            "mdi:file-document-multiple-outline",
+            device_info=device_info,
         )
         self._attr_current_option = "text"
 
@@ -54,8 +58,12 @@ class PaperangImageProfileSelect(PaperangEntity, SelectEntity):
     def __init__(self, coordinator, entry_id, device_info) -> None:
         """Initialize."""
         super().__init__(
-            coordinator, entry_id, "Image Profile", "image_profile",
-            "mdi:image-edit-outline", device_info=device_info,
+            coordinator,
+            entry_id,
+            "Image Profile",
+            "image_profile",
+            "mdi:image-edit-outline",
+            device_info=device_info,
         )
         self._attr_current_option = "document"
 

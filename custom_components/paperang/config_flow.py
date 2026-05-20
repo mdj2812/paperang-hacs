@@ -50,12 +50,14 @@ def _scan_usb_devices() -> list[dict[str, Any]]:
     for dev in devices:
         port = list(dev.port_numbers) if dev.port_numbers else []
         usb_path = "-".join(str(p) for p in [dev.bus] + port)
-        result.append({
-            "usb_path": usb_path,
-            "bus": dev.bus,
-            "port": port,
-            "address": dev.address,
-        })
+        result.append(
+            {
+                "usb_path": usb_path,
+                "bus": dev.bus,
+                "port": port,
+                "address": dev.address,
+            }
+        )
     return result
 
 
@@ -71,9 +73,7 @@ def _verify_printer(bus: int, port: list[int]) -> bool:
 
     from . import UsbTransportWithPath  # pylint: disable=import-outside-toplevel
 
-    printer = paperang.PaperangP2(
-        transport=UsbTransportWithPath(bus=bus, port=port)
-    )
+    printer = paperang.PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
     try:
         printer.connect()
         battery = printer.get_battery()
@@ -167,9 +167,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle USB discovery — scan for Paperang devices."""
         # pylint: disable=unused-argument
         self._transport = TRANSPORT_USB
-        self._usb_discovered = await self.hass.async_add_executor_job(
-            _scan_usb_devices
-        )
+        self._usb_discovered = await self.hass.async_add_executor_job(_scan_usb_devices)
 
         if not self._usb_discovered:
             return self.async_abort(reason="no_usb_device_found")
@@ -180,9 +178,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_select_device()
 
-    async def async_step_select_device(
-        self, user_input: dict[str, Any] | None = None
-    ):
+    async def async_step_select_device(self, user_input: dict[str, Any] | None = None):
         """Let the user pick which USB device to use."""
         errors: dict[str, str] = {}
 
@@ -339,9 +335,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _handle_usb_user_selection(self):
         """Handle USB path from async_step_user."""
-        self._usb_discovered = await self.hass.async_add_executor_job(
-            _scan_usb_devices
-        )
+        self._usb_discovered = await self.hass.async_add_executor_job(_scan_usb_devices)
         if not self._usb_discovered:
             return self.async_show_form(
                 step_id="user",
@@ -367,9 +361,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_ble_verify()
         return await self.async_step_select_ble_device()
 
-    async def async_step_import(
-        self, user_input: dict[str, Any] | None = None
-    ):
+    async def async_step_import(self, user_input: dict[str, Any] | None = None):
         """Handle import from configuration.yaml."""
         return await self.async_step_user(user_input)
 
@@ -380,9 +372,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if transport == TRANSPORT_USB:
                 return await self._handle_usb_user_selection()
             return await self._handle_ble_user_selection()
-        return self.async_show_form(
-            step_id="user", data_schema=self._user_schema()
-        )
+        return self.async_show_form(step_id="user", data_schema=self._user_schema())
 
 
 # ── Options Flow ─────────────────────────────────────────────────

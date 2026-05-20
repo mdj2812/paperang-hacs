@@ -31,8 +31,12 @@ class PaperangPrintContent(PaperangEntity, TextEntity):
     def __init__(self, coordinator, entry_id, device_info) -> None:
         """Initialize."""
         super().__init__(
-            coordinator, entry_id, "Print Content", "print_content",
-            "mdi:form-textbox", device_info=device_info,
+            coordinator,
+            entry_id,
+            "Print Content",
+            "print_content",
+            "mdi:form-textbox",
+            device_info=device_info,
         )
         self._attr_native_value = ""
 

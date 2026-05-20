@@ -350,7 +350,9 @@ def _do_print_text(entry_id, text, font_size, heat_density):
     )
 
 
-def _do_print_image(entry_id, *, image_url, heat_density, threshold, brightness, contrast):  # pylint: disable=too-many-arguments
+def _do_print_image(
+    entry_id, *, image_url, heat_density, threshold, brightness, contrast
+):  # pylint: disable=too-many-arguments
     """Blocking: print image."""
     _with_printer(
         entry_id,
@@ -446,7 +448,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             heat_density = profile_settings["heat_density"]
 
         await hass.async_add_executor_job(
-            _do_print_image, entry_id,
+            _do_print_image,
+            entry_id,
             image_url=image_url,
             heat_density=heat_density,
             threshold=threshold,

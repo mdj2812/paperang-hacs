@@ -34,34 +34,62 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(
         [
             PaperangNumber(
-                coordinator, entry.entry_id, device_info,
-                "font_size", "Font Size",
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "font_size",
+                "Font Size",
                 num_range=NumberRange(
-                    icon="mdi:format-size", minimum=12, maximum=96, default=24, step=1,
+                    icon="mdi:format-size",
+                    minimum=12,
+                    maximum=96,
+                    default=24,
+                    step=1,
                 ),
             ),
             PaperangNumber(
-                coordinator, entry.entry_id, device_info,
-                "heat_density", "Heat Density",
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "heat_density",
+                "Heat Density",
                 num_range=NumberRange(
-                    icon="mdi:thermometer", minimum=0, maximum=100, default=75,
-                    step=5, unit=PERCENTAGE,
+                    icon="mdi:thermometer",
+                    minimum=0,
+                    maximum=100,
+                    default=75,
+                    step=5,
+                    unit=PERCENTAGE,
                 ),
             ),
             PaperangNumber(
-                coordinator, entry.entry_id, device_info,
-                "qr_size", "QR Size",
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "qr_size",
+                "QR Size",
                 num_range=NumberRange(
-                    icon="mdi:qrcode", minimum=100, maximum=576, default=500,
-                    step=10, unit="px",
+                    icon="mdi:qrcode",
+                    minimum=100,
+                    maximum=576,
+                    default=500,
+                    step=10,
+                    unit="px",
                 ),
             ),
             PaperangNumber(
-                coordinator, entry.entry_id, device_info,
-                "feed_lines", "Feed Lines",
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "feed_lines",
+                "Feed Lines",
                 num_range=NumberRange(
-                    icon="mdi:format-line-spacing", minimum=10, maximum=500,
-                    default=50, step=10, unit="lines",
+                    icon="mdi:format-line-spacing",
+                    minimum=10,
+                    maximum=500,
+                    default=50,
+                    step=10,
+                    unit="lines",
                 ),
             ),
         ]
@@ -83,7 +111,11 @@ class PaperangNumber(PaperangEntity, NumberEntity):
     ) -> None:
         """Initialize."""
         super().__init__(
-            coordinator, entry_id, name, f"num_{key}", num_range.icon,
+            coordinator,
+            entry_id,
+            name,
+            f"num_{key}",
+            num_range.icon,
             device_info=device_info,
         )
         self._key = key

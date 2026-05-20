@@ -46,56 +46,116 @@ async def async_setup_entry(hass, entry, async_add_entities):
         [
             # ── Live sensors ─────────────────────────────────────
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "battery", "Battery",
-                config=SensorConfig(icon="mdi:battery", device_class="battery",
-                                    unit=PERCENTAGE, state_class="measurement"),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "battery",
+                "Battery",
+                config=SensorConfig(
+                    icon="mdi:battery",
+                    device_class="battery",
+                    unit=PERCENTAGE,
+                    state_class="measurement",
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "status", "Status",
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "status",
+                "Status",
                 config=SensorConfig(icon="mdi:printer"),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "voltage", "Voltage",
-                config=SensorConfig(icon="mdi:flash", device_class="voltage",
-                                    unit=UnitOfElectricPotential.MILLIVOLT,
-                                    state_class="measurement"),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "voltage",
+                "Voltage",
+                config=SensorConfig(
+                    icon="mdi:flash",
+                    device_class="voltage",
+                    unit=UnitOfElectricPotential.MILLIVOLT,
+                    state_class="measurement",
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "temperature", "Temperature",
-                config=SensorConfig(icon="mdi:thermometer", device_class="temperature",
-                                    unit=UnitOfTemperature.CELSIUS,
-                                    state_class="measurement"),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "temperature",
+                "Temperature",
+                config=SensorConfig(
+                    icon="mdi:thermometer",
+                    device_class="temperature",
+                    unit=UnitOfTemperature.CELSIUS,
+                    state_class="measurement",
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "heat_density", "Heat Density",
-                config=SensorConfig(icon="mdi:thermometer-lines",
-                                    unit=PERCENTAGE, state_class="measurement"),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "heat_density",
+                "Heat Density",
+                config=SensorConfig(
+                    icon="mdi:thermometer-lines",
+                    unit=PERCENTAGE,
+                    state_class="measurement",
+                ),
             ),
             # ── Diagnostic sensors ───────────────────────────────
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "board", "Board Version",
-                config=SensorConfig(icon="mdi:chip",
-                                    entity_category=EntityCategory.DIAGNOSTIC),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "board",
+                "Board Version",
+                config=SensorConfig(
+                    icon="mdi:chip", entity_category=EntityCategory.DIAGNOSTIC
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "version", "Firmware Version",
-                config=SensorConfig(icon="mdi:information-outline",
-                                    entity_category=EntityCategory.DIAGNOSTIC),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "version",
+                "Firmware Version",
+                config=SensorConfig(
+                    icon="mdi:information-outline",
+                    entity_category=EntityCategory.DIAGNOSTIC,
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "hw_info", "Hardware Info",
-                config=SensorConfig(icon="mdi:memory",
-                                    entity_category=EntityCategory.DIAGNOSTIC),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "hw_info",
+                "Hardware Info",
+                config=SensorConfig(
+                    icon="mdi:memory", entity_category=EntityCategory.DIAGNOSTIC
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "model", "Model",
-                config=SensorConfig(icon="mdi:printer-3d-nozzle",
-                                    entity_category=EntityCategory.DIAGNOSTIC),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "model",
+                "Model",
+                config=SensorConfig(
+                    icon="mdi:printer-3d-nozzle",
+                    entity_category=EntityCategory.DIAGNOSTIC,
+                ),
             ),
             PaperangSensor(
-                coordinator, entry.entry_id, device_info, "serial", "Serial Number",
-                config=SensorConfig(icon="mdi:barcode",
-                                    entity_category=EntityCategory.DIAGNOSTIC),
+                coordinator,
+                entry.entry_id,
+                device_info,
+                "serial",
+                "Serial Number",
+                config=SensorConfig(
+                    icon="mdi:barcode", entity_category=EntityCategory.DIAGNOSTIC
+                ),
             ),
         ]
     )
@@ -116,7 +176,11 @@ class PaperangSensor(PaperangEntity, SensorEntity):
     ) -> None:
         """Initialize."""
         super().__init__(
-            coordinator, entry_id, name, key, config.icon,
+            coordinator,
+            entry_id,
+            name,
+            key,
+            config.icon,
             device_info=device_info,
         )
         self._key = key
