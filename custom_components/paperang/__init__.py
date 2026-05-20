@@ -65,7 +65,7 @@ from .const import (  # pylint: disable=wrong-import-position
 
 PLATFORMS = [Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.NUMBER, Platform.TEXT]
 
-SCAN_INTERVAL = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(seconds=10)
 
 # ── UsbTransport with USB path targeting ────────────────────────
 
@@ -239,7 +239,7 @@ def _do_read_printer_state(entry_id: str):
 
             # ── Dynamic: always read, fall back to last known ──────
             battery = printer.get_battery()
-            time.sleep(0.2)
+            time.sleep(0.05)
             status = printer.get_status()
             data["battery"] = (
                 battery if battery is not None
@@ -254,7 +254,7 @@ def _do_read_printer_state(entry_id: str):
 
             # ── Static: always read, update cache if non-None ─────
             for key, reader in _STATIC_READERS:
-                time.sleep(0.2)
+                time.sleep(0.05)
                 val = reader(printer)
                 _update_if_not_none(static_cache, key, val)
 
