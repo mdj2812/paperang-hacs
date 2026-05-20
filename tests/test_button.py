@@ -37,6 +37,13 @@ async def _setup_coordinator(hass: HomeAssistant, entry: MockConfigEntry) -> Non
 def _make_btn(cls, hass, entry):
     """Create a button entity with per-entry args."""
     eid = entry.entry_id
+    device_info = DeviceInfo(identifiers={("paperang", f"paperang_{eid}")})
+    btn = cls(hass.data[DOMAIN][eid], eid, device_info)
+    btn.hass = hass
+    return btn
+
+    """Create a button entity with per-entry args."""
+    eid = entry.entry_id
     device_id = f"paperang_{eid}"
     device_info = DeviceInfo(identifiers={("paperang", device_id)})
     btn = cls(hass.data[DOMAIN][eid], device_id, device_info, eid)

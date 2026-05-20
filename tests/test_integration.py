@@ -322,7 +322,7 @@ class TestServiceCalls:
         """_do_print_image calls print_image with correct args."""
         import custom_components.paperang as mod
         with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
-            mod._do_print_image("test", "http://img", 70, 128, 1.0, 1.0)
+            mod._do_print_image("test", image_url="http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0)
         mock_printer.print_image.assert_called_once_with(
             "http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0
         )

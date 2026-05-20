@@ -50,14 +50,12 @@ def _scan_usb_devices() -> list[dict[str, Any]]:
     for dev in devices:
         port = list(dev.port_numbers) if dev.port_numbers else []
         usb_path = "-".join(str(p) for p in [dev.bus] + port)
-        result.append(
-            {
-                "usb_path": usb_path,
-                "bus": dev.bus,
-                "port": port,
-                "address": dev.address,
-            }
-        )
+        result.append({
+            "usb_path": usb_path,
+            "bus": dev.bus,
+            "port": port,
+            "address": dev.address,
+        })
     return result
 
 
@@ -73,7 +71,9 @@ def _verify_printer(bus: int, port: list[int]) -> bool:
 
     from . import UsbTransportWithPath  # pylint: disable=import-outside-toplevel
 
-    printer = paperang.PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
+    printer = paperang.PaperangP2(
+        transport=UsbTransportWithPath(bus=bus, port=port)
+    )
     try:
         printer.connect()
         battery = printer.get_battery()
@@ -118,7 +118,9 @@ async def _async_verify_ble_printer(address: str) -> bool:
     """Connect to BLE printer and verify communication."""
     try:
         import paperang  # pylint: disable=import-outside-toplevel
-        from paperang.transport import BleTransport  # pylint: disable=import-outside-toplevel
+        from paperang.transport import (  # pylint: disable=import-outside-toplevel
+            BleTransport,
+        )
     except ImportError:
         return False
 
@@ -165,7 +167,9 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle USB discovery — scan for Paperang devices."""
         # pylint: disable=unused-argument
         self._transport = TRANSPORT_USB
-        self._usb_discovered = await self.hass.async_add_executor_job(_scan_usb_devices)
+        self._usb_discovered = await self.hass.async_add_executor_job(
+            _scan_usb_devices
+        )
 
         if not self._usb_discovered:
             return self.async_abort(reason="no_usb_device_found")
@@ -176,7 +180,9 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_select_device()
 
-    async def async_step_select_device(self, user_input: dict[str, Any] | None = None):
+    async def async_step_select_device(
+        self, user_input: dict[str, Any] | None = None
+    ):
         """Let the user pick which USB device to use."""
         errors: dict[str, str] = {}
 
@@ -201,11 +207,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="select_device",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("usb_device"): vol.In(options),
-                }
-            ),
+            data_schema=vol.Schema({vol.Required("usb_device"): vol.In(options)}),
             errors=errors,
         )
 
@@ -289,11 +291,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="select_ble_device",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("ble_device"): vol.In(options),
-                }
-            ),
+            data_schema=vol.Schema({vol.Required("ble_device"): vol.In(options)}),
             errors=errors,
         )
 
@@ -328,7 +326,50 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ── Manual / import ────────────────────────────────────────
 
-    async def async_step_import(self, user_input: dict[str, Any] | None = None):
+    @staticmethod
+    def _user_schema():
+        """Return the transport-selection schema (shared)."""
+        return vol.Schema(
+            {
+                vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In(
+                    {TRANSPORT_USB: "USB", TRANSPORT_BLE: "Bluetooth BLE"}
+                ),
+            }
+        )
+
+    async def _handle_usb_user_selection(self):
+        """Handle USB path from async_step_user."""
+        self._usb_discovered = await self.hass.async_add_executor_job(
+            _scan_usb_devices
+        )
+        if not self._usb_discovered:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=self._user_schema(),
+                errors={"base": "no_usb_device_found"},
+            )
+        if len(self._usb_discovered) == 1:
+            self._selected_usb = self._usb_discovered[0]
+            return await self.async_step_usb_verify()
+        return await self.async_step_select_device()
+
+    async def _handle_ble_user_selection(self):
+        """Handle BLE path from async_step_user."""
+        self._ble_discovered = await _async_scan_ble_devices()
+        if not self._ble_discovered:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=self._user_schema(),
+                errors={"base": "no_ble_device_found"},
+            )
+        if len(self._ble_discovered) == 1:
+            self._selected_ble = self._ble_discovered[0]
+            return await self.async_step_ble_verify()
+        return await self.async_step_select_ble_device()
+
+    async def async_step_import(
+        self, user_input: dict[str, Any] | None = None
+    ):
         """Handle import from configuration.yaml."""
         return await self.async_step_user(user_input)
 
@@ -336,67 +377,11 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the initial step (manual add)."""
         if user_input is not None:
             transport = user_input[CONF_TRANSPORT]
-
             if transport == TRANSPORT_USB:
-                self._usb_discovered = await self.hass.async_add_executor_job(
-                    _scan_usb_devices
-                )
-                if not self._usb_discovered:
-                    return self.async_show_form(
-                        step_id="user",
-                        data_schema=vol.Schema(
-                            {
-                                vol.Required(
-                                    CONF_TRANSPORT, default=TRANSPORT_USB
-                                ): vol.In(
-                                    {
-                                        TRANSPORT_USB: "USB",
-                                        TRANSPORT_BLE: "Bluetooth BLE",
-                                    }
-                                ),
-                            }
-                        ),
-                        errors={"base": "no_usb_device_found"},
-                    )
-                if len(self._usb_discovered) == 1:
-                    self._selected_usb = self._usb_discovered[0]
-                    return await self.async_step_usb_verify()
-                return await self.async_step_select_device()
-
-            # BLE
-            self._ble_discovered = await _async_scan_ble_devices()
-            if not self._ble_discovered:
-                return self.async_show_form(
-                    step_id="user",
-                    data_schema=vol.Schema(
-                        {
-                            vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In(
-                                {
-                                    TRANSPORT_USB: "USB",
-                                    TRANSPORT_BLE: "Bluetooth BLE",
-                                }
-                            ),
-                        }
-                    ),
-                    errors={"base": "no_ble_device_found"},
-                )
-            if len(self._ble_discovered) == 1:
-                self._selected_ble = self._ble_discovered[0]
-                return await self.async_step_ble_verify()
-            return await self.async_step_select_ble_device()
-
+                return await self._handle_usb_user_selection()
+            return await self._handle_ble_user_selection()
         return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In(
-                        {
-                            TRANSPORT_USB: "USB",
-                            TRANSPORT_BLE: "Bluetooth BLE",
-                        }
-                    ),
-                }
-            ),
+            step_id="user", data_schema=self._user_schema()
         )
 
 
@@ -423,12 +408,7 @@ class PaperangOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_TRANSPORT,
                         default=current.get(CONF_TRANSPORT, TRANSPORT_USB),
-                    ): vol.In(
-                        {
-                            TRANSPORT_USB: "USB",
-                            TRANSPORT_BLE: "Bluetooth BLE",
-                        }
-                    ),
+                    ): vol.In({TRANSPORT_USB: "USB", TRANSPORT_BLE: "Bluetooth BLE"}),
                     vol.Optional(
                         CONF_BLE_ADDRESS,
                         default=current.get(CONF_BLE_ADDRESS, ""),

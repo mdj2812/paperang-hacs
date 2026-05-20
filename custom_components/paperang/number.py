@@ -9,10 +9,9 @@ from dataclasses import dataclass
 
 from homeassistant.components.number import NumberEntity
 from homeassistant.const import PERCENTAGE
-from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import DOMAIN
-from .entity import PaperangEntity
+from .entity import PaperangEntity, make_device_info
 
 
 @dataclass(frozen=True)
@@ -30,70 +29,39 @@ class NumberRange:
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up number platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    device_id = f"paperang_{entry.entry_id}"
-    device_info = DeviceInfo(
-        identifiers={("paperang", device_id)},
-    )
+    device_info = make_device_info(entry)
 
     async_add_entities(
         [
             PaperangNumber(
-                coordinator,
-                device_id,
-                device_info,
-                "font_size",
-                "Font Size",
+                coordinator, entry.entry_id, device_info,
+                "font_size", "Font Size",
                 num_range=NumberRange(
-                    icon="mdi:format-size",
-                    minimum=12,
-                    maximum=96,
-                    default=24,
-                    step=1,
+                    icon="mdi:format-size", minimum=12, maximum=96, default=24, step=1,
                 ),
             ),
             PaperangNumber(
-                coordinator,
-                device_id,
-                device_info,
-                "heat_density",
-                "Heat Density",
+                coordinator, entry.entry_id, device_info,
+                "heat_density", "Heat Density",
                 num_range=NumberRange(
-                    icon="mdi:thermometer",
-                    minimum=0,
-                    maximum=100,
-                    default=75,
-                    step=5,
-                    unit=PERCENTAGE,
+                    icon="mdi:thermometer", minimum=0, maximum=100, default=75,
+                    step=5, unit=PERCENTAGE,
                 ),
             ),
             PaperangNumber(
-                coordinator,
-                device_id,
-                device_info,
-                "qr_size",
-                "QR Size",
+                coordinator, entry.entry_id, device_info,
+                "qr_size", "QR Size",
                 num_range=NumberRange(
-                    icon="mdi:qrcode",
-                    minimum=100,
-                    maximum=576,
-                    default=500,
-                    step=10,
-                    unit="px",
+                    icon="mdi:qrcode", minimum=100, maximum=576, default=500,
+                    step=10, unit="px",
                 ),
             ),
             PaperangNumber(
-                coordinator,
-                device_id,
-                device_info,
-                "feed_lines",
-                "Feed Lines",
+                coordinator, entry.entry_id, device_info,
+                "feed_lines", "Feed Lines",
                 num_range=NumberRange(
-                    icon="mdi:format-line-spacing",
-                    minimum=10,
-                    maximum=500,
-                    default=50,
-                    step=10,
-                    unit="lines",
+                    icon="mdi:format-line-spacing", minimum=10, maximum=500,
+                    default=50, step=10, unit="lines",
                 ),
             ),
         ]
@@ -103,11 +71,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class PaperangNumber(PaperangEntity, NumberEntity):
     """Configurable numeric control for print parameters."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         coordinator,
-        device_id: str,
-        device_info: DeviceInfo,
+        entry_id: str,
+        device_info,
         key: str,
         name: str,
         *,
@@ -115,12 +83,8 @@ class PaperangNumber(PaperangEntity, NumberEntity):
     ) -> None:
         """Initialize."""
         super().__init__(
-            coordinator,
-            name,
-            f"{device_id}_num_{key}",
-            num_range.icon,
+            coordinator, entry_id, name, f"num_{key}", num_range.icon,
             device_info=device_info,
-            entry_id=device_id,
         )
         self._key = key
         self._attr_native_min_value = num_range.minimum
