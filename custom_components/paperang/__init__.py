@@ -165,8 +165,21 @@ def _get_printer(entry_id: str | None = None):
 
 # ── Coordinator update logic ───────────────────────────────────
 
-_static_data: dict[str, object] = {}
-_dynamic_data: dict[str, object] = {}
+# Per-entry caches: keyed by entry_id so deleting a device resets its data.
+_static_caches: dict[str, dict[str, object]] = {}
+_dynamic_caches: dict[str, dict[str, object]] = {}
+
+def _get_static_cache(entry_id: str) -> dict[str, object]:
+    """Get or create the static cache for an entry."""
+    if entry_id not in _static_caches:
+        _static_caches[entry_id] = {}
+    return _static_caches[entry_id]
+
+def _get_dynamic_cache(entry_id: str) -> dict[str, object]:
+    """Get or create the dynamic cache for an entry."""
+    if entry_id not in _dynamic_caches:
+        _dynamic_caches[entry_id] = {}
+    return _dynamic_caches[entry_id]
 
 # pylint: disable=duplicate-code
 _RETRIES = 3
@@ -218,6 +231,8 @@ def _do_read_printer_state(entry_id: str):
     """
     for attempt in range(1, _RETRIES + 1):
         data: dict[str, object] = {"available": False}
+        static_cache = _get_static_cache(entry_id)
+        dynamic_cache = _get_dynamic_cache(entry_id)
         printer = _get_printer(entry_id)
         try:
             printer.connect()
@@ -228,24 +243,24 @@ def _do_read_printer_state(entry_id: str):
             status = printer.get_status()
             data["battery"] = (
                 battery if battery is not None
-                else _get_or_fallback(_dynamic_data, "battery")
+                else _get_or_fallback(dynamic_cache, "battery")
             )
             data["status"] = (
                 status if status is not None
-                else _get_or_fallback(_dynamic_data, "status")
+                else _get_or_fallback(dynamic_cache, "status")
             )
-            _update_if_not_none(_dynamic_data, "battery", battery)
-            _update_if_not_none(_dynamic_data, "status", status)
+            _update_if_not_none(dynamic_cache, "battery", battery)
+            _update_if_not_none(dynamic_cache, "status", status)
 
             # ── Static: always read, update cache if non-None ─────
             for key, reader in _STATIC_READERS:
                 time.sleep(0.2)
                 val = reader(printer)
-                _update_if_not_none(_static_data, key, val)
+                _update_if_not_none(static_cache, key, val)
 
             # Merge all cached values into data
             for key in _STATIC_KEYS:
-                data[key] = _get_or_fallback(_static_data, key)
+                data[key] = _get_or_fallback(static_cache, key)
 
             data["available"] = True
             return data
@@ -260,8 +275,8 @@ def _do_read_printer_state(entry_id: str):
                     "Printer not available after %d attempts: %s",
                     _RETRIES, err,
                 )
-                _static_data.clear()
-                _dynamic_data.clear()
+                _static_caches.pop(entry_id, None)
+                _dynamic_caches.pop(entry_id, None)
         finally:
             printer.disconnect()
 
@@ -493,6 +508,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 async def async_unload_entry(hass: HomeAssistant, entry):
     """Unload a config entry."""
     _transport_configs.pop(entry.entry_id, None)
+    _static_caches.pop(entry.entry_id, None)
+    _dynamic_caches.pop(entry.entry_id, None)
     coordinator = hass.data[DOMAIN].pop(entry.entry_id)
     await coordinator.async_shutdown()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
