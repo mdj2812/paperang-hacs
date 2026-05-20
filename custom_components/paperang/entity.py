@@ -1,6 +1,7 @@
 """Base entity mixin for Paperang P2 Printer entities.
 
 Provides common patterns used across all entity platforms:
+- entry_id (for multi-device service routing)
 - available property (reads from coordinator)
 - device info (per-entry for multi-device support)
 - entity naming convention
@@ -24,12 +25,14 @@ class PaperangEntity(CoordinatorEntity):
         unique_id: str,
         icon: str,
         *,
+        entry_id: str,
         device_info: DeviceInfo | None = None,
     ) -> None:
         """Initialize common attributes."""
         self._attr_name = name
         self._attr_unique_id = unique_id
         self._attr_icon = icon
+        self._entry_id = entry_id
         if device_info is not None:
             self._attr_device_info = device_info
         else:

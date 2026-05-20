@@ -70,7 +70,7 @@ PLATFORMS = [
     Platform.TEXT,
 ]
 
-SCAN_INTERVAL = timedelta(seconds=10)
+UPDATE_INTERVAL = timedelta(seconds=5)
 
 # pylint: disable=too-many-instance-attributes,attribute-defined-outside-init
 # pylint: disable=no-member,too-few-public-methods,import-outside-toplevel
@@ -545,7 +545,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         _LOGGER,
         name="paperang",
         update_method=partial(_read_printer_state, hass, entry.entry_id),
-        update_interval=SCAN_INTERVAL,
+        update_interval=UPDATE_INTERVAL,
     )
     await coordinator.async_config_entry_first_refresh()
     _LOGGER.info("Paperang coordinator data: %s", coordinator.data)

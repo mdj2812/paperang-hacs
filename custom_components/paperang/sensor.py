@@ -112,7 +112,7 @@ class PaperangSensor(PaperangEntity, SensorEntity):
         """Initialize."""
         super().__init__(
             coordinator, name, f"{device_id}_{key}", config.icon,
-            device_info=device_info,
+            device_info=device_info, entry_id=device_id,
         )
         self._key = key
         self._attr_device_class = config.device_class

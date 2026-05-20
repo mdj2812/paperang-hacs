@@ -40,9 +40,8 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         """Initialize."""
         super().__init__(
             coordinator, "Print", f"{device_id}_btn_print", "mdi:printer",
-            device_info=device_info,
+            device_info=device_info, entry_id=entry_id,
         )
-        self._entry_id = entry_id
 
     async def async_press(self) -> None:
         """Read entity states and dispatch the appropriate print service."""
@@ -120,9 +119,8 @@ class PaperangFeedButton(PaperangEntity, ButtonEntity):
         """Initialize."""
         super().__init__(
             coordinator, "Feed Paper", f"{device_id}_btn_feed_paper",
-            "mdi:arrow-down-bold", device_info=device_info,
+            "mdi:arrow-down-bold", device_info=device_info, entry_id=entry_id,
         )
-        self._entry_id = entry_id
 
     async def async_press(self) -> None:
         """Feed paper."""
@@ -145,9 +143,8 @@ class PaperangTestPrintButton(PaperangEntity, ButtonEntity):
         """Initialize."""
         super().__init__(
             coordinator, "Test Print", f"{device_id}_btn_test_print",
-            "mdi:printer-check", device_info=device_info,
+            "mdi:printer-check", device_info=device_info, entry_id=entry_id,
         )
-        self._entry_id = entry_id
 
     async def async_press(self) -> None:
         """Print test page."""

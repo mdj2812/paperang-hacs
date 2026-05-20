@@ -78,7 +78,7 @@ class PaperangNumber(PaperangEntity, NumberEntity):
         """Initialize."""
         super().__init__(
             coordinator, name, f"{device_id}_num_{key}", num_range.icon,
-            device_info=device_info,
+            device_info=device_info, entry_id=device_id,
         )
         self._key = key
         self._attr_native_min_value = num_range.minimum
