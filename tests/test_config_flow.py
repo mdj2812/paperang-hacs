@@ -10,6 +10,7 @@ from custom_components.paperang.config_flow import (
 )
 
 
+
 class TestConfigFlowSchema:
     def test_user_step_schema_valid_usb(self):
         """User step schema: transport selector only (USB/BLE)."""

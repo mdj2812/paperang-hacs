@@ -3,13 +3,15 @@
     "abort": {
       "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on.",
       "no_ble_device_found": "No Paperang P2 printer found via Bluetooth. Make sure the printer is powered on and in range.",
+      "ble_disabled": "Bluetooth support is temporarily disabled in this version.",
       "already_configured": "This Paperang printer is already configured. To add another printer, connect a different one via USB or BLE."
     },
     "error": {
       "communication_failed": "Failed to communicate with the selected device. Check the connection and try again.",
       "device_not_found": "Selected device not found. It may have been disconnected.",
       "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on.",
-      "no_ble_device_found": "No Paperang P2 printer found via Bluetooth. Make sure the printer is powered on and in range."
+      "no_ble_device_found": "No Paperang P2 printer found via Bluetooth. Make sure the printer is powered on and in range.",
+      "ble_disabled": "Bluetooth support is temporarily disabled in this version."
     },
     "step": {
       "user": {

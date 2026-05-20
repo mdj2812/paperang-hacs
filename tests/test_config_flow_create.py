@@ -91,26 +91,11 @@ class TestConfigFlowCreateEntry:
     async def test_user_step_ble_single_device_creates_entry(
         self, hass: HomeAssistant
     ) -> None:
-        """User step with BLE and single device creates entry."""
+        """User step with BLE shows ble_disabled error."""
         flow = _make_flow(hass)
-
-        devices = [{"name": "Paperang_P2", "address": "AA:BB:CC:DD:EE:FF"}]
-
-        async def _verify_ok(address):
-            return True
-
-        with patch(
-            "custom_components.paperang.config_flow._async_scan_ble_devices",
-            return_value=devices,
-        ):
-            with patch(
-                "custom_components.paperang.config_flow._async_verify_ble_printer",
-                side_effect=_verify_ok,
-            ):
-                result = await flow.async_step_user({"transport": "ble"})
-
-        assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert result["data"]["ble_address"] == "AA:BB:CC:DD:EE:FF"
+        result = await flow.async_step_user({"transport": "ble"})
+        assert result["type"] == FlowResultType.FORM
+        assert result["errors"]["base"] == "ble_disabled"
 
     @pytest.mark.asyncio
     async def test_select_ble_device_form(self, hass: HomeAssistant) -> None:

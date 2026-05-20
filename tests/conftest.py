@@ -5,6 +5,7 @@ from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
+from homeassistant.config_entries import ConfigEntry
 
 # ── paperang-p2-lib stubs (needed since lib isn't installed with extras) ──
 # Must be set up at module level BEFORE any test files import custom_components.
@@ -39,3 +40,14 @@ def mock_setup_entry() -> Generator[MagicMock]:
         return_value=True,
     ) as mock_setup:
         yield mock_setup
+
+
+class MockConfigEntry(ConfigEntry):
+    """Minimal mock config entry for testing."""
+
+    def __init__(self, *, domain, data=None, unique_id=None, **kwargs):
+        super().__init__(data=data or {})  # type: ignore[call-arg]
+
+    def add_to_hass(self, hass):
+        """Add this entry to the hass instance."""
+        hass.config_entries._entries.append(self)

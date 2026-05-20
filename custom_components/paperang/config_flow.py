@@ -240,26 +240,12 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    # ── BLE discovery ─────────────────────────────────────────
+    # ── BLE discovery (disabled until stable) ─────────────────
 
     async def async_step_bluetooth(self, discovery_info):
-        """Handle Bluetooth discovery — scan for BLE devices."""
-        self._transport = TRANSPORT_BLE
-
-        # Also accept HA's built-in Bluetooth discovery
-        if hasattr(discovery_info, "address"):
-            address = discovery_info.address
-            name = getattr(discovery_info, "name", "Paperang P2")
-            self._ble_discovered = [{"name": name, "address": address}]
-        else:
-            self._ble_discovered = await _async_scan_ble_devices()
-
-        if not self._ble_discovered:
-            return self.async_abort(reason="no_ble_device_found")
-
-        if len(self._ble_discovered) == 1:
-            self._selected_ble = self._ble_discovered[0]
-            return await self.async_step_ble_verify()
+        """Bluetooth discovery — temporarily disabled."""
+        # pylint: disable=unused-argument
+        return self.async_abort(reason="ble_disabled")
 
         return await self.async_step_select_ble_device()
 
@@ -328,7 +314,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return vol.Schema(
             {
                 vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In(
-                    {TRANSPORT_USB: "USB", TRANSPORT_BLE: "Bluetooth BLE"}
+                    {TRANSPORT_USB: "USB"}
                 ),
             }
         )
@@ -348,18 +334,12 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_select_device()
 
     async def _handle_ble_user_selection(self):
-        """Handle BLE path from async_step_user."""
-        self._ble_discovered = await _async_scan_ble_devices()
-        if not self._ble_discovered:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=self._user_schema(),
-                errors={"base": "no_ble_device_found"},
-            )
-        if len(self._ble_discovered) == 1:
-            self._selected_ble = self._ble_discovered[0]
-            return await self.async_step_ble_verify()
-        return await self.async_step_select_ble_device()
+        """BLE path — temporarily disabled."""
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self._user_schema(),
+            errors={"base": "ble_disabled"},
+        )
 
     async def async_step_import(self, user_input: dict[str, Any] | None = None):
         """Handle import from configuration.yaml."""
