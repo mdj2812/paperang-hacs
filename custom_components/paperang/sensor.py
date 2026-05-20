@@ -97,7 +97,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entry.entry_id,
                 device_info,
                 "heat_density",
-                "Heat Density",
+                "Heat Density",  # pylint: disable=duplicate-code
                 config=SensorConfig(
                     icon="mdi:thermometer-lines",
                     unit=PERCENTAGE,
