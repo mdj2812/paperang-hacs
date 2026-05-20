@@ -56,12 +56,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class PaperangSensor(CoordinatorEntity, SensorEntity):  # pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
+class PaperangSensor(CoordinatorEntity, SensorEntity):
     """Generic Paperang sensor. Reads a key from coordinator data."""
 
     _attr_has_entity_name = True
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,

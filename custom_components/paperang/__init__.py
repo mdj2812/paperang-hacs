@@ -69,6 +69,9 @@ SCAN_INTERVAL = timedelta(seconds=60)
 
 # ── UsbTransport with USB path targeting ────────────────────────
 
+# pylint: disable=too-many-instance-attributes,attribute-defined-outside-init
+# pylint: disable=no-member,too-few-public-methods
+
 class UsbTransportWithPath(_lib.transport.UsbTransport):
     """UsbTransport that connects to a specific device by bus/port.
 
@@ -285,7 +288,7 @@ def _do_print_text(entry_id, text, font_size, heat_density):
     _with_printer(entry_id, lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density))
 
 
-def _do_print_image(entry_id, image_url, heat_density, threshold, brightness, contrast):
+def _do_print_image(entry_id, image_url, heat_density, threshold, brightness, contrast):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Blocking: print image."""
     _with_printer(
         entry_id,
@@ -335,6 +338,7 @@ def _do_get_status(entry_id):
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    # pylint: disable=too-many-statements
     """Set up the Paperang P2 Printer component."""
     # Register services
 

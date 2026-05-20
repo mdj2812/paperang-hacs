@@ -38,11 +38,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class PaperangNumber(CoordinatorEntity, NumberEntity):  # pylint: disable=too-many-instance-attributes,too-many-arguments
+class PaperangNumber(CoordinatorEntity, NumberEntity):  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
     """Configurable numeric control for print parameters."""
 
     _attr_has_entity_name = True
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(  # pylint: disable=too-many-arguments
         self,
         coordinator,

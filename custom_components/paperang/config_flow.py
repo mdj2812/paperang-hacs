@@ -162,7 +162,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_verify(
-        self, user_input: dict[str, Any] | None = None
+        self, user_input: dict[str, Any] | None = None  # pylint: disable=unused-argument
     ):
         """Verify communication with the selected device."""
         if self._selected_device is None:
