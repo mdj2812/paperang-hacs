@@ -1,13 +1,27 @@
 {
   "config": {
+    "abort": {
+      "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on."
+    },
+    "error": {
+      "communication_failed": "Failed to communicate with the selected device. Check the connection and try again.",
+      "device_not_found": "Selected device not found. It may have been disconnected."
+    },
     "step": {
       "user": {
         "title": "Add Paperang P2 Printer",
         "description": "Connect your Paperang P2 via USB to auto-detect, or add manually."
       },
-      "confirm": {
-        "title": "Paperang P2 Detected",
-        "description": "Paperang P2 printer found via USB. Do you want to set it up?"
+      "select_device": {
+        "title": "Select USB Device",
+        "description": "Multiple Paperang P2 printers detected. Choose which one to add.",
+        "data": {
+          "usb_device": "USB Device"
+        }
+      },
+      "verify": {
+        "title": "Verifying Device",
+        "description": "Establishing communication with the printer…"
       }
     }
   }

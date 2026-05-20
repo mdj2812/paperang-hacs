@@ -16,20 +16,19 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-DEVICE_ID = "paperang_p2_printer"
-DEVICE_INFO = DeviceInfo(
-    identifiers={("paperang", DEVICE_ID)},
-)
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up button platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    device_id = f"paperang_{entry.entry_id}"
+    device_info = DeviceInfo(
+        identifiers={("paperang", device_id)},
+    )
 
     async_add_entities([
-        PaperangPrintButton(coordinator),
-        PaperangFeedButton(coordinator),
-        PaperangTestPrintButton(coordinator),
+        PaperangPrintButton(coordinator, device_info, device_id, entry.entry_id),
+        PaperangFeedButton(coordinator, device_info, device_id, entry.entry_id),
+        PaperangTestPrintButton(coordinator, device_info, device_id, entry.entry_id),
     ])
 
 
@@ -38,12 +37,13 @@ class PaperangPrintButton(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, device_info, device_id, entry_id) -> None:
         """Initialize."""
         self._attr_name = "Print"
-        self._attr_unique_id = "paperang_p2_btn_print"
-        self._attr_device_info = DEVICE_INFO
+        self._attr_unique_id = f"{device_id}_btn_print"
+        self._attr_device_info = device_info
         self._attr_icon = "mdi:printer"
+        self._entry_id = entry_id
         super().__init__(coordinator)
 
     @property
@@ -54,7 +54,7 @@ class PaperangPrintButton(CoordinatorEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Read entity states and dispatch the appropriate print service."""
         hass = self.hass
-        prefix = "select.paperang_p2_printer_print_mode"
+        prefix = f"select.paperang_{self._entry_id}_print_mode"
 
         mode = "text"
         content = ""
@@ -65,44 +65,64 @@ class PaperangPrintButton(CoordinatorEntity, ButtonEntity):
 
         if (state := hass.states.get(prefix)) is not None:
             mode = state.state
-        if (state := hass.states.get("text.paperang_p2_printer_print_content")) is not None:
+        if (state := hass.states.get(
+            f"text.paperang_{self._entry_id}_print_content"
+        )) is not None:
             content = state.state or ""
-        if (state := hass.states.get("number.paperang_p2_printer_font_size")) is not None:
+        if (state := hass.states.get(
+            f"number.paperang_{self._entry_id}_font_size"
+        )) is not None:
             font_size = int(float(state.state))
-        if (state := hass.states.get("number.paperang_p2_printer_heat_density")) is not None:
+        if (state := hass.states.get(
+            f"number.paperang_{self._entry_id}_heat_density"
+        )) is not None:
             heat_density = int(float(state.state))
-        if (state := hass.states.get("number.paperang_p2_printer_qr_size")) is not None:
+        if (state := hass.states.get(
+            f"number.paperang_{self._entry_id}_qr_size"
+        )) is not None:
             qr_size = int(float(state.state))
-        if (state := hass.states.get("select.paperang_p2_printer_image_profile")) is not None:
+        if (state := hass.states.get(
+            f"select.paperang_{self._entry_id}_image_profile"
+        )) is not None:
             profile = state.state
 
         if not content.strip():
             _LOGGER.warning("Print content is empty")
             return
 
+        service_data = {"entry_id": self._entry_id}
+
         if mode == "text":
+            service_data.update({
+                "text": content,
+                "font_size": font_size,
+                "heat_density": heat_density,
+            })
             await hass.services.async_call(
-                DOMAIN, "print_text",
-                {"text": content, "font_size": font_size, "heat_density": heat_density},
-                blocking=False,
+                DOMAIN, "print_text", service_data, blocking=False,
             )
         elif mode == "image":
+            service_data.update({
+                "image_url": content,
+                "heat_density": heat_density,
+                "profile": profile,
+            })
             await hass.services.async_call(
-                DOMAIN, "print_image",
-                {"image_url": content, "heat_density": heat_density, "profile": profile},
-                blocking=False,
+                DOMAIN, "print_image", service_data, blocking=False,
             )
         elif mode == "qr":
+            service_data.update({
+                "qr_content": content,
+                "qr_size": qr_size,
+                "heat_density": heat_density,
+            })
             await hass.services.async_call(
-                DOMAIN, "print_qr",
-                {"qr_content": content, "qr_size": qr_size, "heat_density": heat_density},
-                blocking=False,
+                DOMAIN, "print_qr", service_data, blocking=False,
             )
         elif mode == "pickup_code":
+            service_data.update({"pickup_code": content})
             await hass.services.async_call(
-                DOMAIN, "print_pickup_code",
-                {"pickup_code": content},
-                blocking=False,
+                DOMAIN, "print_pickup_code", service_data, blocking=False,
             )
 
 
@@ -111,23 +131,26 @@ class PaperangFeedButton(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, device_info, device_id, entry_id) -> None:
         """Initialize."""
         self._attr_name = "Feed Paper"
-        self._attr_unique_id = "paperang_p2_btn_feed_paper"
-        self._attr_device_info = DEVICE_INFO
+        self._attr_unique_id = f"{device_id}_btn_feed_paper"
+        self._attr_device_info = device_info
         self._attr_icon = "mdi:arrow-down-bold"
+        self._entry_id = entry_id
         super().__init__(coordinator)
 
     async def async_press(self) -> None:
         """Feed paper."""
         lines = 50
         if (state := self.hass.states.get(
-            "number.paperang_p2_printer_feed_lines"
+            f"number.paperang_{self._entry_id}_feed_lines"
         )) is not None:
             lines = int(float(state.state))
         await self.hass.services.async_call(
-            DOMAIN, "feed_paper", {"lines": lines}, blocking=False,
+            DOMAIN, "feed_paper",
+            {"lines": lines, "entry_id": self._entry_id},
+            blocking=False,
         )
 
     @property
@@ -141,18 +164,21 @@ class PaperangTestPrintButton(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, device_info, device_id, entry_id) -> None:
         """Initialize."""
         self._attr_name = "Test Print"
-        self._attr_unique_id = "paperang_p2_btn_test_print"
-        self._attr_device_info = DEVICE_INFO
+        self._attr_unique_id = f"{device_id}_btn_test_print"
+        self._attr_device_info = device_info
         self._attr_icon = "mdi:printer-check"
+        self._entry_id = entry_id
         super().__init__(coordinator)
 
     async def async_press(self) -> None:
         """Print test page."""
         await self.hass.services.async_call(
-            DOMAIN, "print_test_page", {}, blocking=False,
+            DOMAIN, "print_test_page",
+            {"entry_id": self._entry_id},
+            blocking=False,
         )
 
     @property

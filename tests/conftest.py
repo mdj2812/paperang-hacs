@@ -57,6 +57,8 @@ _paperang.transport = MagicMock()
 _paperang.transport.Transport = object
 _paperang.transport.UsbTransport = MagicMock
 _paperang.transport.BleTransport = MagicMock
+# Make UsbTransport available at top level (used by __init__.py)
+_paperang.UsbTransport = _paperang.transport.UsbTransport
 
 _MODULES += [
     ("paperang", _paperang),

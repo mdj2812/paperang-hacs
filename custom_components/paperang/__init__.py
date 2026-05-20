@@ -57,6 +57,8 @@ from .const import (  # pylint: disable=wrong-import-position
     ATTR_LINES,
     CONF_TRANSPORT,
     CONF_BLE_ADDRESS,
+    CONF_USB_BUS,
+    CONF_USB_PORT,
     TRANSPORT_USB,
     TRANSPORT_BLE,
 )
@@ -65,17 +67,97 @@ PLATFORMS = [Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.NUMBER,
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
-# ── Transport config (stored at module level for blocking functions) ─────
+# ── UsbTransport with USB path targeting ────────────────────────
 
-_transport_config: dict[str, object] = {}
+class UsbTransportWithPath(_lib.UsbTransport):
+    """UsbTransport that connects to a specific device by bus/port.
 
-def _get_printer():
-    """Create a PaperangP2 with the configured transport."""
-    transport_type = _transport_config.get(CONF_TRANSPORT, "")
+    The default *UsbTransport* always picks the first matching VID/PID
+    device.  This subclass lets us pin a specific physical printer when
+    multiple are attached.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, bus, port, vid=0x4348, pid=0x5584):
+        super().__init__(vid, pid)
+        self._target_bus = bus
+        self._target_port = tuple(port) if port else ()
+
+    def connect(self):
+        """Find the targeted USB device, claim and configure it."""
+        import usb.core
+        import usb.util
+
+        # Find all matching devices, pick the one at the right bus/port
+        devices = usb.core.find(find_all=True,
+                                idVendor=self.vid, idProduct=self.pid)
+        self._dev = None
+        for d in devices:
+            if d.bus == self._target_bus and tuple(d.port_numbers) == self._target_port:
+                self._dev = d
+                break
+
+        if self._dev is None:
+            raise RuntimeError(
+                f"Paperang P2 not found at bus={self._target_bus} "
+                f"port={list(self._target_port)}"
+            )
+
+        if self._dev.is_kernel_driver_active(0):
+            self._dev.detach_kernel_driver(0)
+        self._dev.set_configuration()
+        cfg = self._dev.get_active_configuration()
+        intf = cfg[(0, 0)]
+        self._ep_out = usb.util.find_descriptor(
+            intf,
+            custom_match=lambda e:
+                usb.util.endpoint_direction(e.bEndpointAddress)
+                == usb.util.ENDPOINT_OUT,
+        )
+        self._ep_in = usb.util.find_descriptor(
+            intf,
+            custom_match=lambda e:
+                usb.util.endpoint_direction(e.bEndpointAddress)
+                == usb.util.ENDPOINT_IN,
+        )
+        return True
+
+
+# pylint: enable=too-many-instance-attributes
+
+# ── Per-entry transport config ───────────────────────────────────
+
+_transport_configs: dict[str, dict[str, object]] = {}
+
+
+def _get_printer(entry_id: str | None = None):
+    """Create a PaperangP2 with the configured transport.
+
+    When *entry_id* is given the matching config entry is used;
+    otherwise the first configured entry is returned.
+    """
+    if entry_id and entry_id in _transport_configs:
+        cfg = _transport_configs[entry_id]
+    elif _transport_configs:
+        _id, cfg = next(iter(_transport_configs.items()))
+        entry_id = _id
+    else:
+        # Fallback: no configs loaded yet
+        return PaperangP2()
+
+    transport_type = cfg.get(CONF_TRANSPORT, "")
     if transport_type == TRANSPORT_BLE and BleTransport is not None:
-        ble_addr = _transport_config.get(CONF_BLE_ADDRESS, "")
+        ble_addr = cfg.get(CONF_BLE_ADDRESS, "")
         ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
         return PaperangP2(transport=ble)
+
+    # USB — use targeted transport when bus/port are configured
+    bus = cfg.get(CONF_USB_BUS)
+    port = cfg.get(CONF_USB_PORT)
+    if bus is not None and port is not None:
+        return PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
+
     return PaperangP2()
 
 # ── Coordinator update logic ───────────────────────────────────
@@ -115,12 +197,12 @@ def _get_or_fallback(cache: dict[str, object], key: str) -> object:
     return cache.get(key)
 
 
-async def _read_printer_state(hass: HomeAssistant):
+async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     """Read all printer telemetry (runs blocking USB in executor)."""
-    return await hass.async_add_executor_job(_do_read_printer_state)
+    return await hass.async_add_executor_job(_do_read_printer_state, entry_id)
 
 
-def _do_read_printer_state():
+def _do_read_printer_state(entry_id: str):
     """Blocking: connect to printer and read telemetry.
 
     Dynamic values (battery, status): read every poll.  If None, keep
@@ -133,7 +215,7 @@ def _do_read_printer_state():
     """
     for attempt in range(1, _RETRIES + 1):
         data: dict[str, object] = {"available": False}
-        printer = _get_printer()
+        printer = _get_printer(entry_id)
         try:
             printer.connect()
 
@@ -185,12 +267,12 @@ def _do_read_printer_state():
 
 _LOGGER = logging.getLogger(__name__)
 
-def _with_printer(fn):
+def _with_printer(entry_id: str, fn):
     """Create a printer, connect, run *fn(printer)*, disconnect.
 
     Returns whatever *fn* returns.  Exceptions propagate to caller.
     """
-    printer = _get_printer()
+    printer = _get_printer(entry_id)
     try:
         printer.connect()
         return fn(printer)
@@ -198,14 +280,15 @@ def _with_printer(fn):
         printer.disconnect()
 
 
-def _do_print_text(text, font_size, heat_density):
+def _do_print_text(entry_id, text, font_size, heat_density):
     """Blocking: print text."""
-    _with_printer(lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density))
+    _with_printer(entry_id, lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density))
 
 
-def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
+def _do_print_image(entry_id, image_url, heat_density, threshold, brightness, contrast):
     """Blocking: print image."""
     _with_printer(
+        entry_id,
         lambda p: p.print_image(
             image_url,
             heat_density=heat_density,
@@ -216,30 +299,31 @@ def _do_print_image(image_url, heat_density, threshold, brightness, contrast):
     )
 
 
-def _do_print_qr(qr_content, qr_size, heat_density):
+def _do_print_qr(entry_id, qr_content, qr_size, heat_density):
     """Blocking: print QR code."""
-    _with_printer(lambda p: p.print_qr(qr_content, heat_density=heat_density, max_width=qr_size))
+    _with_printer(entry_id, lambda p: p.print_qr(qr_content, heat_density=heat_density, max_width=qr_size))
 
 
-def _do_print_pickup_code(pickup_code):
+def _do_print_pickup_code(entry_id, pickup_code):
     """Blocking: print pickup code."""
-    _with_printer(lambda p: p.print_pickup_code(pickup_code))
+    _with_printer(entry_id, lambda p: p.print_pickup_code(pickup_code))
 
 
-def _do_print_test_page():
+def _do_print_test_page(entry_id):
     """Blocking: print test page."""
-    _with_printer(lambda p: p.print_test_page())
+    _with_printer(entry_id, lambda p: p.print_test_page())
 
 
-def _do_feed_paper(lines):
+def _do_feed_paper(entry_id, lines):
     """Blocking: feed paper."""
-    _with_printer(lambda p: p.feed(lines))
+    _with_printer(entry_id, lambda p: p.feed(lines))
 
 
-def _do_get_status():
+def _do_get_status(entry_id):
     """Blocking: get printer battery and status."""
     try:
         return _with_printer(
+            entry_id,
             lambda p: {
                 "battery": p.get_battery(),
                 "status": p.get_status(),
@@ -254,16 +338,35 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Paperang P2 Printer component."""
     # Register services
 
+    def _get_entry_id(call: ServiceCall) -> str:
+        """Resolve entry_id from a service call.
+
+        Uses explicit ``entry_id`` kwarg, falls back to first configured entry.
+        """
+        explicit = call.data.get("entry_id")
+        if explicit and explicit in _transport_configs:
+            return explicit
+        if _transport_configs:
+            return next(iter(_transport_configs))
+        return ""
 
     async def handle_print_text(call: ServiceCall) -> None:
         """Handle print text service call."""
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
         text = call.data.get(ATTR_TEXT, "")
         font_size = call.data.get(ATTR_FONT_SIZE, 24)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await hass.async_add_executor_job(_do_print_text, text, font_size, heat_density)
+        await hass.async_add_executor_job(
+            _do_print_text, entry_id, text, font_size, heat_density
+        )
 
     async def handle_print_image(call: ServiceCall) -> None:
         """Handle print image service call."""
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
         image_url = call.data.get(ATTR_IMAGE_URL, "")
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
@@ -278,34 +381,54 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             heat_density = profile_settings["heat_density"]
 
         await hass.async_add_executor_job(
-            _do_print_image, image_url, heat_density, threshold, brightness, contrast
+            _do_print_image, entry_id, image_url, heat_density,
+            threshold, brightness, contrast
         )
 
     async def handle_print_qr(call: ServiceCall) -> None:
         """Handle print QR code service call."""
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
         qr_content = call.data.get(ATTR_QR_CONTENT, "")
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
-        await hass.async_add_executor_job(_do_print_qr, qr_content, qr_size, heat_density)
+        await hass.async_add_executor_job(
+            _do_print_qr, entry_id, qr_content, qr_size, heat_density
+        )
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
         """Handle print pickup code service call."""
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
-        await hass.async_add_executor_job(_do_print_pickup_code, pickup_code)
+        await hass.async_add_executor_job(
+            _do_print_pickup_code, entry_id, pickup_code
+        )
 
     async def handle_get_status(call: ServiceCall) -> None:  # pylint: disable=unused-argument
         """Handle get status service call."""
-        result = await hass.async_add_executor_job(_do_get_status)
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
+        result = await hass.async_add_executor_job(_do_get_status, entry_id)
         _LOGGER.info("Paperang P2 status: %s", result)
 
     async def handle_feed_paper(call: ServiceCall) -> None:
         """Handle feed paper service call."""
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
         lines = call.data.get(ATTR_LINES, 100)
-        await hass.async_add_executor_job(_do_feed_paper, lines)
+        await hass.async_add_executor_job(_do_feed_paper, entry_id, lines)
 
     async def handle_print_test_page(call: ServiceCall) -> None:  # pylint: disable=unused-argument
         """Handle print test page service call."""
-        await hass.async_add_executor_job(_do_print_test_page)
+        entry_id = _get_entry_id(call)
+        if not entry_id:
+            return
+        await hass.async_add_executor_job(_do_print_test_page, entry_id)
 
     # Register services
     hass.services.async_register(DOMAIN, SERVICE_PRINT_TEXT, handle_print_text)
@@ -343,15 +466,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry):
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up from config entry (also called after YAML import)."""
-    # Populate transport config for blocking functions
-    _transport_config.clear()
-    _transport_config.update(entry.data)
+    # Store per-entry transport config
+    _transport_configs[entry.entry_id] = dict(entry.data)
 
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name="paperang",
-        update_method=partial(_read_printer_state, hass),
+        update_method=partial(_read_printer_state, hass, entry.entry_id),
         update_interval=SCAN_INTERVAL,
     )
     await coordinator.async_config_entry_first_refresh()
@@ -366,6 +488,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
 async def async_unload_entry(hass: HomeAssistant, entry):
     """Unload a config entry."""
+    _transport_configs.pop(entry.entry_id, None)
     coordinator = hass.data[DOMAIN].pop(entry.entry_id)
     await coordinator.async_shutdown()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

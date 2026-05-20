@@ -12,18 +12,17 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 
-DEVICE_ID = "paperang_p2_printer"
-DEVICE_INFO = DeviceInfo(
-    identifiers={("paperang", DEVICE_ID)},
-)
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up text platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    device_id = f"paperang_{entry.entry_id}"
+    device_info = DeviceInfo(
+        identifiers={("paperang", device_id)},
+    )
 
     async_add_entities([
-        PaperangPrintContent(coordinator),
+        PaperangPrintContent(coordinator, device_info, device_id),
     ])
 
 
@@ -33,11 +32,11 @@ class PaperangPrintContent(CoordinatorEntity, TextEntity):
     _attr_has_entity_name = True
     _attr_mode = "text"
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, device_info, device_id) -> None:
         """Initialize."""
         self._attr_name = "Print Content"
-        self._attr_unique_id = "paperang_p2_print_content"
-        self._attr_device_info = DEVICE_INFO
+        self._attr_unique_id = f"{device_id}_print_content"
+        self._attr_device_info = device_info
         self._attr_icon = "mdi:form-textbox"
         self._attr_native_value = ""
         super().__init__(coordinator)
