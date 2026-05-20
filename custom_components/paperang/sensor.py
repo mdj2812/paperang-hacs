@@ -1,7 +1,7 @@
 """Paperang P2 Printer - Sensor platform.
 
-Provides battery, status, voltage, temperature, and other printer telemetry
-via periodic USB polling.
+Provides real-time sensors (battery, status, voltage, temperature,
+heat density) and diagnostic sensors (board revision, firmware, etc.).
 """
 
 from __future__ import annotations
@@ -9,7 +9,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import PERCENTAGE, UnitOfElectricPotential, UnitOfTemperature
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
+)
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import DOMAIN
@@ -18,12 +23,13 @@ from .entity import PaperangEntity
 
 @dataclass(frozen=True)
 class SensorConfig:
-    """Sensor-specific configuration (icon and optional HA sensor attrs)."""
+    """Sensor-specific configuration (icon, HA sensor attrs, category)."""
 
     icon: str
     device_class: str | None = None
     unit: str | None = None
     state_class: str | None = None
+    entity_category: EntityCategory | None = None
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -39,6 +45,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(
         [
+            # ── Live sensors ─────────────────────────────────────
             PaperangSensor(
                 coordinator, device_id, device_info, "battery", "Battery",
                 config=SensorConfig(icon="mdi:battery", device_class="battery",
@@ -65,6 +72,32 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 config=SensorConfig(icon="mdi:thermometer-lines",
                                     unit=PERCENTAGE, state_class="measurement"),
             ),
+            # ── Diagnostic sensors ───────────────────────────────
+            PaperangSensor(
+                coordinator, device_id, device_info, "board", "Board Version",
+                config=SensorConfig(icon="mdi:chip",
+                                    entity_category=EntityCategory.DIAGNOSTIC),
+            ),
+            PaperangSensor(
+                coordinator, device_id, device_info, "version", "Firmware Version",
+                config=SensorConfig(icon="mdi:information-outline",
+                                    entity_category=EntityCategory.DIAGNOSTIC),
+            ),
+            PaperangSensor(
+                coordinator, device_id, device_info, "hw_info", "Hardware Info",
+                config=SensorConfig(icon="mdi:memory",
+                                    entity_category=EntityCategory.DIAGNOSTIC),
+            ),
+            PaperangSensor(
+                coordinator, device_id, device_info, "model", "Model",
+                config=SensorConfig(icon="mdi:printer-3d-nozzle",
+                                    entity_category=EntityCategory.DIAGNOSTIC),
+            ),
+            PaperangSensor(
+                coordinator, device_id, device_info, "serial", "Serial Number",
+                config=SensorConfig(icon="mdi:barcode",
+                                    entity_category=EntityCategory.DIAGNOSTIC),
+            ),
         ]
     )
 
@@ -85,6 +118,7 @@ class PaperangSensor(PaperangEntity, SensorEntity):
         self._attr_device_class = config.device_class
         self._attr_native_unit_of_measurement = config.unit
         self._attr_state_class = config.state_class
+        self._attr_entity_category = config.entity_category
 
     @property
     def native_value(self):
