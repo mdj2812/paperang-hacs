@@ -1,9 +1,9 @@
 # pylint: disable=import-error
 """Config flow for Paperang P2 Printer integration.
 
-USB discovery scans for all compatible devices and lets the user
-pick one.  Each device is identified by its USB bus + port path so
-multiple printers can coexist.
+USB / BLE discovery scans for all compatible devices and lets the user
+pick one.  Each device is identified by USB bus+port path or BLE address
+so multiple printers can coexist.
 """
 
 from __future__ import annotations
@@ -87,6 +87,61 @@ def _verify_printer(bus: int, port: list[int]) -> bool:
             pass
 
 
+# ── BLE discovery helpers ────────────────────────────────────────
+
+BLE_NAMES = {"paperang", "miaomiaoji"}
+
+
+async def _async_scan_ble_devices() -> list[dict[str, Any]]:
+    """Scan for nearby Paperang BLE devices.
+
+    Each dict: ``name``, ``address``.
+    Returns empty list on error or no devices.
+    """
+    try:
+        from bleak import BleakScanner  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return []
+
+    try:
+        devices = await BleakScanner.discover(timeout=5)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return []
+
+    result: list[dict[str, Any]] = []
+    for d in devices:
+        if d.name and any(
+            d.name.lower().startswith(n) for n in BLE_NAMES
+        ):
+            result.append({"name": d.name, "address": d.address})
+    return result
+
+
+async def _async_verify_ble_printer(address: str) -> bool:
+    """Connect to BLE printer and verify communication.
+
+    Returns True on success, False on any error.
+    """
+    try:
+        import paperang  # pylint: disable=import-outside-toplevel
+        from paperang.transport import BleTransport  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return False
+
+    printer = paperang.PaperangP2(transport=BleTransport(address=address))
+    try:
+        printer.connect()
+        battery = printer.get_battery()
+        return battery is not None
+    except Exception:  # pylint: disable=broad-exception-caught
+        return False
+    finally:
+        try:
+            printer.disconnect()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+
+
 # ── Config Flow ──────────────────────────────────────────────────
 
 
@@ -98,8 +153,11 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialise."""
         super().__init__()
-        self._discovered: list[dict[str, Any]] = []
-        self._selected_device: dict[str, Any] | None = None
+        self._usb_discovered: list[dict[str, Any]] = []
+        self._selected_usb: dict[str, Any] | None = None
+        self._ble_discovered: list[dict[str, Any]] = []
+        self._selected_ble: dict[str, Any] | None = None
+        self._transport: str = TRANSPORT_USB
 
     @staticmethod
     @callback
@@ -112,17 +170,17 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_usb(self, discovery_info=None):
         """Handle USB discovery — scan for Paperang devices."""
         # pylint: disable=unused-argument
-        self._discovered = await self.hass.async_add_executor_job(
+        self._transport = TRANSPORT_USB
+        self._usb_discovered = await self.hass.async_add_executor_job(
             _scan_usb_devices
         )
 
-        if not self._discovered:
+        if not self._usb_discovered:
             return self.async_abort(reason="no_usb_device_found")
 
-        # Single device → skip selection, go straight to verify
-        if len(self._discovered) == 1:
-            self._selected_device = self._discovered[0]
-            return await self.async_step_verify()
+        if len(self._usb_discovered) == 1:
+            self._selected_usb = self._usb_discovered[0]
+            return await self.async_step_usb_verify()
 
         return await self.async_step_select_device()
 
@@ -134,23 +192,22 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             chosen_path = user_input["usb_device"]
-            for dev in self._discovered:
+            for dev in self._usb_discovered:
                 if dev["usb_path"] == chosen_path:
-                    self._selected_device = dev
+                    self._selected_usb = dev
                     break
 
-            if self._selected_device is None:
+            if self._selected_usb is None:
                 errors["usb_device"] = "device_not_found"
             else:
-                return await self.async_step_verify()
+                return await self.async_step_usb_verify()
 
-        # Build dropdown options
         options = {
             dev["usb_path"]: (
                 f"Paperang P2 — USB {dev['usb_path']}"
                 f" (bus {dev['bus']}, addr {dev['address']})"
             )
-            for dev in self._discovered
+            for dev in self._usb_discovered
         }
 
         return self.async_show_form(
@@ -161,17 +218,16 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_verify(
+    async def async_step_usb_verify(
         self, user_input: dict[str, Any] | None = None  # pylint: disable=unused-argument
     ):
-        """Verify communication with the selected device."""
-        if self._selected_device is None:
+        """Verify communication with the selected USB device."""
+        if self._selected_usb is None:
             return self.async_abort(reason="no_usb_device_found")
 
-        dev = self._selected_device
+        dev = self._selected_usb
         usb_path = dev["usb_path"]
 
-        # Set unique_id based on USB path so HA can tell devices apart
         await self.async_set_unique_id(f"paperang_usb_{usb_path}")
         self._abort_if_unique_id_configured()
 
@@ -181,7 +237,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if not ok:
             return self.async_show_form(
-                step_id="verify",
+                step_id="usb_verify",
                 errors={"base": "communication_failed"},
             )
 
@@ -194,7 +250,86 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    # ── Manual / import / BLE ──────────────────────────────────
+    # ── BLE discovery ─────────────────────────────────────────
+
+    async def async_step_ble(self, discovery_info=None):
+        """Handle BLE discovery — scan for Paperang devices."""
+        # pylint: disable=unused-argument
+        self._transport = TRANSPORT_BLE
+        self._ble_discovered = await _async_scan_ble_devices()
+
+        if not self._ble_discovered:
+            return self.async_abort(reason="no_ble_device_found")
+
+        if len(self._ble_discovered) == 1:
+            self._selected_ble = self._ble_discovered[0]
+            return await self.async_step_ble_verify()
+
+        return await self.async_step_select_ble_device()
+
+    async def async_step_select_ble_device(
+        self, user_input: dict[str, Any] | None = None
+    ):
+        """Let the user pick which BLE device to use."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            chosen_addr = user_input["ble_device"]
+            for dev in self._ble_discovered:
+                if dev["address"] == chosen_addr:
+                    self._selected_ble = dev
+                    break
+
+            if self._selected_ble is None:
+                errors["ble_device"] = "device_not_found"
+            else:
+                return await self.async_step_ble_verify()
+
+        options = {
+            dev["address"]: (
+                f"{dev['name']} ({dev['address']})"
+            )
+            for dev in self._ble_discovered
+        }
+
+        return self.async_show_form(
+            step_id="select_ble_device",
+            data_schema=vol.Schema({
+                vol.Required("ble_device"): vol.In(options),
+            }),
+            errors=errors,
+        )
+
+    async def async_step_ble_verify(
+        self, user_input: dict[str, Any] | None = None  # pylint: disable=unused-argument
+    ):
+        """Verify communication with the selected BLE device."""
+        if self._selected_ble is None:
+            return self.async_abort(reason="no_ble_device_found")
+
+        dev = self._selected_ble
+        address = dev["address"]
+
+        await self.async_set_unique_id(f"paperang_ble_{address}")
+        self._abort_if_unique_id_configured()
+
+        ok = await _async_verify_ble_printer(address)
+
+        if not ok:
+            return self.async_show_form(
+                step_id="ble_verify",
+                errors={"base": "communication_failed"},
+            )
+
+        return self.async_create_entry(
+            title=f"Paperang P2 ({dev['name']})",
+            data={
+                CONF_TRANSPORT: TRANSPORT_BLE,
+                CONF_BLE_ADDRESS: address,
+            },
+        )
+
+    # ── Manual / import ────────────────────────────────────────
 
     async def async_step_import(
         self, user_input: dict[str, Any] | None = None
@@ -206,19 +341,15 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ):
         """Handle the initial step (manual add)."""
-        transport = (
-            user_input.get(CONF_TRANSPORT, TRANSPORT_USB)
-            if user_input
-            else TRANSPORT_USB
-        )
-
         if user_input is not None:
+            transport = user_input[CONF_TRANSPORT]
+
             if transport == TRANSPORT_USB:
-                # USB manual add — scan for devices
-                self._discovered = await self.hass.async_add_executor_job(
+                # USB — scan for devices and enter USB flow
+                self._usb_discovered = await self.hass.async_add_executor_job(
                     _scan_usb_devices
                 )
-                if not self._discovered:
+                if not self._usb_discovered:
                     return self.async_show_form(
                         step_id="user",
                         data_schema=vol.Schema({
@@ -226,28 +357,31 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 TRANSPORT_USB: "USB",
                                 TRANSPORT_BLE: "Bluetooth BLE",
                             }),
-                            vol.Optional(CONF_BLE_ADDRESS): str,
                         }),
                         errors={"base": "no_usb_device_found"},
                     )
-                if len(self._discovered) == 1:
-                    self._selected_device = self._discovered[0]
-                    return await self.async_step_verify()
+                if len(self._usb_discovered) == 1:
+                    self._selected_usb = self._usb_discovered[0]
+                    return await self.async_step_usb_verify()
                 return await self.async_step_select_device()
 
-            # BLE path
-            ble_addr = user_input.get(CONF_BLE_ADDRESS, "")
-            unique_id = f"paperang_ble_{ble_addr}" if ble_addr else "paperang_ble"
-            await self.async_set_unique_id(unique_id)
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title="Paperang P2 Printer (BLE)",
-                data={
-                    CONF_TRANSPORT: TRANSPORT_BLE,
-                    CONF_BLE_ADDRESS: ble_addr,
-                },
-            )
+            # BLE — scan for devices and enter BLE flow
+            self._ble_discovered = await _async_scan_ble_devices()
+            if not self._ble_discovered:
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema({
+                        vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In({
+                            TRANSPORT_USB: "USB",
+                            TRANSPORT_BLE: "Bluetooth BLE",
+                        }),
+                    }),
+                    errors={"base": "no_ble_device_found"},
+                )
+            if len(self._ble_discovered) == 1:
+                self._selected_ble = self._ble_discovered[0]
+                return await self.async_step_ble_verify()
+            return await self.async_step_select_ble_device()
 
         return self.async_show_form(
             step_id="user",
@@ -256,7 +390,6 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     TRANSPORT_USB: "USB",
                     TRANSPORT_BLE: "Bluetooth BLE",
                 }),
-                vol.Optional(CONF_BLE_ADDRESS): str,
             }),
         )
 
