@@ -94,9 +94,7 @@ class UsbTransportWithPath(_lib.transport.UsbTransport):
         import usb.util
 
         # Find all matching devices, pick the one at the right bus/port
-        devices = usb.core.find(
-            find_all=True, idVendor=self.vid, idProduct=self.pid
-        )
+        devices = usb.core.find(find_all=True, idVendor=self.vid, idProduct=self.pid)
         self._dev = None
         for d in devices:
             if d.bus == self._target_bus and tuple(d.port_numbers) == self._target_port:
@@ -116,13 +114,15 @@ class UsbTransportWithPath(_lib.transport.UsbTransport):
         intf = cfg[(0, 0)]
         self._ep_out = usb.util.find_descriptor(
             intf,
-            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress)
-            == usb.util.ENDPOINT_OUT,
+            custom_match=lambda e: (
+                usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT
+            ),
         )
         self._ep_in = usb.util.find_descriptor(
             intf,
-            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress)
-            == usb.util.ENDPOINT_IN,
+            custom_match=lambda e: (
+                usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN
+            ),
         )
         return True
 
@@ -446,8 +446,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             heat_density = profile_settings["heat_density"]
 
         await hass.async_add_executor_job(
-            _do_print_image, entry_id, image_url, heat_density,
-            threshold, brightness, contrast,
+            _do_print_image,
+            entry_id,
+            image_url,
+            heat_density,
+            threshold,
+            brightness,
+            contrast,
         )
 
     async def handle_print_qr(call: ServiceCall) -> None:
@@ -468,9 +473,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if not entry_id:
             return
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
-        await hass.async_add_executor_job(
-            _do_print_pickup_code, entry_id, pickup_code
-        )
+        await hass.async_add_executor_job(_do_print_pickup_code, entry_id, pickup_code)
 
     async def handle_get_status(_call: ServiceCall) -> None:
         """Handle get status service call."""
