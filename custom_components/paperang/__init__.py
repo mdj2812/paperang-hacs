@@ -267,6 +267,12 @@ def _do_read_printer_state(entry_id: str):
             # Merge all cached values into data
             for key in _STATIC_KEYS:
                 data[key] = _get_or_fallback(static_cache, key)
+            # Decode firmware version if still a raw integer in cache
+            ver = data.get("version")
+            if isinstance(ver, int) and ver is not None:
+                data["version"] = (
+                    f"V{ver & 0xFF}.{(ver >> 8) & 0xFF}.{(ver >> 16) & 0xFFFF}"
+                )
 
             data["available"] = True
             return data
