@@ -256,23 +256,35 @@ def _do_read_printer_state(entry_id: str):
             for key, reader in _STATIC_READERS:
                 time.sleep(0.05)
                 val = reader(printer)
-                # Decode firmware version: bits 0-7=major, 8-15=minor, 16-31=patch
-                if key == "version" and isinstance(val, int) and val is not None:
-                    major = val & 0xFF
-                    minor = (val >> 8) & 0xFF
-                    patch = (val >> 16) & 0xFFFF
-                    val = f"V{major}.{minor}.{patch}"
+                # Decode firmware version: raw str "720897" → "V1.0.11"
+                # bits 0-7=major, 8-15=minor, 16-31=patch
+                if key == "version" and val is not None:
+                    try:
+                        ver_int = int(val)
+                        val = (
+                            f"V{ver_int & 0xFF}."
+                            f"{(ver_int >> 8) & 0xFF}."
+                            f"{(ver_int >> 16) & 0xFFFF}"
+                        )
+                    except (ValueError, TypeError):
+                        pass  # already a readable version string
                 _update_if_not_none(static_cache, key, val)
 
             # Merge all cached values into data
             for key in _STATIC_KEYS:
                 data[key] = _get_or_fallback(static_cache, key)
-            # Decode firmware version if still a raw integer in cache
+            # Decode firmware version if still a raw string/integer in cache
             ver = data.get("version")
-            if isinstance(ver, int) and ver is not None:
-                data["version"] = (
-                    f"V{ver & 0xFF}.{(ver >> 8) & 0xFF}.{(ver >> 16) & 0xFFFF}"
-                )
+            if ver is not None:
+                try:
+                    ver_int = int(ver)
+                    data["version"] = (
+                        f"V{ver_int & 0xFF}."
+                        f"{(ver_int >> 8) & 0xFF}."
+                        f"{(ver_int >> 16) & 0xFFFF}"
+                    )
+                except (ValueError, TypeError):
+                    pass
 
             data["available"] = True
             return data
