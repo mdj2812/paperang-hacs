@@ -1,5 +1,49 @@
 # Changelog
 
+## v1.4.0rc1 (2026-05-14) — *unreleased*
+
+> **Note:** v1.3.2 was cut from this branch with BLE disabled.
+> The BLE features listed below are present in code but disabled
+> in the config flow until stability issues are resolved.
+
+## v1.3.2 (2026-05-21)
+
+### Added
+- **Multi-device USB support** — multiple Paperang printers can coexist
+  - USB device scanning at integration add time
+  - Dropdown selection when multiple devices are connected
+  - Communication verification (connect + read battery) before adding
+  - Device title includes USB port path (e.g. "Paperang P2 (USB 1-3)")
+  - `UsbTransportWithPath` for per-device USB bus/port targeting
+- **Per-entry configs and caches** — `_transport_configs`, `_static_caches`,
+  `_dynamic_caches` keyed by `entry_id`; cleared on unload
+- **Per-entry entity unique_ids and DeviceInfo** — no collisions across devices
+- **Diagnostic sensor tab** — Board Version, Firmware Version, Hardware Info,
+  Model, Serial Number live in a separate "Diagnostic" tab on the device page
+- **Service routing** — services accept optional `entry_id` parameter for
+  multi-device targeting; fall back to first configured entry
+- `make_device_info()` helper in `entity.py` eliminates duplicate setup code
+- Extensive test suite: **109 tests, 85% coverage** (up from 35 / 33%)
+
+### Changed
+- **Polling interval**: 60s → 5s (`UPDATE_INTERVAL`), faster sensor updates
+- **Inter-command sleep**: 200ms → 50ms for quicker per-poll cycles
+- `PaperangEntity` constructor simplified — `entry_id` serves as both
+  identity and unique-id prefix
+- `async_step_user` refactored: `_user_schema()`, `_handle_usb_user_selection()`,
+  `_handle_ble_user_selection()` extracted (pylint R0911)
+- `_do_print_image` uses keyword-only args (pylint R0913)
+
+### Fixed
+- **Firmware version decode**: raw string `"720897"` → `V1.0.11`
+  (bits 0-7=major, 8-15=minor, 16-31=patch)
+- **Stale cache after re-add**: per-entry caches cleared on unload
+- Already-configured abort message is now user-friendly
+- `async_get_config_entry_diagnostics` KeyError when domain not in hass.data
+
+### Disabled
+- BLE device discovery temporarily hidden from config flow (unstable)
+
 ## v1.4.0rc1 (2026-05-14)
 
 ### Added
