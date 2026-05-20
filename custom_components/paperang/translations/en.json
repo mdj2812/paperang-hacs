@@ -1,7 +1,8 @@
 {
   "config": {
     "abort": {
-      "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on."
+      "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on.",
+      "already_configured": "This Paperang printer is already configured. To add another printer, connect a different one via USB."
     },
     "error": {
       "communication_failed": "Failed to communicate with the selected device. Check the connection and try again.",
