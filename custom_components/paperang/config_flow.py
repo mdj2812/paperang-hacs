@@ -243,11 +243,9 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # ── BLE discovery (disabled until stable) ─────────────────
 
     async def async_step_bluetooth(self, discovery_info):
-        """Bluetooth discovery — temporarily disabled."""
         # pylint: disable=unused-argument
+        """Bluetooth discovery — temporarily disabled."""
         return self.async_abort(reason="ble_disabled")
-
-        return await self.async_step_select_ble_device()
 
     async def async_step_select_ble_device(
         self, user_input: dict[str, Any] | None = None
