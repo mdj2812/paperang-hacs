@@ -8,7 +8,7 @@ from __future__ import annotations
 from homeassistant.components.select import SelectEntity
 
 from .const import DOMAIN
-from .entity import PaperangEntity
+from .entity import PaperangEntity, make_device_info
 
 PRINT_MODES = ["text", "image", "qr", "pickup_code"]
 IMAGE_PROFILES = ["portrait", "landscape", "document", "high_contrast", "light"]
@@ -17,11 +17,12 @@ IMAGE_PROFILES = ["portrait", "landscape", "document", "high_contrast", "light"]
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up select platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    device_info = make_device_info(entry)
 
     async_add_entities(
         [
-            PaperangPrintModeSelect(coordinator),
-            PaperangImageProfileSelect(coordinator),
+            PaperangPrintModeSelect(coordinator, entry.entry_id, device_info),
+            PaperangImageProfileSelect(coordinator, entry.entry_id, device_info),
         ]
     )
 
@@ -31,13 +32,15 @@ class PaperangPrintModeSelect(PaperangEntity, SelectEntity):
 
     _attr_options = PRINT_MODES
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, entry_id, device_info) -> None:
         """Initialize."""
         super().__init__(
             coordinator,
+            entry_id,
             "Print Mode",
-            "paperang_p2_print_mode",
+            "print_mode",
             "mdi:file-document-multiple-outline",
+            device_info=device_info,
         )
         self._attr_current_option = "text"
 
@@ -52,13 +55,15 @@ class PaperangImageProfileSelect(PaperangEntity, SelectEntity):
 
     _attr_options = IMAGE_PROFILES
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, entry_id, device_info) -> None:
         """Initialize."""
         super().__init__(
             coordinator,
+            entry_id,
             "Image Profile",
-            "paperang_p2_image_profile",
+            "image_profile",
             "mdi:image-edit-outline",
+            device_info=device_info,
         )
         self._attr_current_option = "document"
 
