@@ -65,30 +65,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 config=SensorConfig(icon="mdi:thermometer-lines",
                                     unit=PERCENTAGE, state_class="measurement"),
             ),
-            PaperangSensor(
-                coordinator, device_id, device_info, "paper_type", "Paper Type",
-                config=SensorConfig(icon="mdi:paper-roll"),
-            ),
-            PaperangSensor(
-                coordinator, device_id, device_info, "version", "Firmware Version",
-                config=SensorConfig(icon="mdi:information-outline"),
-            ),
-            PaperangSensor(
-                coordinator, device_id, device_info, "model", "Model",
-                config=SensorConfig(icon="mdi:printer-3d-nozzle"),
-            ),
-            PaperangSensor(
-                coordinator, device_id, device_info, "serial", "Serial Number",
-                config=SensorConfig(icon="mdi:barcode"),
-            ),
-            PaperangSensor(
-                coordinator, device_id, device_info, "board", "Board Version",
-                config=SensorConfig(icon="mdi:chip"),
-            ),
-            PaperangSensor(
-                coordinator, device_id, device_info, "hw_info", "Hardware Info",
-                config=SensorConfig(icon="mdi:memory"),
-            ),
         ]
     )
 

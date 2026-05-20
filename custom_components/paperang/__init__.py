@@ -565,3 +565,26 @@ async def async_unload_entry(hass: HomeAssistant, entry):
     coordinator = hass.data[DOMAIN].pop(entry.entry_id)
     await coordinator.async_shutdown()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_get_config_entry_diagnostics(
+    hass: HomeAssistant, entry
+) -> dict[str, object]:
+    """Return static printer info for diagnostics.
+
+    Static values (board version, firmware, hardware info, model,
+    serial, paper type) are read once and cached; they belong in
+    diagnostics rather than as live sensors.
+    """
+    coordinator = hass.data[DOMAIN].get(entry.entry_id)
+    if not coordinator or not coordinator.data:
+        return {}
+    data = coordinator.data
+    return {
+        "board_version": data.get("board"),
+        "firmware_version": data.get("version"),
+        "hardware_info": data.get("hw_info"),
+        "model": data.get("model"),
+        "serial_number": data.get("serial"),
+        "paper_type": data.get("paper_type"),
+    }
