@@ -6,6 +6,7 @@ Provides dropdown selectors for print mode and image profile.
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import DOMAIN
 from .entity import PaperangEntity
@@ -17,11 +18,15 @@ IMAGE_PROFILES = ["portrait", "landscape", "document", "high_contrast", "light"]
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up select platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    device_id = f"paperang_{entry.entry_id}"
+    device_info = DeviceInfo(
+        identifiers={("paperang", device_id)},
+    )
 
     async_add_entities(
         [
-            PaperangPrintModeSelect(coordinator),
-            PaperangImageProfileSelect(coordinator),
+            PaperangPrintModeSelect(coordinator, device_id, device_info),
+            PaperangImageProfileSelect(coordinator, device_id, device_info),
         ]
     )
 
@@ -31,13 +36,11 @@ class PaperangPrintModeSelect(PaperangEntity, SelectEntity):
 
     _attr_options = PRINT_MODES
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, device_id, device_info) -> None:
         """Initialize."""
         super().__init__(
-            coordinator,
-            "Print Mode",
-            "paperang_p2_print_mode",
-            "mdi:file-document-multiple-outline",
+            coordinator, "Print Mode", f"{device_id}_print_mode",
+            "mdi:file-document-multiple-outline", device_info=device_info,
         )
         self._attr_current_option = "text"
 
@@ -52,13 +55,11 @@ class PaperangImageProfileSelect(PaperangEntity, SelectEntity):
 
     _attr_options = IMAGE_PROFILES
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator, device_id, device_info) -> None:
         """Initialize."""
         super().__init__(
-            coordinator,
-            "Image Profile",
-            "paperang_p2_image_profile",
-            "mdi:image-edit-outline",
+            coordinator, "Image Profile", f"{device_id}_image_profile",
+            "mdi:image-edit-outline", device_info=device_info,
         )
         self._attr_current_option = "document"
 

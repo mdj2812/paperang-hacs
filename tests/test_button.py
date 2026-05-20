@@ -3,6 +3,7 @@
 import pytest
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.paperang.const import (
@@ -33,6 +34,16 @@ async def _setup_coordinator(hass: HomeAssistant, entry: MockConfigEntry) -> Non
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
 
+def _make_btn(cls, hass, entry):
+    """Create a button entity with per-entry args."""
+    eid = entry.entry_id
+    device_id = f"paperang_{eid}"
+    device_info = DeviceInfo(identifiers={("paperang", device_id)})
+    btn = cls(hass.data[DOMAIN][eid], device_id, device_info, eid)
+    btn.hass = hass
+    return btn
+
+
 class TestPrintButton:
     async def test_empty_content_warns(self, hass: HomeAssistant) -> None:
         """Empty content → warning, no service call."""
@@ -42,8 +53,8 @@ class TestPrintButton:
 
         from custom_components.paperang.button import PaperangPrintButton
 
-        btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        eid = entry.entry_id
+        btn = _make_btn(PaperangPrintButton, hass, entry)
 
         calls = []
 
@@ -64,15 +75,15 @@ class TestPrintButton:
         entry.add_to_hass(hass)
         await _setup_coordinator(hass, entry)
 
-        hass.states.async_set("select.paperang_p2_printer_print_mode", "text")
-        hass.states.async_set("text.paperang_p2_printer_print_content", "Hello")
-        hass.states.async_set("number.paperang_p2_printer_font_size", "24")
-        hass.states.async_set("number.paperang_p2_printer_heat_density", "75")
+        eid = entry.entry_id
+        hass.states.async_set(f"select.paperang_{eid}_print_mode", "text")
+        hass.states.async_set(f"text.paperang_{eid}_print_content", "Hello")
+        hass.states.async_set(f"number.paperang_{eid}_font_size", "24")
+        hass.states.async_set(f"number.paperang_{eid}_heat_density", "75")
 
         from custom_components.paperang.button import PaperangPrintButton
 
-        btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangPrintButton, hass, entry)
 
         calls = []
 
@@ -95,15 +106,15 @@ class TestPrintButton:
         entry.add_to_hass(hass)
         await _setup_coordinator(hass, entry)
 
-        hass.states.async_set("select.paperang_p2_printer_print_mode", "image")
-        hass.states.async_set("text.paperang_p2_printer_print_content", "http://img")
-        hass.states.async_set("number.paperang_p2_printer_heat_density", "80")
-        hass.states.async_set("select.paperang_p2_printer_image_profile", "photo")
+        eid = entry.entry_id
+        hass.states.async_set(f"select.paperang_{eid}_print_mode", "image")
+        hass.states.async_set(f"text.paperang_{eid}_print_content", "http://img")
+        hass.states.async_set(f"number.paperang_{eid}_heat_density", "80")
+        hass.states.async_set(f"select.paperang_{eid}_image_profile", "photo")
 
         from custom_components.paperang.button import PaperangPrintButton
 
-        btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangPrintButton, hass, entry)
 
         calls = []
 
@@ -126,15 +137,15 @@ class TestPrintButton:
         entry.add_to_hass(hass)
         await _setup_coordinator(hass, entry)
 
-        hass.states.async_set("select.paperang_p2_printer_print_mode", "qr")
-        hass.states.async_set("text.paperang_p2_printer_print_content", "https://x.com")
-        hass.states.async_set("number.paperang_p2_printer_qr_size", "400")
-        hass.states.async_set("number.paperang_p2_printer_heat_density", "60")
+        eid = entry.entry_id
+        hass.states.async_set(f"select.paperang_{eid}_print_mode", "qr")
+        hass.states.async_set(f"text.paperang_{eid}_print_content", "https://x.com")
+        hass.states.async_set(f"number.paperang_{eid}_qr_size", "400")
+        hass.states.async_set(f"number.paperang_{eid}_heat_density", "60")
 
         from custom_components.paperang.button import PaperangPrintButton
 
-        btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangPrintButton, hass, entry)
 
         calls = []
 
@@ -157,13 +168,13 @@ class TestPrintButton:
         entry.add_to_hass(hass)
         await _setup_coordinator(hass, entry)
 
-        hass.states.async_set("select.paperang_p2_printer_print_mode", "pickup_code")
-        hass.states.async_set("text.paperang_p2_printer_print_content", "19-4308")
+        eid = entry.entry_id
+        hass.states.async_set(f"select.paperang_{eid}_print_mode", "pickup_code")
+        hass.states.async_set(f"text.paperang_{eid}_print_content", "19-4308")
 
         from custom_components.paperang.button import PaperangPrintButton
 
-        btn = PaperangPrintButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangPrintButton, hass, entry)
 
         calls = []
 
@@ -186,12 +197,12 @@ class TestFeedButton:
         entry.add_to_hass(hass)
         await _setup_coordinator(hass, entry)
 
-        hass.states.async_set("number.paperang_p2_printer_feed_lines", "10")
+        eid = entry.entry_id
+        hass.states.async_set(f"number.paperang_{eid}_feed_lines", "10")
 
         from custom_components.paperang.button import PaperangFeedButton
 
-        btn = PaperangFeedButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangFeedButton, hass, entry)
 
         calls = []
 
@@ -214,8 +225,7 @@ class TestFeedButton:
 
         from custom_components.paperang.button import PaperangFeedButton
 
-        btn = PaperangFeedButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangFeedButton, hass, entry)
 
         calls = []
 
@@ -240,8 +250,7 @@ class TestTestPrintButton:
 
         from custom_components.paperang.button import PaperangTestPrintButton
 
-        btn = PaperangTestPrintButton(hass.data[DOMAIN][entry.entry_id])
-        btn.hass = hass
+        btn = _make_btn(PaperangTestPrintButton, hass, entry)
 
         calls = []
 

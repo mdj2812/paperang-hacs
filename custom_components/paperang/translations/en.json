@@ -1,13 +1,42 @@
 {
   "config": {
+    "abort": {
+      "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on.",
+      "no_ble_device_found": "No Paperang P2 printer found via Bluetooth. Make sure the printer is powered on and in range.",
+      "already_configured": "This Paperang printer is already configured. To add another printer, connect a different one via USB or BLE."
+    },
+    "error": {
+      "communication_failed": "Failed to communicate with the selected device. Check the connection and try again.",
+      "device_not_found": "Selected device not found. It may have been disconnected.",
+      "no_usb_device_found": "No Paperang P2 printer found via USB. Make sure the printer is connected and powered on.",
+      "no_ble_device_found": "No Paperang P2 printer found via Bluetooth. Make sure the printer is powered on and in range."
+    },
     "step": {
       "user": {
         "title": "Add Paperang P2 Printer",
-        "description": "Connect your Paperang P2 via USB to auto-detect, or add manually."
+        "description": "Select USB or Bluetooth to discover your Paperang P2 printer."
       },
-      "confirm": {
-        "title": "Paperang P2 Detected",
-        "description": "Paperang P2 printer found via USB. Do you want to set it up?"
+      "select_device": {
+        "title": "Select USB Device",
+        "description": "Multiple Paperang P2 printers detected via USB. Choose which one to add.",
+        "data": {
+          "usb_device": "USB Device"
+        }
+      },
+      "usb_verify": {
+        "title": "Verifying USB Device",
+        "description": "Establishing communication with the printer…"
+      },
+      "select_ble_device": {
+        "title": "Select Bluetooth Device",
+        "description": "Multiple Paperang P2 printers detected via Bluetooth. Choose which one to add.",
+        "data": {
+          "ble_device": "Bluetooth Device"
+        }
+      },
+      "ble_verify": {
+        "title": "Verifying Bluetooth Device",
+        "description": "Establishing communication with the printer…"
       }
     }
   }

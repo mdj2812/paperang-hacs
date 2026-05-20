@@ -2,7 +2,7 @@
 
 Provides common patterns used across all entity platforms:
 - available property (reads from coordinator)
-- device info
+- device info (per-entry for multi-device support)
 - entity naming convention
 """
 
@@ -16,18 +16,29 @@ class PaperangEntity(CoordinatorEntity):
     """Base class for all Paperang entities."""
 
     _attr_has_entity_name = True
-    _attr_device_info = DeviceInfo(
-        identifiers={("paperang", DEVICE_ID)},
-        name="Paperang P2 Printer",
-        manufacturer="Paperang",
-        model="P2",
-    )
 
-    def __init__(self, coordinator, name: str, unique_id: str, icon: str) -> None:
+    def __init__(
+        self,
+        coordinator,
+        name: str,
+        unique_id: str,
+        icon: str,
+        *,
+        device_info: DeviceInfo | None = None,
+    ) -> None:
         """Initialize common attributes."""
         self._attr_name = name
         self._attr_unique_id = unique_id
         self._attr_icon = icon
+        if device_info is not None:
+            self._attr_device_info = device_info
+        else:
+            self._attr_device_info = DeviceInfo(
+                identifiers={("paperang", DEVICE_ID)},
+                name="Paperang P2 Printer",
+                manufacturer="Paperang",
+                model="P2",
+            )
         super().__init__(coordinator)
 
     @property
