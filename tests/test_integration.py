@@ -298,3 +298,31 @@ class TestServiceCalls:
         cache = {"a": 1}
         assert mod._get_or_fallback(cache, "a") == 1
         assert mod._get_or_fallback(cache, "b") is None
+
+    async def test_get_static_dynamic_cache(self) -> None:
+        """_get_static_cache and _get_dynamic_cache create and return per-entry dicts."""
+        import custom_components.paperang as mod
+        mod._static_caches.clear()
+        mod._dynamic_caches.clear()
+        sc = mod._get_static_cache("eid1")
+        dc = mod._get_dynamic_cache("eid1")
+        assert isinstance(sc, dict)
+        assert isinstance(dc, dict)
+        assert "eid1" in mod._static_caches
+        assert mod._get_static_cache("eid1") is sc  # same object
+
+    async def test_do_print_text(self, mock_printer) -> None:
+        """_do_print_text calls print_text with correct args."""
+        import custom_components.paperang as mod
+        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+            mod._do_print_text("test", "Hello", 24, 75)
+        mock_printer.print_text.assert_called_once_with("Hello", font_size=24, heat_density=75)
+
+    async def test_do_print_image(self, mock_printer) -> None:
+        """_do_print_image calls print_image with correct args."""
+        import custom_components.paperang as mod
+        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+            mod._do_print_image("test", "http://img", 70, 128, 1.0, 1.0)
+        mock_printer.print_image.assert_called_once_with(
+            "http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0
+        )
