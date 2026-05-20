@@ -256,6 +256,12 @@ def _do_read_printer_state(entry_id: str):
             for key, reader in _STATIC_READERS:
                 time.sleep(0.05)
                 val = reader(printer)
+                # Decode firmware version: bits 0-7=major, 8-15=minor, 16-31=patch
+                if key == "version" and isinstance(val, int) and val is not None:
+                    major = val & 0xFF
+                    minor = (val >> 8) & 0xFF
+                    patch = (val >> 16) & 0xFFFF
+                    val = f"V{major}.{minor}.{patch}"
                 _update_if_not_none(static_cache, key, val)
 
             # Merge all cached values into data
