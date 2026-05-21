@@ -228,7 +228,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step (manual add)."""
         if user_input is not None:
-            transport = user_input[CONF_TRANSPORT]
+            transport = user_input.get(CONF_TRANSPORT, TRANSPORT_USB)
             if transport == TRANSPORT_USB:
                 return await self._handle_usb_user_selection()
             return await self._handle_ble_user_selection()
