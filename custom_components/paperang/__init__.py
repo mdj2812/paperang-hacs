@@ -27,7 +27,7 @@ from .core.blocking import (
     _do_print_text,
     _with_printer,
 )
-from .core.runtime import _get_printer, _clear_usb_lock, transport_configs
+from .core.runtime import _get_printer, transport_configs
 from .core.state import (
     _dynamic_caches,
     _get_dynamic_cache,
@@ -118,7 +118,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 async def async_unload_entry(hass: HomeAssistant, entry):
     """Unload a config entry."""
     transport_configs.pop(entry.entry_id, None)
-    _clear_usb_lock(entry.entry_id)
     clear_caches_for_entry(entry.entry_id)
     coordinator = hass.data[DOMAIN].pop(entry.entry_id)
     await coordinator.async_shutdown()

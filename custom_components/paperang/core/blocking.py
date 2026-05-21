@@ -2,23 +2,32 @@
 
 from __future__ import annotations
 
-from .runtime import _get_printer, _get_usb_lock
+import time
+
+from .runtime import _get_printer
 
 
 def _with_printer(entry_id: str, fn):
     """Create a printer, connect, run *fn(printer)*, disconnect.
 
-    Uses a per-entry lock to prevent concurrent USB access
-    (coordinator polling and service calls share the same device).
+    Retries on USB Resource busy errors caused by concurrent access
+    (coordinator polling and service calls competing for the device).
     """
-    lock = _get_usb_lock(entry_id)
-    with lock:
+    last_err = None
+    for _ in range(3):
         printer = _get_printer(entry_id)
         try:
             printer.connect()
             return fn(printer)
+        except Exception as err:
+            last_err = err
+            if "Resource busy" in str(err) or "Entity" in str(err):
+                time.sleep(0.5)
+                continue
+            raise
         finally:
             printer.disconnect()
+    raise last_err  # pylint: disable=raising-bad-type
 
 
 def _do_print_text(entry_id, text, font_size, heat_density):
