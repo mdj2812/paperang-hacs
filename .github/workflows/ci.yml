@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install test dependencies
-        run: python3 -m pip install pytest pytest-cov voluptuous pytest-homeassistant-custom-component
+        run: python3 -m pip install pytest pytest-cov voluptuous pytest-homeassistant-custom-component pyusb
       - name: Run tests with coverage
         run: python3 -m pytest tests/ -v --cov=custom_components/paperang --cov-report=xml --cov-report=term
       - name: Code Coverage Summary
