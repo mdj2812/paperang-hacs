@@ -1,2 +1,37 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing & coverage
 .coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# Type checkers & linters
+.mypy_cache/
+.ruff_cache/
+
+# Packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Local env / secrets (never commit real credentials)
+.env
+.env.local
+
+# Logs
+*.log
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

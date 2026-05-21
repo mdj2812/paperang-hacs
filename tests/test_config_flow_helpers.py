@@ -5,11 +5,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from custom_components.paperang.config_flow import (
+    _async_verify_ble_printer,
     _scan_usb_devices,
     _verify_printer,
-    _async_scan_ble_devices,
-    _async_verify_ble_printer,
-    PaperangOptionsFlow,
+)
+from custom_components.paperang.transport.ble import (
+    async_scan_ble_devices as _async_scan_ble_devices,
 )
 
 
@@ -23,8 +24,10 @@ class TestUsbDiscovery:
 
     def test_verify_printer_no_lib_returns_false(self):
         """_verify_printer returns False when paperang is missing."""
-        with patch("builtins.__import__") as mock_import:
-            mock_import.side_effect = ImportError
+        with patch(
+            "custom_components.paperang.transport.usb.PaperangP2",
+            side_effect=ImportError,
+        ):
             result = _verify_printer(1, [3])
             assert result is False
 
@@ -35,8 +38,11 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("paperang.PaperangP2", return_value=mock_p):
-            with patch("custom_components.paperang.UsbTransportWithPath", return_value=mock_tp):
+        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+            with patch(
+                "custom_components.paperang.transport.usb.UsbTransportWithPath",
+                return_value=mock_tp,
+            ):
                 result = _verify_printer(1, [3])
 
         assert result is True
@@ -51,8 +57,11 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("paperang.PaperangP2", return_value=mock_p):
-            with patch("custom_components.paperang.UsbTransportWithPath", return_value=mock_tp):
+        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+            with patch(
+                "custom_components.paperang.transport.usb.UsbTransportWithPath",
+                return_value=mock_tp,
+            ):
                 result = _verify_printer(1, [3])
 
         assert result is False
@@ -64,8 +73,11 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("paperang.PaperangP2", return_value=mock_p):
-            with patch("custom_components.paperang.UsbTransportWithPath", return_value=mock_tp):
+        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+            with patch(
+                "custom_components.paperang.transport.usb.UsbTransportWithPath",
+                return_value=mock_tp,
+            ):
                 result = _verify_printer(1, [3])
 
         assert result is False
@@ -78,8 +90,11 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("paperang.PaperangP2", return_value=mock_p):
-            with patch("custom_components.paperang.UsbTransportWithPath", return_value=mock_tp):
+        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+            with patch(
+                "custom_components.paperang.transport.usb.UsbTransportWithPath",
+                return_value=mock_tp,
+            ):
                 result = _verify_printer(1, [3])
 
         assert result is True  # battery was read before disconnect failed
@@ -136,8 +151,7 @@ class TestBleDiscovery:
     @pytest.mark.asyncio
     async def test_verify_ble_no_lib_returns_false(self):
         """_async_verify_ble_printer returns False when paperang is missing."""
-        with patch("builtins.__import__") as mock_import:
-            mock_import.side_effect = ImportError
+        with patch("custom_components.paperang.transport.ble.BleTransport", None):
             result = await _async_verify_ble_printer("AA:BB:CC:DD:EE:FF")
             assert result is False
 
@@ -149,8 +163,11 @@ class TestBleDiscovery:
 
         mock_ble = MagicMock()
 
-        with patch("paperang.PaperangP2", return_value=mock_p):
-            with patch("paperang.transport.BleTransport", return_value=mock_ble):
+        with patch("custom_components.paperang.transport.ble.PaperangP2", return_value=mock_p):
+            with patch(
+                "custom_components.paperang.transport.ble.BleTransport",
+                return_value=mock_ble,
+            ):
                 result = await _async_verify_ble_printer("AA:BB:CC:DD:EE:FF")
 
         assert result is True
@@ -165,8 +182,11 @@ class TestBleDiscovery:
 
         mock_ble = MagicMock()
 
-        with patch("paperang.PaperangP2", return_value=mock_p):
-            with patch("paperang.transport.BleTransport", return_value=mock_ble):
+        with patch("custom_components.paperang.transport.ble.PaperangP2", return_value=mock_p):
+            with patch(
+                "custom_components.paperang.transport.ble.BleTransport",
+                return_value=mock_ble,
+            ):
                 result = await _async_verify_ble_printer("AA:BB:CC:DD:EE:FF")
 
         assert result is False

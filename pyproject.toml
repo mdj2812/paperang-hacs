@@ -17,3 +17,6 @@ exclude_also = [
 [tool.ruff.lint]
 # E402: deliberate non-top-level imports due to HA module name conflict
 ignore = ["E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"custom_components/paperang/__init__.py" = ["F401"]

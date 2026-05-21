@@ -1,6 +1,6 @@
 """Tests for paperang config flow — HA integration style."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -68,13 +68,13 @@ class TestConfigFlowBLE:
     @pytest.mark.asyncio
     async def test_ble_scan_no_devices_aborts(self, hass: HomeAssistant) -> None:
         """BLE step with no devices returns empty list from scan."""
-        from custom_components.paperang.config_flow import _async_scan_ble_devices
+        from custom_components.paperang.transport.ble import async_scan_ble_devices
 
         with patch("bleak.BleakScanner") as mock_cls:
             async def _empty(timeout=5):
                 return []
             mock_cls.discover = _empty
-            result = await _async_scan_ble_devices()
+            result = await async_scan_ble_devices()
 
         assert result == []
 
