@@ -116,6 +116,68 @@ class TestServiceRegistration:
                 DOMAIN, "get_status", {"entry_id": entry.entry_id}, blocking=True,
             )
 
+    async def test_print_image_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
+        """print_image service dispatches to printer."""
+        entry = await _setup_entry(hass, mock_p)
+
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+            await hass.services.async_call(
+                DOMAIN, "print_image",
+                {"image_url": "http://x.com/a.png", "entry_id": entry.entry_id},
+                blocking=True,
+            )
+        mock_p.print_image.assert_called_once()
+
+    async def test_print_qr_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
+        """print_qr service dispatches to printer."""
+        entry = await _setup_entry(hass, mock_p)
+
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+            await hass.services.async_call(
+                DOMAIN, "print_qr",
+                {"qr_content": "https://x.com", "entry_id": entry.entry_id},
+                blocking=True,
+            )
+        mock_p.print_qr.assert_called_once()
+
+    async def test_print_pickup_code_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
+        """print_pickup_code service dispatches to printer."""
+        entry = await _setup_entry(hass, mock_p)
+
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+            await hass.services.async_call(
+                DOMAIN, "print_pickup_code",
+                {"pickup_code": "19-4308", "entry_id": entry.entry_id},
+                blocking=True,
+            )
+        mock_p.print_pickup_code.assert_called_once()
+
+    async def test_get_entry_id_from_call(self) -> None:
+        """_get_entry_id_from_call resolves entry_id correctly."""
+        from custom_components.paperang.services import _get_entry_id_from_call
+        from custom_components.paperang.core.runtime import transport_configs
+
+        transport_configs.clear()
+        # No entries → empty string
+        call = MagicMock()
+        call.data = {}
+        assert _get_entry_id_from_call(call) == ""
+
+        # With entries and explicit id
+        transport_configs["abc123"] = {}
+        call.data = {"entry_id": "abc123"}
+        assert _get_entry_id_from_call(call) == "abc123"
+
+        # Without explicit id, falls back to first
+        call.data = {}
+        assert _get_entry_id_from_call(call) == "abc123"
+
+        # Explicit but unknown id → first fallback
+        call.data = {"entry_id": "unknown"}
+        assert _get_entry_id_from_call(call) == "abc123"
+
+        transport_configs.clear()
+
 
 class TestCoordinator:
     async def test_coordinator_reads_all_keys(self, hass: HomeAssistant, mock_p) -> None:

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 
+from functools import partial
+
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
@@ -84,13 +86,15 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
             heat_density = profile_settings["heat_density"]
 
         await hass.async_add_executor_job(
-            _do_print_image,
-            entry_id,
-            image_url=image_url,
-            heat_density=heat_density,
-            threshold=threshold,
-            brightness=brightness,
-            contrast=contrast,
+            partial(
+                _do_print_image,
+                entry_id,
+                image_url=image_url,
+                heat_density=heat_density,
+                threshold=threshold,
+                brightness=brightness,
+                contrast=contrast,
+            )
         )
 
     async def handle_print_qr(call: ServiceCall) -> None:
