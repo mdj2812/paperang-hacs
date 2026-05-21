@@ -5,6 +5,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+def _check_usb():
+    """Check if pyusb is available."""
+    try:
+        import usb.core  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+_usb_available = _check_usb()
+
+
 class TestUsbTransportWithPath:
     """Tests for UsbTransportWithPath constructor."""
 
@@ -30,6 +42,7 @@ class TestUsbTransportWithPath:
 class TestScanUsbDevices:
     """Tests for scan_usb_devices()."""
 
+    @pytest.mark.skipif(not _usb_available, reason="pyusb not installed")
     def test_returns_devices(self):
         """Returns list of device dicts when devices are found."""
         from custom_components.paperang.transport.usb import scan_usb_devices
@@ -47,6 +60,7 @@ class TestScanUsbDevices:
             "usb_path": "2-1-3", "bus": 2, "port": [1, 3], "address": 5,
         }
 
+    @pytest.mark.skipif(not _usb_available, reason="pyusb not installed")
     def test_returns_empty(self):
         """Returns empty list when no devices found."""
         from custom_components.paperang.transport.usb import scan_usb_devices
@@ -55,6 +69,7 @@ class TestScanUsbDevices:
             result = scan_usb_devices()
         assert result == []
 
+    @pytest.mark.skipif(not _usb_available, reason="pyusb not installed")
     def test_device_none_port_numbers(self):
         """Device with None port_numbers falls back to empty list."""
         from custom_components.paperang.transport.usb import scan_usb_devices
