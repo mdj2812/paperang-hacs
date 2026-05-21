@@ -47,7 +47,7 @@ class PaperangEntity(CoordinatorEntity):
         *entry_id* is HA's raw config entry id.  Together with *suffix*
         it forms the entity unique id (``paperang_{entry_id}_{suffix}``).
         """
-        self._attr_name = name
+        self._attr_name = None  # resolved via translation_key
         self._attr_unique_id = f"paperang_{entry_id}_{suffix}"
         self._attr_translation_key = suffix
         self._attr_icon = icon

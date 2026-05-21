@@ -36,7 +36,7 @@ class TestText:
         assert len(entities) == 1
         e = entities[0]
         assert e.unique_id == f"paperang_{entry.entry_id}_print_content"
-        assert e.name == "Print Content"
+        assert e.translation_key == "print_content"
         assert e.native_value == ""
 
     async def test_set_value(self, hass: HomeAssistant) -> None:
