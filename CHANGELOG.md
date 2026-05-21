@@ -2,9 +2,25 @@
 
 ## v1.4.0rc1 (2026-05-14) — *unreleased*
 
-> **Note:** v1.3.2 was cut from this branch with BLE disabled.
+> **Note:** v1.3.x releases are cut from this branch with BLE disabled.
 > The BLE features listed below are present in code but disabled
 > in the config flow until stability issues are resolved.
+
+## v1.3.3 (2026-05-21)
+
+### Changed
+- **Static info moved to device registry** — model, firmware version, board version,
+  and serial number are now shown on the device info card (no longer separate sensors)
+- **Diagnostic sensors reduced** — only `Connection` remains (connected/disconnected);
+  the old board/version/hw_info/model/serial sensors removed
+- Sensor count: 11 → 6 (5 live + 1 diagnostic)
+
+### Added
+- **Connection diagnostic sensor** — shows `connected` or `disconnected`;
+  usable in automations (e.g. trigger on reconnect)
+
+### Fixed
+- Tests updated for sensor layout change (109 passed, 2 skipped)
 
 ## v1.3.2 (2026-05-21)
 

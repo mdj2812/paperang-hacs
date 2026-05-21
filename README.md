@@ -12,10 +12,10 @@ Control and monitor your Paperang P2 thermal printer through Home Assistant. Pri
 - 🔌 **USB auto-discovery** — printer detected automatically when plugged in
 - 📡 **Bluetooth BLE** — auto-discovered or specify MAC address
 - 🎛️ **Device page controls** — interactive print panel with mode selector, text input, parameter sliders, and print button
-- 📊 **11 telemetry sensors** — battery, status, voltage, temperature, heat density, paper type, firmware version, model, serial number, board version, hardware info
+- 📊 **6 telemetry sensors** — battery, status, voltage, temperature, heat density, and Connection (diagnostic); static info (model, firmware, board, serial) shown on device card
 - 🖨️ **7 services** — print text, images, QR codes, pickup codes, test page, get status, feed paper
 - 📦 **Single device** — all entities grouped under one "Paperang P2 Printer" device
-- ✅ **High coverage** — 56 tests, 97% code coverage, pylint 10.00/10
+- ✅ **High coverage** — 109 tests, 85% coverage, pylint 10.00/10
 
 ## Installation
 
@@ -99,12 +99,9 @@ The device page provides an interactive print panel:
 | Voltage | Battery voltage | mV |
 | Temperature | Printer head temperature | °C |
 | Heat Density | Current heat density setting | % |
-| Paper Type | Detected paper type | — |
-| Firmware Version | Printer firmware version | — |
-| Model | Printer model identifier | — |
-| Serial Number | Printer serial number | — |
-| Board Version | Hardware board revision | — |
-| Hardware Info | Raw hardware info | — |
+| Connection | Connection status (diagnostic) | — |
+
+> ℹ️ Static info (model, firmware version, board version, serial number) is shown on the device card, not as separate sensors.
 
 ## Services
 
