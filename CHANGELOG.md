@@ -6,6 +6,14 @@
 > The BLE features listed below are present in code but disabled
 > in the config flow until stability issues are resolved.
 
+## v1.3.5 (2026-05-22)
+
+### Fixed
+- **Device info now updates on every poll** — firmware version, model, serial
+  number and other static info no longer stay "unknown" if the first poll
+  misses them; subsequent successful polls will fill in missing values
+- Remove unused import (ruff F401)
+
 ## v1.3.4 (2026-05-21)
 
 ### Added
