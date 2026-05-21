@@ -7,7 +7,6 @@ import logging
 import sys
 import time
 from datetime import timedelta
-from functools import partial
 
 import paperang as _lib  # pylint: disable=import-self
 from homeassistant.const import Platform
