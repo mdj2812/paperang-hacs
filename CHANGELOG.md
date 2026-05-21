@@ -6,6 +6,20 @@
 > The BLE features listed below are present in code but disabled
 > in the config flow until stability issues are resolved.
 
+## v1.3.4 (2026-05-21)
+
+### Added
+- **Chinese (zh-Hans) translations** — config flow, options, services, and entity
+  names all display in Chinese when HA language is set to zh-Hans
+- Entity name translation: sensors (电池电量/状态/电压/温度/加热浓度/连接状态),
+  buttons (打印/送纸/测试打印), selects (打印模式/图片配置), numbers (字体大小/
+  二维码大小/送纸行数), text (打印内容)
+- Select state translations: print mode options (文本/图片/二维码/取件码),
+  image profile options (竖版/横版/文档/高对比度/浅色)
+
+### Fixed
+- HACS icon now displays correctly (`icon.png` added at repo root)
+
 ## v1.3.3 (2026-05-21)
 
 ### Changed
