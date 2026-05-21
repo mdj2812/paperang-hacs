@@ -244,7 +244,7 @@ class TestServiceCalls:
         with patch.object(mod, "_get_printer", return_value=bad):
             result = await mod._read_printer_state(hass, entry.entry_id)
 
-        assert result == {"available": False}
+        assert result == {"available": False, "connected": "disconnected"}
 
     async def test_do_print_qr(self, mock_printer) -> None:
         """_do_print_qr calls print_qr with correct args."""

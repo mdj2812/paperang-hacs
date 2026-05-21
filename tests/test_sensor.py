@@ -18,6 +18,7 @@ async def _setup_coordinator(hass: HomeAssistant, entry: MockConfigEntry, data=N
     coordinator.last_update_success = True
     coordinator.data = data or {
         "available": True,
+        "connected": "connected",
         "battery": 80,
         "status": "online",
         "voltage": 4200,
@@ -48,7 +49,7 @@ class TestSensors:
 
         add_entities.assert_called_once()
         entities = add_entities.call_args[0][0]
-        assert len(entities) == 10
+        assert len(entities) == 6
 
         for e in entities:
             assert e.unique_id.startswith(f"paperang_{entry.entry_id}_")
@@ -84,8 +85,13 @@ class TestSensors:
         assert temp.native_unit_of_measurement == UnitOfTemperature.CELSIUS
         assert temp.native_value == 35
 
+        # Connection is the only diagnostic sensor now
+        conn = by_key["connected"]
+        assert conn.entity_category == EntityCategory.DIAGNOSTIC
+        assert conn.native_value == "connected"
+
     async def test_diagnostic_sensors_category(self, hass: HomeAssistant) -> None:
-        """Diagnostic sensors have EntityCategory.DIAGNOSTIC."""
+        """Only Connection is diagnostic; live sensors have no category."""
         entry = MockConfigEntry(domain=DOMAIN, title="Paperang P2 (USB 1-3)")
         entry.add_to_hass(hass)
         await _setup_coordinator(hass, entry)
@@ -101,11 +107,9 @@ class TestSensors:
         assert by_key["battery"].entity_category is None
         assert by_key["status"].entity_category is None
         assert by_key["voltage"].entity_category is None
-        assert by_key["board"].entity_category == EntityCategory.DIAGNOSTIC
-        assert by_key["version"].entity_category == EntityCategory.DIAGNOSTIC
-        assert by_key["hw_info"].entity_category == EntityCategory.DIAGNOSTIC
-        assert by_key["model"].entity_category == EntityCategory.DIAGNOSTIC
-        assert by_key["serial"].entity_category == EntityCategory.DIAGNOSTIC
+        assert by_key["temperature"].entity_category is None
+        assert by_key["heat_density"].entity_category is None
+        assert by_key["connected"].entity_category == EntityCategory.DIAGNOSTIC
 
     async def test_sensor_unavailable_when_printer_offline(self, hass: HomeAssistant) -> None:
         """Sensor shows unavailable when coordinator data signals offline."""
