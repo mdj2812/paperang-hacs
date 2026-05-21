@@ -1,5 +1,5 @@
 """USB transport, device enumeration, and config-flow verification."""
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-few-public-methods
 
 from __future__ import annotations
 
@@ -23,6 +23,9 @@ class UsbTransportWithPath(UsbTransportBase):
         super().__init__(vid, pid)
         self._target_bus = bus
         self._target_port = tuple(port) if port else ()
+        self._dev = None
+        self._ep_out = None
+        self._ep_in = None
 
     def connect(self):
         """Find the targeted USB device, claim and configure it."""
