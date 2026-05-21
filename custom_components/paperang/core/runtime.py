@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 from ..const import (
     CONF_BLE_ADDRESS,
     CONF_TRANSPORT,
@@ -13,6 +15,22 @@ from .paperang_lib import BleTransport, PaperangP2
 from ..transport.usb import UsbTransportWithPath
 
 transport_configs: dict[str, dict[str, object]] = {}
+
+# Per-entry thread lock to prevent concurrent USB access
+# (coordinator polling and service calls share the same USB device)
+_usb_locks: dict[str, threading.Lock] = {}
+
+
+def _get_usb_lock(entry_id: str) -> threading.Lock:
+    """Get or create a per-entry USB lock."""
+    if entry_id not in _usb_locks:
+        _usb_locks[entry_id] = threading.Lock()
+    return _usb_locks[entry_id]
+
+
+def _clear_usb_lock(entry_id: str) -> None:
+    """Remove the USB lock for an entry (on unload)."""
+    _usb_locks.pop(entry_id, None)
 
 
 def _get_printer(entry_id: str | None = None):

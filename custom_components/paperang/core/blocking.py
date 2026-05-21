@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
-from .runtime import _get_printer
+from .runtime import _get_printer, _get_usb_lock
 
 
 def _with_printer(entry_id: str, fn):
-    """Create a printer, connect, run *fn(printer)*, disconnect."""
-    printer = _get_printer(entry_id)
-    try:
-        printer.connect()
-        return fn(printer)
-    finally:
-        printer.disconnect()
+    """Create a printer, connect, run *fn(printer)*, disconnect.
+
+    Uses a per-entry lock to prevent concurrent USB access
+    (coordinator polling and service calls share the same device).
+    """
+    lock = _get_usb_lock(entry_id)
+    with lock:
+        printer = _get_printer(entry_id)
+        try:
+            printer.connect()
+            return fn(printer)
+        finally:
+            printer.disconnect()
 
 
 def _do_print_text(entry_id, text, font_size, heat_density):

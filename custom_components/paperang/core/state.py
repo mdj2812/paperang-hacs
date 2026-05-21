@@ -8,7 +8,7 @@ import time
 from homeassistant.core import HomeAssistant
 
 from ..const import CONF_TRANSPORT, TRANSPORT_BLE
-from .runtime import _get_printer, transport_configs
+from .runtime import _get_printer, _get_usb_lock, transport_configs
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,7 +95,17 @@ def _blocking_read_printer_state(entry_id: str):
     poll until a non-None value is obtained; thereafter reuse cache.
 
     Retries up to 3 times on failure; logs warning if all fail.
+
+    Uses a per-entry lock to prevent concurrent USB access from
+    coordinator polling and service calls.
     """
+    lock = _get_usb_lock(entry_id)
+    with lock:
+        return _do_read_printer_state_inner(entry_id)
+
+
+def _do_read_printer_state_inner(entry_id: str):
+    """Inner: actually read printer state (called with lock held)."""
     for attempt in range(1, _RETRIES + 1):
         data: dict[str, object] = {"available": False}
         static_cache = _get_static_cache(entry_id)
