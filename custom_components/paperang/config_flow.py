@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 """Config flow for Paperang P2 Printer integration.
 
-USB / BLE discovery scans for all compatible devices and lets the user
+USB / BLE transport discovery scans for all compatible devices and lets the user
 pick one.  Each device is identified by USB bus+port path or BLE address
 so multiple printers can coexist.
 """
@@ -24,121 +24,9 @@ from .const import (
     TRANSPORT_BLE,
     TRANSPORT_USB,
 )
-
-# ── USB discovery helpers ────────────────────────────────────────
-
-PAPERANG_VID = 0x4348
-PAPERANG_PID = 0x5584
-
-
-def _scan_usb_devices() -> list[dict[str, Any]]:
-    """Return all Paperang P2 USB devices currently attached.
-
-    Each dict: ``usb_path`` (display string), ``bus``, ``port``,
-    ``address``.
-    Returns empty list if pyusb is missing or no devices found.
-    """
-    try:
-        import usb.core  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        return []
-
-    devices = usb.core.find(
-        find_all=True, idVendor=PAPERANG_VID, idProduct=PAPERANG_PID
-    )
-    result: list[dict[str, Any]] = []
-    for dev in devices:
-        port = list(dev.port_numbers) if dev.port_numbers else []
-        usb_path = "-".join(str(p) for p in [dev.bus] + port)
-        result.append(
-            {
-                "usb_path": usb_path,
-                "bus": dev.bus,
-                "port": port,
-                "address": dev.address,
-            }
-        )
-    return result
-
-
-def _verify_printer(bus: int, port: list[int]) -> bool:
-    """Quick check: connect to the device and read battery.
-
-    Returns True on success, False on any error.
-    """
-    try:
-        import paperang  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        return False
-
-    from . import UsbTransportWithPath  # pylint: disable=import-outside-toplevel
-
-    printer = paperang.PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
-    try:
-        printer.connect()
-        battery = printer.get_battery()
-        return battery is not None
-    except Exception:  # pylint: disable=broad-exception-caught
-        return False
-    finally:
-        try:
-            printer.disconnect()
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-
-
-# ── BLE discovery helpers ────────────────────────────────────────
-
-BLE_NAMES = {"paperang", "miaomiaoji"}
-
-
-async def _async_scan_ble_devices() -> list[dict[str, Any]]:
-    """Scan for nearby Paperang BLE devices.
-
-    Each dict: ``name``, ``address``.
-    """
-    try:
-        from bleak import BleakScanner  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        return []
-
-    try:
-        devices = await BleakScanner.discover(timeout=5)
-    except Exception:  # pylint: disable=broad-exception-caught
-        return []
-
-    result: list[dict[str, Any]] = []
-    for d in devices:
-        if d.name and any(d.name.lower().startswith(n) for n in BLE_NAMES):
-            result.append({"name": d.name, "address": d.address})
-    return result
-
-
-async def _async_verify_ble_printer(address: str) -> bool:
-    """Connect to BLE printer and verify communication."""
-    try:
-        import paperang  # pylint: disable=import-outside-toplevel
-        from paperang.transport import (  # pylint: disable=import-outside-toplevel
-            BleTransport,
-        )
-    except ImportError:
-        return False
-
-    printer = paperang.PaperangP2(transport=BleTransport(address=address))
-    try:
-        printer.connect()
-        battery = printer.get_battery()
-        return battery is not None
-    except Exception:  # pylint: disable=broad-exception-caught
-        return False
-    finally:
-        try:
-            printer.disconnect()
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-
-
-# ── Config Flow ──────────────────────────────────────────────────
+from .transport.ble import async_verify_ble_printer as _async_verify_ble_printer
+from .transport.usb import scan_usb_devices as _scan_usb_devices
+from .transport.usb import verify_printer as _verify_printer
 
 
 class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -160,8 +48,6 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry):
         """Get the options flow."""
         return PaperangOptionsFlow(config_entry)
-
-    # ── USB discovery ─────────────────────────────────────────
 
     async def async_step_usb(self, discovery_info=None):
         """Handle USB discovery — scan for Paperang devices."""
@@ -240,8 +126,6 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    # ── BLE discovery (disabled until stable) ─────────────────
-
     async def async_step_bluetooth(self, discovery_info):
         # pylint: disable=unused-argument
         """Bluetooth discovery — temporarily disabled."""
@@ -304,8 +188,6 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    # ── Manual / import ────────────────────────────────────────
-
     @staticmethod
     def _user_schema():
         """Return the transport-selection schema (shared)."""
@@ -351,9 +233,6 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self._handle_usb_user_selection()
             return await self._handle_ble_user_selection()
         return self.async_show_form(step_id="user", data_schema=self._user_schema())
-
-
-# ── Options Flow ─────────────────────────────────────────────────
 
 
 class PaperangOptionsFlow(config_entries.OptionsFlow):

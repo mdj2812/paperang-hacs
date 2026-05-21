@@ -11,6 +11,10 @@ from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, CONF_TRANSPO
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
+_PATCH_STATE_GET = "custom_components.paperang.core.state._get_printer"
+_PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
+_PATCH_BLOCK_GET = "custom_components.paperang.core.blocking._get_printer"
+
 
 @pytest.fixture
 def mock_printer():
@@ -42,7 +46,7 @@ class TestSetupEntry:
 
         import custom_components.paperang as mod
 
-        with patch.object(mod, "_get_printer", return_value=mock_printer):
+        with patch(_PATCH_STATE_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
                 with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
                     result = await mod.async_setup_entry(hass, entry)
@@ -62,7 +66,7 @@ class TestSetupEntry:
 
         import custom_components.paperang as mod
 
-        with patch.object(mod, "_get_printer", return_value=mock_printer):
+        with patch(_PATCH_STATE_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
                 with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
                     result = await mod.async_setup_entry(hass, entry)
@@ -83,7 +87,7 @@ class TestSetupEntry:
 
         import custom_components.paperang as mod
 
-        with patch.object(mod, "_get_printer", return_value=mock_printer):
+        with patch(_PATCH_STATE_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
                 with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
                     await mod.async_setup_entry(hass, entry)
@@ -110,7 +114,7 @@ class TestServiceCalls:
         import custom_components.paperang as mod
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             # Call the do-function directly
             mod._do_print_text(entry.entry_id, "Hello", 24, 75)
 
@@ -128,7 +132,7 @@ class TestServiceCalls:
         import custom_components.paperang as mod
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_feed_paper(entry.entry_id, 100)
 
         mock_printer.feed.assert_called_once_with(100)
@@ -145,7 +149,7 @@ class TestServiceCalls:
         import custom_components.paperang as mod
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_test_page(entry.entry_id)
 
         mock_printer.print_test_page.assert_called_once()
@@ -162,7 +166,7 @@ class TestServiceCalls:
         import custom_components.paperang as mod
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             result = mod._do_get_status(entry.entry_id)
 
         assert result == {"battery": 80, "status": "online", "available": True}
@@ -170,13 +174,16 @@ class TestServiceCalls:
     async def test_get_printer_usb_with_path(self) -> None:
         """_get_printer with USB bus/port uses UsbTransportWithPath."""
         import custom_components.paperang as mod
+        import custom_components.paperang.core.runtime as pr
+
         mod._transport_configs.clear()
         mod._transport_configs["test_eid"] = {
             "transport": "usb", "usb_bus": 1, "usb_port": [3],
         }
 
-        with patch.object(mod, "UsbTransportWithPath") as mock_tp, \
-                patch.object(mod, "PaperangP2") as mock_p2:
+        with patch.object(pr, "UsbTransportWithPath") as mock_tp, patch.object(
+            pr, "PaperangP2"
+        ) as mock_p2:
             mock_transport = MagicMock()
             mock_tp.return_value = mock_transport
             mod._get_printer("test_eid")
@@ -186,13 +193,16 @@ class TestServiceCalls:
     async def test_get_printer_ble(self) -> None:
         """_get_printer with BLE transport uses BleTransport."""
         import custom_components.paperang as mod
+        import custom_components.paperang.core.runtime as pr
+
         mod._transport_configs.clear()
         mod._transport_configs["test_eid"] = {
             "transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF",
         }
 
-        with patch.object(mod, "BleTransport", create=True) as mock_ble_cls, \
-                patch.object(mod, "PaperangP2") as mock_p2:
+        with patch.object(pr, "BleTransport", create=True) as mock_ble_cls, patch.object(
+            pr, "PaperangP2"
+        ) as mock_p2:
             mock_ble = MagicMock()
             mock_ble_cls.return_value = mock_ble
             mod._get_printer("test_eid")
@@ -221,7 +231,7 @@ class TestServiceCalls:
         import custom_components.paperang as mod
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
-        with patch.object(mod, "_get_printer", return_value=mock_printer):
+        with patch(_PATCH_STATE_GET, return_value=mock_printer):
             result = await mod._read_printer_state(hass, entry.entry_id)
 
         assert result["version"] == "V1.0.11"
@@ -241,7 +251,7 @@ class TestServiceCalls:
         bad = MagicMock()
         bad.connect.side_effect = RuntimeError("boom")
 
-        with patch.object(mod, "_get_printer", return_value=bad):
+        with patch(_PATCH_STATE_GET, return_value=bad):
             result = await mod._read_printer_state(hass, entry.entry_id)
 
         assert result == {"available": False}
@@ -250,7 +260,7 @@ class TestServiceCalls:
         """_do_print_qr calls print_qr with correct args."""
         import custom_components.paperang as mod
 
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_qr("test", "https://x.com", 400, 70)
 
         mock_printer.print_qr.assert_called_once_with("https://x.com", heat_density=70, max_width=400)
@@ -259,7 +269,7 @@ class TestServiceCalls:
         """_do_print_pickup_code calls print_pickup_code."""
         import custom_components.paperang as mod
 
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_pickup_code("test", "19-4308")
 
         mock_printer.print_pickup_code.assert_called_once_with("19-4308")
@@ -268,7 +278,7 @@ class TestServiceCalls:
         """_do_get_status returns error dict on failure."""
         import custom_components.paperang as mod
 
-        with patch.object(mod, "_get_printer", side_effect=RuntimeError("offline")):
+        with patch(_PATCH_BLOCK_GET, side_effect=RuntimeError("offline")):
             result = mod._do_get_status("test")
 
         assert result["available"] is False
@@ -277,9 +287,11 @@ class TestServiceCalls:
     async def test_get_printer_fallback(self) -> None:
         """_get_printer without args returns default PaperangP2."""
         import custom_components.paperang as mod
+        import custom_components.paperang.core.runtime as pr
+
         mod._transport_configs.clear()
 
-        with patch.object(mod, "PaperangP2") as mock_p2:
+        with patch.object(pr, "PaperangP2") as mock_p2:
             mod._get_printer()
             mock_p2.assert_called_once()
 
@@ -314,14 +326,14 @@ class TestServiceCalls:
     async def test_do_print_text(self, mock_printer) -> None:
         """_do_print_text calls print_text with correct args."""
         import custom_components.paperang as mod
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_text("test", "Hello", 24, 75)
         mock_printer.print_text.assert_called_once_with("Hello", font_size=24, heat_density=75)
 
     async def test_do_print_image(self, mock_printer) -> None:
         """_do_print_image calls print_image with correct args."""
         import custom_components.paperang as mod
-        with patch.object(mod, "_with_printer", wraps=lambda eid, fn: fn(mock_printer)):
+        with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_image("test", image_url="http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0)
         mock_printer.print_image.assert_called_once_with(
             "http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0

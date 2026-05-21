@@ -10,6 +10,9 @@ from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, CONF_TRANSPO
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
+_PATCH_STATE_GET = "custom_components.paperang.core.state._get_printer"
+_PATCH_BLOCK_GET = "custom_components.paperang.core.blocking._get_printer"
+
 
 @pytest.fixture
 def mock_p():
@@ -40,7 +43,7 @@ async def _setup_entry(hass, mock_p, extra_data=None):
     import custom_components.paperang as mod
     # Register services (async_setup is called once per HA instance)
     await mod.async_setup(hass, {})
-    with patch.object(mod, "_get_printer", return_value=mock_p):
+    with patch(_PATCH_STATE_GET, return_value=mock_p):
         with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
             await mod.async_setup_entry(hass, entry)
     return entry
@@ -61,8 +64,7 @@ class TestServiceRegistration:
         """print_text service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
-        with patch.object(mod, "_get_printer", return_value=mock_p):
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_text",
                 {"text": "Hello", "font_size": 24, "heat_density": 75,
@@ -75,8 +77,7 @@ class TestServiceRegistration:
         """feed_paper service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
-        with patch.object(mod, "_get_printer", return_value=mock_p):
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "feed_paper",
                 {"lines": 50, "entry_id": entry.entry_id},
@@ -88,8 +89,7 @@ class TestServiceRegistration:
         """print_test_page service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
-        with patch.object(mod, "_get_printer", return_value=mock_p):
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_test_page",
                 {"entry_id": entry.entry_id},
@@ -99,10 +99,9 @@ class TestServiceRegistration:
 
     async def test_service_without_entry_id(self, hass: HomeAssistant, mock_p) -> None:
         """Service without entry_id falls back to first entry."""
-        entry = await _setup_entry(hass, mock_p)
+        await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
-        with patch.object(mod, "_get_printer", return_value=mock_p):
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "feed_paper", {"lines": 100}, blocking=True,
             )
@@ -112,8 +111,7 @@ class TestServiceRegistration:
         """get_status service logs printer status."""
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
-        with patch.object(mod, "_get_printer", return_value=mock_p):
+        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "get_status", {"entry_id": entry.entry_id}, blocking=True,
             )
@@ -124,7 +122,6 @@ class TestCoordinator:
         """Coordinator data contains all expected keys after refresh."""
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
         coordinator = hass.data[DOMAIN][entry.entry_id]
 
         assert coordinator.data["available"] is True
@@ -175,7 +172,6 @@ class TestVersionDecode:
         mock_p.get_version.return_value = "720897"
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
         coordinator = hass.data[DOMAIN][entry.entry_id]
         assert coordinator.data["version"] == "V1.0.11"
 
@@ -184,6 +180,5 @@ class TestVersionDecode:
         mock_p.get_version.return_value = "1.2.3"
         entry = await _setup_entry(hass, mock_p)
 
-        import custom_components.paperang as mod
         coordinator = hass.data[DOMAIN][entry.entry_id]
         assert coordinator.data["version"] == "1.2.3"

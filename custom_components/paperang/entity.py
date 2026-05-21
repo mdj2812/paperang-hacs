@@ -8,7 +8,7 @@ Provides common patterns used across all entity platforms:
 """
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 DEVICE_ID = "paperang_p2_printer"
