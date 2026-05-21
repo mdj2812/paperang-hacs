@@ -49,6 +49,7 @@ class PaperangEntity(CoordinatorEntity):
         """
         self._attr_name = name
         self._attr_unique_id = f"paperang_{entry_id}_{suffix}"
+        self._attr_translation_key = suffix
         self._attr_icon = icon
         self._entry_id = entry_id
         if device_info is not None:
