@@ -1,4 +1,5 @@
 """USB transport, device enumeration, and config-flow verification."""
+# pylint: disable=duplicate-code
 
 from __future__ import annotations
 

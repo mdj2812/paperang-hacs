@@ -52,6 +52,7 @@ def _get_entry_id_from_call(call: ServiceCall) -> str:
 
 
 def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
+    # pylint: disable=too-many-statements
     """Register Paperang domain services."""
 
     async def handle_print_text(call: ServiceCall) -> None:
