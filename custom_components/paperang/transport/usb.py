@@ -98,19 +98,28 @@ def scan_usb_devices() -> list[dict[str, Any]]:
 def verify_printer(bus: int, port: list[int]) -> bool:
     """Quick check: connect to the device and read battery.
 
+    Retries on USB Resource busy errors caused by concurrent access.
     Returns True on success, False on any error.
     """
-    printer = None
-    try:
-        printer = PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
-        printer.connect()
-        battery = printer.get_battery()
-        return battery is not None
-    except Exception:  # pylint: disable=broad-exception-caught
-        return False
-    finally:
-        if printer is not None:
-            try:
-                printer.disconnect()
-            except Exception:  # pylint: disable=broad-exception-caught
-                pass
+    import time
+    last_err = None
+    for _ in range(3):
+        printer = None
+        try:
+            printer = PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
+            printer.connect()
+            battery = printer.get_battery()
+            return battery is not None
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            last_err = err
+            if "Resource busy" in str(err) or "Entity" in str(err):
+                time.sleep(0.5)
+                continue
+            return False
+        finally:
+            if printer is not None:
+                try:
+                    printer.disconnect()
+                except Exception:  # pylint: disable=broad-exception-caught
+                    pass
+    return False
