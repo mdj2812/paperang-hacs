@@ -6,6 +6,19 @@
 > The BLE features listed below are present in code but disabled
 > in the config flow until stability issues are resolved.
 
+## v1.3.6 (2026-05-22)
+
+### Changed
+- **Refactored code structure** — monolithic `__init__.py` (500+ lines) split into
+  `core/`, `transport/`, and `services/` sub-packages for better maintainability
+- Test coverage: 125 tests, 91% (up from 109 tests, 87%)
+
+### Fixed
+- Concurrent USB access between coordinator polling and service calls now uses
+  retry-on-busy (3 attempts, 0.5s backoff) instead of failing immediately
+- Config flow: `KeyError` when YAML import data lacks `transport` key
+- Config flow class tests no longer skipped unnecessarily
+
 ## v1.3.5 (2026-05-22)
 
 ### Fixed
