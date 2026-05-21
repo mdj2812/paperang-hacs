@@ -304,6 +304,7 @@ def _do_read_printer_state(entry_id: str):
                     pass
 
             data["available"] = True
+            data["connected"] = "connected"
             return data
         except Exception as err:  # pylint: disable=broad-exception-caught
             if attempt < _RETRIES:
@@ -324,7 +325,7 @@ def _do_read_printer_state(entry_id: str):
         finally:
             printer.disconnect()
 
-    return {"available": False}
+    return {"available": False, "connected": "disconnected"}
 
 
 # pylint: enable=duplicate-code

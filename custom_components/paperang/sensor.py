@@ -109,6 +109,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 coordinator,
                 entry.entry_id,
                 device_info,
+                "connected",
+                "Connection",
+                config=SensorConfig(
+                    icon="mdi:connection", entity_category=EntityCategory.DIAGNOSTIC
+                ),
+            ),
+            PaperangSensor(
+                coordinator,
+                entry.entry_id,
+                device_info,
                 "board",
                 "Board Version",
                 config=SensorConfig(
