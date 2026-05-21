@@ -1,7 +1,8 @@
 """Paperang P2 Printer - Sensor platform.
 
 Provides real-time sensors (battery, status, voltage, temperature,
-heat density) and diagnostic sensors (board revision, firmware, etc.).
+heat density) and a diagnostic Connection sensor.
+Static info (model, firmware, board, serial) lives in device registry.
 """
 
 from __future__ import annotations
@@ -113,58 +114,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 "Connection",
                 config=SensorConfig(
                     icon="mdi:connection", entity_category=EntityCategory.DIAGNOSTIC
-                ),
-            ),
-            PaperangSensor(
-                coordinator,
-                entry.entry_id,
-                device_info,
-                "board",
-                "Board Version",
-                config=SensorConfig(
-                    icon="mdi:chip", entity_category=EntityCategory.DIAGNOSTIC
-                ),
-            ),
-            PaperangSensor(
-                coordinator,
-                entry.entry_id,
-                device_info,
-                "version",
-                "Firmware Version",
-                config=SensorConfig(
-                    icon="mdi:information-outline",
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-            ),
-            PaperangSensor(
-                coordinator,
-                entry.entry_id,
-                device_info,
-                "hw_info",
-                "Hardware Info",
-                config=SensorConfig(
-                    icon="mdi:memory", entity_category=EntityCategory.DIAGNOSTIC
-                ),
-            ),
-            PaperangSensor(
-                coordinator,
-                entry.entry_id,
-                device_info,
-                "model",
-                "Model",
-                config=SensorConfig(
-                    icon="mdi:printer-3d-nozzle",
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-            ),
-            PaperangSensor(
-                coordinator,
-                entry.entry_id,
-                device_info,
-                "serial",
-                "Serial Number",
-                config=SensorConfig(
-                    icon="mdi:barcode", entity_category=EntityCategory.DIAGNOSTIC
                 ),
             ),
         ]

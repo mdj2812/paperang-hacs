@@ -12,6 +12,7 @@ from functools import partial
 import paperang as _lib  # pylint: disable=import-self
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -559,6 +560,23 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Push static printer info into the device registry
+    data = coordinator.data
+    if data and data.get("available"):
+        device_registry = dr.async_get(hass)
+        device = device_registry.async_get_device(
+            identifiers={("paperang", f"paperang_{entry.entry_id}")}
+        )
+        if device:
+            device_registry.async_update_device(
+                device.id,
+                model=data.get("model") or "P2",
+                sw_version=str(data.get("version", "")),
+                hw_version=str(data.get("board", "")),
+                serial_number=data.get("serial") or None,
+            )
+
     return True
 
 
