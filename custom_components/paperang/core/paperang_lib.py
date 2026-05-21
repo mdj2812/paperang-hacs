@@ -15,7 +15,7 @@ _custom_paths = [p for p in sys.path if "custom_components" in p]
 for _p in _custom_paths:
     sys.path.remove(_p)
 
-import paperang as _lib  # noqa: E402 pylint: disable=import-outside-toplevel,import-error
+import paperang as _lib  # noqa: E402 pylint: disable=import-outside-toplevel,import-error,wrong-import-position
 
 for _p in _custom_paths:
     sys.path.insert(0, _p)
