@@ -217,7 +217,7 @@ class TestServiceCalls:
         }
 
         result = await mod._read_printer_state(hass, "test_eid")
-        assert result == {"available": True}
+        assert result == {"available": True, "connected": "connected"}
 
     async def test_read_printer_state_firmware_decode(self, hass: HomeAssistant, mock_printer) -> None:
         """Firmware version 720897 is decoded to V1.0.11."""
@@ -254,7 +254,7 @@ class TestServiceCalls:
         with patch(_PATCH_STATE_GET, return_value=bad):
             result = await mod._read_printer_state(hass, entry.entry_id)
 
-        assert result == {"available": False}
+        assert result == {"available": False, "connected": "disconnected"}
 
     async def test_do_print_qr(self, mock_printer) -> None:
         """_do_print_qr calls print_qr with correct args."""

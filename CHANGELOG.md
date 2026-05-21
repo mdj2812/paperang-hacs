@@ -2,9 +2,47 @@
 
 ## v1.4.0rc1 (2026-05-14) — *unreleased*
 
-> **Note:** v1.3.2 was cut from this branch with BLE disabled.
+> **Note:** v1.3.x releases are cut from this branch with BLE disabled.
 > The BLE features listed below are present in code but disabled
 > in the config flow until stability issues are resolved.
+
+## v1.3.5 (2026-05-22)
+
+### Fixed
+- **Device info now updates on every poll** — firmware version, model, serial
+  number and other static info no longer stay "unknown" if the first poll
+  misses them; subsequent successful polls will fill in missing values
+- Remove unused import (ruff F401)
+
+## v1.3.4 (2026-05-21)
+
+### Added
+- **Chinese (zh-Hans) translations** — config flow, options, services, and entity
+  names all display in Chinese when HA language is set to zh-Hans
+- Entity name translation: sensors (电池电量/状态/电压/温度/加热浓度/连接状态),
+  buttons (打印/送纸/测试打印), selects (打印模式/图片配置), numbers (字体大小/
+  二维码大小/送纸行数), text (打印内容)
+- Select state translations: print mode options (文本/图片/二维码/取件码),
+  image profile options (竖版/横版/文档/高对比度/浅色)
+
+### Fixed
+- HACS icon now displays correctly (`icon.png` added at repo root)
+
+## v1.3.3 (2026-05-21)
+
+### Changed
+- **Static info moved to device registry** — model, firmware version, board version,
+  and serial number are now shown on the device info card (no longer separate sensors)
+- **Diagnostic sensors reduced** — only `Connection` remains (connected/disconnected);
+  the old board/version/hw_info/model/serial sensors removed
+- Sensor count: 11 → 6 (5 live + 1 diagnostic)
+
+### Added
+- **Connection diagnostic sensor** — shows `connected` or `disconnected`;
+  usable in automations (e.g. trigger on reconnect)
+
+### Fixed
+- Tests updated for sensor layout change (109 passed, 2 skipped)
 
 ## v1.3.2 (2026-05-21)
 

@@ -6,12 +6,12 @@ Powered by paperang-p2-lib for core printer logic.
 from __future__ import annotations
 
 from datetime import timedelta
-from functools import partial
 
 import logging
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -80,11 +80,29 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up from config entry (also called after YAML import)."""
     transport_configs[entry.entry_id] = dict(entry.data)
 
+    async def _coordinator_update():
+        """Read printer state, then push static info to device registry."""
+        data = await _read_printer_state(hass, entry.entry_id)
+        if data and data.get("available"):
+            device_registry = dr.async_get(hass)
+            device = device_registry.async_get_device(
+                identifiers={("paperang", f"paperang_{entry.entry_id}")}
+            )
+            if device:
+                device_registry.async_update_device(
+                    device.id,
+                    model=data.get("model") or "P2",
+                    sw_version=str(data.get("version", "")),
+                    hw_version=str(data.get("board", "")),
+                    serial_number=data.get("serial") or None,
+                )
+        return data
+
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name="paperang",
-        update_method=partial(_read_printer_state, hass, entry.entry_id),
+        update_method=_coordinator_update,
         update_interval=UPDATE_INTERVAL,
     )
     await coordinator.async_config_entry_first_refresh()

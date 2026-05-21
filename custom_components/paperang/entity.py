@@ -27,6 +27,31 @@ def make_device_info(entry: ConfigEntry) -> DeviceInfo:
     )
 
 
+# Map English entity names to Chinese (zh-Hans).
+_NAME_ZH: dict[str, str] = {
+    # Sensors
+    "Battery": "电池电量",
+    "Status": "状态",
+    "Voltage": "电压",
+    "Temperature": "温度",
+    "Heat Density": "加热浓度",
+    "Connection": "连接状态",
+    # Buttons
+    "Print": "打印",
+    "Feed Paper": "送纸",
+    "Test Print": "测试打印",
+    # Selects
+    "Print Mode": "打印模式",
+    "Image Profile": "图片配置",
+    # Numbers
+    "Font Size": "字体大小",
+    "QR Size": "二维码大小",
+    "Feed Lines": "送纸行数",
+    # Text
+    "Print Content": "打印内容",
+}
+
+
 class PaperangEntity(CoordinatorEntity):
     """Base class for all Paperang entities."""
 
@@ -49,6 +74,7 @@ class PaperangEntity(CoordinatorEntity):
         """
         self._attr_name = name
         self._attr_unique_id = f"paperang_{entry_id}_{suffix}"
+        self._attr_translation_key = suffix
         self._attr_icon = icon
         self._entry_id = entry_id
         if device_info is not None:
@@ -61,6 +87,18 @@ class PaperangEntity(CoordinatorEntity):
                 model="P2",
             )
         super().__init__(coordinator)
+
+    @property
+    def name(self) -> str | None:
+        """Return localized name based on HA language."""
+        if self.hass and (lang := self.hass.config.language) and lang.startswith("zh"):
+            return _NAME_ZH.get(self._attr_name, self._attr_name)
+        return self._attr_name
+
+    @name.setter
+    def name(self, value: str | None) -> None:
+        """Allow setting name via _attr_name."""
+        self._attr_name = value
 
     @property
     def available(self) -> bool:

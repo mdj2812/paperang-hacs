@@ -81,7 +81,7 @@ async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     """
     cfg = transport_configs.get(entry_id, {})
     if cfg.get(CONF_TRANSPORT) == TRANSPORT_BLE:
-        return {"available": True}
+        return {"available": True, "connected": "connected"}
     return await hass.async_add_executor_job(_blocking_read_printer_state, entry_id)
 
 
@@ -150,6 +150,7 @@ def _blocking_read_printer_state(entry_id: str):
                     pass
 
             data["available"] = True
+            data["connected"] = "connected"
             return data
         except Exception as err:  # pylint: disable=broad-exception-caught
             if attempt < _RETRIES:
@@ -169,4 +170,4 @@ def _blocking_read_printer_state(entry_id: str):
         finally:
             printer.disconnect()
 
-    return {"available": False}
+    return {"available": False, "connected": "disconnected"}
