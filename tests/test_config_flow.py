@@ -47,11 +47,9 @@ class TestConfigFlowSchema:
 
 
 class TestConfigFlowClass:
-    @pytest.mark.skip(reason="ConfigFlow mock requires full HA runtime")
     def test_version_is_2(self):
         assert PaperangConfigFlow.VERSION == 2
 
-    @pytest.mark.skip(reason="ConfigFlow mock requires full HA runtime")
     def test_async_get_options_flow(self):
         opts = PaperangConfigFlow.async_get_options_flow(MagicMock())
         assert isinstance(opts, PaperangOptionsFlow)
