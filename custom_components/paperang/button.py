@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.button import ButtonEntity
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .entity import PaperangEntity, make_device_info
@@ -52,8 +53,6 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         Chinese).  We first try the stable unique_id, then fall back to
         the hardcoded entity_id for testing and backwards compatibility.
         """
-        from homeassistant.helpers import entity_registry as er
-
         registry = er.async_get(hass)
         for entry in registry.entities.values():
             if entry.unique_id == entity_unique_id:

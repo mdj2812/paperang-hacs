@@ -8,6 +8,7 @@ import time
 from homeassistant.core import HomeAssistant
 
 from ..const import CONF_TRANSPORT, TRANSPORT_BLE
+from .blocking import _get_lock
 from .runtime import _get_printer, transport_configs
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,7 +86,8 @@ async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     return await hass.async_add_executor_job(_blocking_read_printer_state, entry_id)
 
 
-def _blocking_read_printer_state(entry_id: str):
+def _blocking_read_printer_state(entry_id: str):  # noqa: C901
+    # pylint: disable=too-many-locals
     """Blocking: connect to printer and read telemetry.
 
     Dynamic values (battery, status): read every poll.  If None, keep
@@ -103,8 +105,6 @@ def _blocking_read_printer_state(entry_id: str):
         printer = _get_printer(entry_id)
 
         # Serialize USB access with print services
-        from .blocking import _get_lock
-
         lock = _get_lock(entry_id)
         try:
             with lock:
