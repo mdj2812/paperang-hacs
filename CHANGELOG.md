@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.7 (2026-05-23)
+
+### Fixed
+- **i18n: button entities now work in Chinese locale** — button.py uses entity
+  registry unique_id lookup with entity_id fallback instead of hardcoding
+  English entity_id suffixes (fixes "Print content is empty" in Chinese)
+- **USB access serialization** — coordinator polling and print services now
+  share a per-entry threading lock to prevent Resource busy conflicts
+
+### Dependencies
+- Bump `paperang-p2-lib` to `>=0.4.0rc2`
+
 ## v1.4.0rc1 (2026-05-14) — *unreleased*
 
 > **Note:** v1.3.x releases are cut from this branch with BLE disabled.
