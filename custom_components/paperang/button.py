@@ -44,12 +44,13 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         )
 
     @staticmethod
-    def _get_state_by_unique_id(hass, entity_unique_id: str):
-        """Get entity state by unique_id, resolving language-variant entity_id.
+    def _get_state_by_unique_id(hass, entity_unique_id: str, fallback_entity_id: str):
+        """Get entity state by unique_id, with entity_id fallback.
 
         HA auto-generates entity_ids from the entity name, which changes
         with the UI language (e.g. "print_content" → "da_yin_nei_rong" in
-        Chinese).  Using the stable unique_id avoids this.
+        Chinese).  We first try the stable unique_id, then fall back to
+        the hardcoded entity_id for testing and backwards compatibility.
         """
         from homeassistant.helpers import entity_registry as er
 
@@ -57,7 +58,8 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         for entry in registry.entities.values():
             if entry.unique_id == entity_unique_id:
                 return hass.states.get(entry.entity_id)
-        return None
+        # Fallback: entity_id lookup (for tests and pre-registry setups)
+        return hass.states.get(fallback_entity_id)
 
     async def async_press(self) -> None:
         """Read entity states and dispatch the appropriate print service."""
@@ -71,17 +73,47 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         qr_size = 500
         profile = "document"
 
-        if (state := self._get_state_by_unique_id(hass, f"paperang_{eid}_print_mode")) is not None:
+        if (
+            state := self._get_state_by_unique_id(
+                hass, f"paperang_{eid}_print_mode", f"select.paperang_{eid}_print_mode"
+            )
+        ) is not None:
             mode = state.state
-        if (state := self._get_state_by_unique_id(hass, f"paperang_{eid}_print_content")) is not None:
+        if (
+            state := self._get_state_by_unique_id(
+                hass,
+                f"paperang_{eid}_print_content",
+                f"text.paperang_{eid}_print_content",
+            )
+        ) is not None:
             content = state.state or ""
-        if (state := self._get_state_by_unique_id(hass, f"paperang_{eid}_font_size")) is not None:
+        if (
+            state := self._get_state_by_unique_id(
+                hass, f"paperang_{eid}_font_size", f"number.paperang_{eid}_font_size"
+            )
+        ) is not None:
             font_size = int(float(state.state))
-        if (state := self._get_state_by_unique_id(hass, f"paperang_{eid}_heat_density")) is not None:
+        if (
+            state := self._get_state_by_unique_id(
+                hass,
+                f"paperang_{eid}_heat_density",
+                f"number.paperang_{eid}_heat_density",
+            )
+        ) is not None:
             heat_density = int(float(state.state))
-        if (state := self._get_state_by_unique_id(hass, f"paperang_{eid}_qr_size")) is not None:
+        if (
+            state := self._get_state_by_unique_id(
+                hass, f"paperang_{eid}_qr_size", f"number.paperang_{eid}_qr_size"
+            )
+        ) is not None:
             qr_size = int(float(state.state))
-        if (state := self._get_state_by_unique_id(hass, f"paperang_{eid}_image_profile")) is not None:
+        if (
+            state := self._get_state_by_unique_id(
+                hass,
+                f"paperang_{eid}_image_profile",
+                f"select.paperang_{eid}_image_profile",
+            )
+        ) is not None:
             profile = state.state
 
         if not content.strip():
