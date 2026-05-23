@@ -101,57 +101,63 @@ def _blocking_read_printer_state(entry_id: str):
         static_cache = _get_static_cache(entry_id)
         dynamic_cache = _get_dynamic_cache(entry_id)
         printer = _get_printer(entry_id)
+
+        # Serialize USB access with print services
+        from .blocking import _get_lock
+
+        lock = _get_lock(entry_id)
         try:
-            printer.connect()
+            with lock:
+                printer.connect()
 
-            battery = printer.get_battery()
-            time.sleep(0.05)
-            status = printer.get_status()
-            data["battery"] = (
-                battery
-                if battery is not None
-                else _get_or_fallback(dynamic_cache, "battery")
-            )
-            data["status"] = (
-                status
-                if status is not None
-                else _get_or_fallback(dynamic_cache, "status")
-            )
-            _update_if_not_none(dynamic_cache, "battery", battery)
-            _update_if_not_none(dynamic_cache, "status", status)
-
-            for key, reader in _STATIC_READERS:
+                battery = printer.get_battery()
                 time.sleep(0.05)
-                val = reader(printer)
-                if key == "version" and val is not None:
+                status = printer.get_status()
+                data["battery"] = (
+                    battery
+                    if battery is not None
+                    else _get_or_fallback(dynamic_cache, "battery")
+                )
+                data["status"] = (
+                    status
+                    if status is not None
+                    else _get_or_fallback(dynamic_cache, "status")
+                )
+                _update_if_not_none(dynamic_cache, "battery", battery)
+                _update_if_not_none(dynamic_cache, "status", status)
+
+                for key, reader in _STATIC_READERS:
+                    time.sleep(0.05)
+                    val = reader(printer)
+                    if key == "version" and val is not None:
+                        try:
+                            ver_int = int(val)
+                            val = (
+                                f"V{ver_int & 0xFF}."
+                                f"{(ver_int >> 8) & 0xFF}."
+                                f"{(ver_int >> 16) & 0xFFFF}"
+                            )
+                        except (ValueError, TypeError):
+                            pass
+                    _update_if_not_none(static_cache, key, val)
+
+                for key in _STATIC_KEYS:
+                    data[key] = _get_or_fallback(static_cache, key)
+                ver = data.get("version")
+                if ver is not None:
                     try:
-                        ver_int = int(val)
-                        val = (
+                        ver_int = int(ver)
+                        data["version"] = (
                             f"V{ver_int & 0xFF}."
                             f"{(ver_int >> 8) & 0xFF}."
                             f"{(ver_int >> 16) & 0xFFFF}"
                         )
                     except (ValueError, TypeError):
                         pass
-                _update_if_not_none(static_cache, key, val)
 
-            for key in _STATIC_KEYS:
-                data[key] = _get_or_fallback(static_cache, key)
-            ver = data.get("version")
-            if ver is not None:
-                try:
-                    ver_int = int(ver)
-                    data["version"] = (
-                        f"V{ver_int & 0xFF}."
-                        f"{(ver_int >> 8) & 0xFF}."
-                        f"{(ver_int >> 16) & 0xFFFF}"
-                    )
-                except (ValueError, TypeError):
-                    pass
-
-            data["available"] = True
-            data["connected"] = "connected"
-            return data
+                data["available"] = True
+                data["connected"] = "connected"
+                return data
         except Exception as err:  # pylint: disable=broad-exception-caught
             if attempt < _RETRIES:
                 _LOGGER.debug(

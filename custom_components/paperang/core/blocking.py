@@ -2,31 +2,45 @@
 
 from __future__ import annotations
 
+import threading
 import time
 
 from .runtime import _get_printer
+
+# Per-entry locks to serialize USB access between coordinator polling
+# and on-demand print services.
+_locks: dict[str, threading.Lock] = {}
+
+
+def _get_lock(entry_id: str) -> threading.Lock:
+    if entry_id not in _locks:
+        _locks[entry_id] = threading.Lock()
+    return _locks[entry_id]
 
 
 def _with_printer(entry_id: str, fn):
     """Create a printer, connect, run *fn(printer)*, disconnect.
 
-    Retries on USB Resource busy errors caused by concurrent access
-    (coordinator polling and service calls competing for the device).
+    Uses a per-entry lock to serialize USB access between coordinator
+    polling and on-demand print service calls.  Retries on USB Resource
+    busy errors caused by kernel driver conflicts.
     """
+    lock = _get_lock(entry_id)
     last_err = None
     for _ in range(3):
-        printer = _get_printer(entry_id)
-        try:
-            printer.connect()
-            return fn(printer)
-        except Exception as err:
-            last_err = err
-            if "Resource busy" in str(err) or "Entity" in str(err):
-                time.sleep(0.5)
-                continue
-            raise
-        finally:
-            printer.disconnect()
+        with lock:
+            printer = _get_printer(entry_id)
+            try:
+                printer.connect()
+                return fn(printer)
+            except Exception as err:
+                last_err = err
+                if "Resource busy" in str(err) or "Entity" in str(err):
+                    time.sleep(0.5)
+                    continue
+                raise
+            finally:
+                printer.disconnect()
     raise last_err  # pylint: disable=raising-bad-type
 
 
