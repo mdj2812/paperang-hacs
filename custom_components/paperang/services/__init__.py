@@ -115,9 +115,8 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
         # Support multiple codes: comma/space/newline separated
         codes = [c.strip() for c in pickup_code.replace(",", " ").split() if c.strip()]
-        await hass.async_add_executor_job(
-            _do_print_pickup_code, entry_id, codes if len(codes) > 1 else codes[0]
-        )
+        for code in codes:
+            await hass.async_add_executor_job(_do_print_pickup_code, entry_id, code)
 
     async def handle_get_status(_call: ServiceCall) -> None:
         entry_id = _get_entry_id_from_call(_call)

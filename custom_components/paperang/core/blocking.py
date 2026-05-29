@@ -77,22 +77,8 @@ def _do_print_qr(entry_id, qr_content, qr_size, heat_density):
 
 
 def _do_print_pickup_code(entry_id, pickup_code):
-    """Blocking: print one or more pickup codes.
-
-    Tries batch print first (lib >=0.4.0rc2 supports a list).
-    Falls back to individual prints if the installed lib only
-    accepts a single string.
-    """
-    if not isinstance(pickup_code, list):
-        _with_printer(entry_id, lambda p: p.print_pickup_code(pickup_code))
-        return
-
-    # Multiple codes: try batch first, fall back to one-by-one.
-    try:
-        _with_printer(entry_id, lambda p: p.print_pickup_code(pickup_code))
-    except TypeError:
-        for code in pickup_code:
-            _with_printer(entry_id, lambda p, c=code: p.print_pickup_code(c))
+    """Blocking: print pickup code."""
+    _with_printer(entry_id, lambda p: p.print_pickup_code(pickup_code))
 
 
 def _do_print_test_page(entry_id):
