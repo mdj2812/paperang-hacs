@@ -5,11 +5,9 @@ Powered by paperang-p2-lib for core printer logic.
 
 from __future__ import annotations
 
-import logging
-import subprocess
-import sys
-
 from datetime import timedelta
+
+import logging
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -78,48 +76,8 @@ async def async_migrate_entry(hass: HomeAssistant, entry):
     return True
 
 
-def _ensure_lib() -> bool:
-    """Upgrade paperang-p2-lib >=0.4.0rc2 if outdated.
-
-    Returns True if an upgrade was performed and a restart is needed.
-    """
-    try:
-        from importlib.metadata import version  # py>=3.8
-
-        inst = version("paperang-p2-lib")
-    except Exception:
-        inst = "0"
-
-    # Need >=0.4.0rc2 for multi-code pickup code support
-    if inst >= "0.4":
-        return False
-
-    _LOGGER.warning(
-        "paperang-p2-lib %s is outdated; upgrading to >=0.4.0rc2", inst
-    )
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--upgrade",
-             "paperang-p2-lib[qr,cjk,ble]"],
-            timeout=120,
-        )
-        _LOGGER.warning(
-            "paperang-p2-lib upgraded. A restart is needed for the new "
-            "version to take effect."
-        )
-        return True
-    except Exception as exc:
-        _LOGGER.error("Failed to upgrade paperang-p2-lib: %s", exc)
-        return False
-
-
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up from config entry (also called after YAML import)."""
-    if await hass.async_add_executor_job(_ensure_lib):
-        _LOGGER.warning(
-            "paperang-p2-lib was just upgraded. "
-            "Please restart Home Assistant to use the new version."
-        )
     transport_configs[entry.entry_id] = dict(entry.data)
 
     async def _coordinator_update():
