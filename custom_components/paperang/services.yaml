@@ -67,3 +67,32 @@ print_pickup_code:
       description: "Pickup code in format like '19-4308'"
       required: true
       example: "19-4308"
+
+get_status:
+  name: Get Printer Status
+  description: Query Paperang P2 printer telemetry (battery, temperature, etc.)
+  fields:
+    entry_id:
+      name: Entry ID
+      description: "Config entry ID (optional; uses first available if omitted)"
+
+feed_paper:
+  name: Feed Paper
+  description: Feed paper through the Paperang P2 printer
+  fields:
+    lines:
+      name: Lines
+      description: "Number of lines to feed (default: 100)"
+      default: 100
+      example: 100
+    entry_id:
+      name: Entry ID
+      description: "Config entry ID (optional)"
+
+print_test_page:
+  name: Print Test Page
+  description: Print a diagnostic test page on the Paperang P2
+  fields:
+    entry_id:
+      name: Entry ID
+      description: "Config entry ID (optional)"
