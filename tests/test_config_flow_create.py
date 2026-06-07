@@ -91,11 +91,11 @@ class TestConfigFlowCreateEntry:
     async def test_user_step_ble_single_device_creates_entry(
         self, hass: HomeAssistant
     ) -> None:
-        """User step with BLE shows ble_disabled error."""
+        """User step with BLE triggers scan; no devices returns error."""
         flow = _make_flow(hass)
         result = await flow.async_step_user({"transport": "ble"})
         assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "ble_disabled"
+        assert result["errors"]["base"] == "no_ble_device_found"
 
     @pytest.mark.asyncio
     async def test_select_ble_device_form(self, hass: HomeAssistant) -> None:

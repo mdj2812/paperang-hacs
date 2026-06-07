@@ -99,9 +99,9 @@ class TestConfigFlowBLE:
     async def test_user_step_ble_no_devices_shows_error(
         self, hass: HomeAssistant
     ) -> None:
-        """User step with BLE shows ble_disabled error."""
+        """User step with BLE triggers scan; no devices returns error."""
         flow = PaperangConfigFlow()
         flow.hass = hass
         result = await flow.async_step_user({"transport": "ble"})
         assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "ble_disabled"
+        assert result["errors"]["base"] == "no_ble_device_found"
