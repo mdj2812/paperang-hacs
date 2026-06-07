@@ -24,6 +24,7 @@ from .const import (
     TRANSPORT_BLE,
     TRANSPORT_USB,
 )
+from .transport.ble import async_scan_ble_devices as _async_scan_ble_devices
 from .transport.ble import async_verify_ble_printer as _async_verify_ble_printer
 from .transport.usb import scan_usb_devices as _scan_usb_devices
 from .transport.usb import verify_printer as _verify_printer
@@ -128,8 +129,18 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_bluetooth(self, discovery_info):
         # pylint: disable=unused-argument
-        """Bluetooth discovery — temporarily disabled."""
-        return self.async_abort(reason="ble_disabled")
+        """Handle Bluetooth discovery — scan for Paperang BLE devices."""
+        self._transport = TRANSPORT_BLE
+        self._ble_discovered = await _async_scan_ble_devices()
+
+        if not self._ble_discovered:
+            return self.async_abort(reason="no_ble_device_found")
+
+        if len(self._ble_discovered) == 1:
+            self._selected_ble = self._ble_discovered[0]
+            return await self.async_step_ble_verify()
+
+        return await self.async_step_select_ble_device()
 
     async def async_step_select_ble_device(
         self, user_input: dict[str, Any] | None = None
@@ -194,7 +205,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return vol.Schema(
             {
                 vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In(
-                    {TRANSPORT_USB: "USB"}
+                    {TRANSPORT_USB: "USB", TRANSPORT_BLE: "Bluetooth BLE"}
                 ),
             }
         )
@@ -214,12 +225,27 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_select_device()
 
     async def _handle_ble_user_selection(self):
-        """BLE path — temporarily disabled."""
-        return self.async_show_form(
-            step_id="user",
-            data_schema=self._user_schema(),
-            errors={"base": "ble_disabled"},
-        )
+        """Handle BLE selection from async_step_user."""
+        try:
+            from bleak import BleakScanner  # noqa: F401  # pylint: disable=import-outside-toplevel,unused-import
+        except ImportError:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=self._user_schema(),
+                errors={"base": "bleak_not_installed"},
+            )
+
+        self._ble_discovered = await _async_scan_ble_devices()
+        if not self._ble_discovered:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=self._user_schema(),
+                errors={"base": "no_ble_device_found"},
+            )
+        if len(self._ble_discovered) == 1:
+            self._selected_ble = self._ble_discovered[0]
+            return await self.async_step_ble_verify()
+        return await self.async_step_select_ble_device()
 
     async def async_step_import(self, user_input: dict[str, Any] | None = None):
         """Handle import from configuration.yaml."""
