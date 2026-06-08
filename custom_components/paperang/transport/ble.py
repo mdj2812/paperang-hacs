@@ -32,10 +32,24 @@ async def async_scan_ble_devices() -> list[dict[str, Any]]:
 
 
 async def async_verify_ble_printer(address: str) -> bool:
-    """Connect to BLE printer and verify communication."""
+    """Connect to BLE printer and verify communication.
+
+    BleTransport internally runs ``asyncio.run_until_complete()`` which
+    cannot be called from HA's already-running event loop.  We run the
+    whole sync verification in a thread-pool executor where it gets its
+    own event loop.
+    """
     if BleTransport is None:
         return False
+    import asyncio as _asyncio
 
+    return await _asyncio.get_running_loop().run_in_executor(
+        None, _sync_verify_ble, address
+    )
+
+
+def _sync_verify_ble(address: str) -> bool:
+    """Blocking: connect and verify BLE printer (runs in executor)."""
     printer = None
     try:
         printer = PaperangP2(transport=BleTransport(address=address))
