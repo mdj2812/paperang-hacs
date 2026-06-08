@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from ..core.paperang_lib import BleTransport, PaperangP2
@@ -41,19 +42,17 @@ async def async_verify_ble_printer(address: str) -> bool:
     """
     if BleTransport is None:
         return False
-    import asyncio as _asyncio
 
-    return await _asyncio.get_running_loop().run_in_executor(
+    return await asyncio.get_running_loop().run_in_executor(
         None, _sync_verify_ble, address
     )
 
 
 def _sync_verify_ble(address: str) -> bool:
     """Blocking: connect and verify BLE printer (runs in executor)."""
-    import asyncio as _asyncio
 
-    loop = _asyncio.new_event_loop()
-    _asyncio.set_event_loop(loop)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     printer = None
     try:
         printer = PaperangP2(transport=BleTransport(address=address))

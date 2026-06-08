@@ -29,4 +29,4 @@ UsbTransportBase = _lib.transport.UsbTransport  # pylint: disable=no-member
 try:
     BleTransport = _lib.transport.BleTransport  # pylint: disable=no-member
 except (ImportError, AttributeError):
-    BleTransport = None
+    BleTransport = None  # pylint: disable=invalid-name
