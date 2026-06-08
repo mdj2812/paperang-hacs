@@ -27,6 +27,6 @@ pack_packet = _lib.pack_packet  # pylint: disable=no-member
 UsbTransportBase = _lib.transport.UsbTransport  # pylint: disable=no-member
 
 try:
-    from paperang.transport import BleTransport  # pylint: disable=unused-import
-except ImportError:
+    BleTransport = _lib.transport.BleTransport  # pylint: disable=no-member
+except (ImportError, AttributeError):
     BleTransport = None
