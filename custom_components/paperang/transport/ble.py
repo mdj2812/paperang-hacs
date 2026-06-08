@@ -50,6 +50,10 @@ async def async_verify_ble_printer(address: str) -> bool:
 
 def _sync_verify_ble(address: str) -> bool:
     """Blocking: connect and verify BLE printer (runs in executor)."""
+    import asyncio as _asyncio
+
+    loop = _asyncio.new_event_loop()
+    _asyncio.set_event_loop(loop)
     printer = None
     try:
         printer = PaperangP2(transport=BleTransport(address=address))
@@ -64,3 +68,4 @@ def _sync_verify_ble(address: str) -> bool:
                 printer.disconnect()
             except Exception:  # pylint: disable=broad-exception-caught
                 pass
+        loop.close()
