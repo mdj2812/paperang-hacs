@@ -7,8 +7,9 @@ import time
 
 from homeassistant.core import HomeAssistant
 
-from ..const import CONF_TRANSPORT, TRANSPORT_BLE
+from ..const import CONF_TRANSPORT, TRANSPORT_BLE, TRANSPORT_BT
 from .blocking import _get_lock
+from .paperang_lib import PaperangP2
 from .runtime import _get_printer, transport_configs
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ _STATIC_READERS = [
 
 _static_caches: dict[str, dict[str, object]] = {}
 _dynamic_caches: dict[str, dict[str, object]] = {}
+_bt_persistent_printers: dict[str, object] = {}
 
 
 def _get_static_cache(entry_id: str) -> dict[str, object]:
@@ -69,15 +71,22 @@ def _get_or_fallback(cache: dict[str, object], key: str) -> object:
 
 
 def clear_caches_for_entry(entry_id: str) -> None:
-    """Remove cached telemetry for a config entry."""
+    """Remove cached telemetry and persistent printer for a config entry."""
     _static_caches.pop(entry_id, None)
     _dynamic_caches.pop(entry_id, None)
+    bt_printer = _bt_persistent_printers.pop(entry_id, None)
+    if bt_printer is not None:
+        try:
+            bt_printer.disconnect()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
 
 
 async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     """Read all printer telemetry.
 
-    USB: blocking I/O in executor thread.
+    USB: blocking I/O in executor thread — connect/read/disconnect each poll.
+    BT (classic SPP): blocking I/O with persistent RFCOMM connection.
     BLE: skip polling — BLE only connects during on-demand operations.
     """
     cfg = transport_configs.get(entry_id, {})
@@ -96,19 +105,34 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
     Static values (voltage, temperature, firmware, etc.): read every
     poll until a non-None value is obtained; thereafter reuse cache.
 
+    BT (classic SPP): keeps the RFCOMM connection open across polls.
+    Reconnects only on failure.
+
     Retries up to 3 times on failure; logs warning if all fail.
     """
+    cfg = transport_configs.get(entry_id, {})
+    is_bt = cfg.get(CONF_TRANSPORT) == TRANSPORT_BT
+
     for attempt in range(1, _RETRIES + 1):
         data: dict[str, object] = {"available": False}
         static_cache = _get_static_cache(entry_id)
         dynamic_cache = _get_dynamic_cache(entry_id)
-        printer = _get_printer(entry_id)
 
-        # Serialize USB access with print services
+        # ── Get or reuse persistent BT printer ──
+        if is_bt and entry_id in _bt_persistent_printers:
+            printer = _bt_persistent_printers[entry_id]
+        else:
+            printer = _get_printer(entry_id)
+
+        # Serialize USB/BT access with print services
         lock = _get_lock(entry_id)
         try:
             with lock:
-                printer.connect()
+                # Only connect if not already connected (BT persistent)
+                if is_bt and entry_id in _bt_persistent_printers:
+                    pass  # already connected
+                else:
+                    printer.connect()
 
                 battery = printer.get_battery()
                 time.sleep(0.05)
@@ -157,8 +181,14 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
 
                 data["available"] = True
                 data["connected"] = "connected"
+                # Cache the connected printer for reuse
+                if is_bt:
+                    _bt_persistent_printers[entry_id] = printer
                 return data
         except Exception as err:  # pylint: disable=broad-exception-caught
+            # Connection lost — clear cached printer so next poll reconnects
+            if is_bt:
+                _bt_persistent_printers.pop(entry_id, None)
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",
@@ -174,6 +204,8 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
                 )
                 clear_caches_for_entry(entry_id)
         finally:
-            printer.disconnect()
+            # Only disconnect if NOT using persistent connection
+            if not is_bt:
+                printer.disconnect()
 
     return {"available": False, "connected": "disconnected"}
