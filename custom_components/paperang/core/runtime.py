@@ -16,41 +16,67 @@ from .paperang_lib import BtTransport, BleTransport, PaperangP2
 
 transport_configs: dict[str, dict[str, object]] = {}
 
-# Persistent printers (USB + BT SPP) — reused across coordinator polls
-# and print services to avoid re-enumeration and "Resource busy" errors.
-# BLE is excluded: BLE connections are intentionally short-lived.
-_persistent_printers: dict[str, object] = {}
 
+class _PersistentPrinterCache:
+    """Cache of connected printers (USB + BT SPP), keyed by entry_id.
+
+    USB and BT printers are cached after the first successful connect.
+    Subsequent calls reuse the same transport to avoid USB ``Resource
+    busy`` errors and duplicate RFCOMM sockets.
+
+    BLE printers are intentionally excluded — BLE connections are
+    short-lived and managed separately.
+    """
+
+    def __init__(self) -> None:
+        self._printers: dict[str, object] = {}
+
+    def get_or_create(self, entry_id: str) -> object:
+        """Return a cached (already connected) printer, or create + connect."""
+        cfg = transport_configs.get(entry_id, {})
+        if cfg.get(CONF_TRANSPORT) == TRANSPORT_BLE:
+            return None  # type: ignore[return-value]
+
+        if entry_id in self._printers:
+            return self._printers[entry_id]
+
+        printer = _get_printer(entry_id)
+        printer.connect()
+        self._printers[entry_id] = printer
+        return printer
+
+    def cache(self, entry_id: str, printer: object) -> None:
+        """Store a connected printer for reuse."""
+        self._printers[entry_id] = printer
+
+    def pop(self, entry_id: str) -> object | None:
+        """Remove and return a cached printer (e.g. on connection loss)."""
+        return self._printers.pop(entry_id, None)
+
+    def clear(self) -> None:
+        """Remove all cached printers."""
+        self._printers.clear()
+
+
+_persistent_printers = _PersistentPrinterCache()
+
+
+# Public API — thin wrappers around the cache instance.
+# (Kept as module-level functions for backward compat with callers.)
 
 def _get_or_reuse_printer(entry_id: str):
-    """Return a persistent printer if available; None for BLE.
-
-    USB and BT (SPP/RFCOMM) printers are cached after the first
-    successful connect.  Subsequent calls reuse the same transport
-    to avoid USB ``Resource busy`` errors and duplicate RFCOMM sockets.
-    """
-    cfg = transport_configs.get(entry_id, {})
-    transport = cfg.get(CONF_TRANSPORT, "")
-    if transport == TRANSPORT_BLE:
-        return None
-
-    if entry_id in _persistent_printers:
-        return _persistent_printers[entry_id]
-
-    printer = _get_printer(entry_id)
-    printer.connect()
-    _persistent_printers[entry_id] = printer
-    return printer
+    """Return a persistent printer if available (USB/BT); None for BLE."""
+    return _persistent_printers.get_or_create(entry_id)
 
 
 def _cache_printer(entry_id: str, printer: object) -> None:
     """Cache a printer for persistent reuse (USB or BT)."""
-    _persistent_printers[entry_id] = printer
+    _persistent_printers.cache(entry_id, printer)
 
 
 def _pop_printer(entry_id: str) -> object | None:
     """Remove and return a cached persistent printer."""
-    return _persistent_printers.pop(entry_id, None)
+    return _persistent_printers.pop(entry_id)
 
 
 def _get_printer(entry_id: str | None = None):
