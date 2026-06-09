@@ -153,6 +153,8 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
                 _update_if_not_none(dynamic_cache, "status", status)
 
                 for key, reader in _STATIC_READERS:
+                    if key in static_cache:
+                        continue  # already cached — skip expensive recv
                     time.sleep(0.05)
                     val = reader(printer)
                     if key == "version" and val is not None:
