@@ -37,24 +37,6 @@ class TestGetPrinter:
             mock_tp.assert_called_once_with(bus=1, port=[3])
             mock_p2.assert_called_once_with(transport=mock_transport)
 
-    def test_ble_with_address(self):
-        import custom_components.paperang as mod
-        import custom_components.paperang.core.runtime as pr
-
-        mod._transport_configs[FAKE_ENTRY_ID] = {
-            "transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF",
-        }
-
-        with (
-            patch.object(pr, "BleTransport", create=True) as mock_ble_cls,
-            patch.object(pr, "PaperangP2") as mock_p2,
-        ):
-            mock_ble = MagicMock()
-            mock_ble_cls.return_value = mock_ble
-            mod._get_printer(FAKE_ENTRY_ID)
-            mock_ble_cls.assert_called_once_with(address="AA:BB:CC:DD:EE:FF")
-            mock_p2.assert_called_once_with(transport=mock_ble)
-
     def test_no_transport_configs_falls_back_to_usb(self):
         import custom_components.paperang as mod
         import custom_components.paperang.core.runtime as pr

@@ -4,15 +4,13 @@ from __future__ import annotations
 
 from ..const import (
     CONF_BT_ADDRESS,
-    CONF_BLE_ADDRESS,
     CONF_TRANSPORT,
     CONF_USB_BUS,
     CONF_USB_PORT,
     TRANSPORT_BT,
-    TRANSPORT_BLE,
 )
 from ..transport.usb import UsbTransportWithPath
-from .paperang_lib import BtTransport, BleTransport, PaperangP2
+from .paperang_lib import BtTransport, PaperangP2
 
 transport_configs: dict[str, dict[str, object]] = {}
 
@@ -20,12 +18,9 @@ transport_configs: dict[str, dict[str, object]] = {}
 class _PersistentPrinterCache:
     """Cache of connected printers (USB + BT SPP), keyed by entry_id.
 
-    USB and BT printers are cached after the first successful connect.
+    Printers are cached after the first successful connect.
     Subsequent calls reuse the same transport to avoid USB ``Resource
     busy`` errors and duplicate RFCOMM sockets.
-
-    BLE printers are intentionally excluded — BLE connections are
-    short-lived and managed separately.
     """
 
     def __init__(self) -> None:
@@ -33,10 +28,6 @@ class _PersistentPrinterCache:
 
     def get_or_create(self, entry_id: str) -> object:
         """Return a cached (already connected) printer, or create + connect."""
-        cfg = transport_configs.get(entry_id, {})
-        if cfg.get(CONF_TRANSPORT) == TRANSPORT_BLE:
-            return None  # type: ignore[return-value]
-
         if entry_id in self._printers:
             return self._printers[entry_id]
 
@@ -62,11 +53,9 @@ _persistent_printers = _PersistentPrinterCache()
 
 
 # Public API — thin wrappers around the cache instance.
-# (Kept as module-level functions for backward compat with callers.)
-
 
 def _get_or_reuse_printer(entry_id: str):
-    """Return a persistent printer if available (USB/BT); None for BLE."""
+    """Return a persistent printer if available (USB/BT)."""
     return _persistent_printers.get_or_create(entry_id)
 
 
@@ -98,11 +87,6 @@ def _get_printer(entry_id: str | None = None):
         bt_addr = cfg.get(CONF_BT_ADDRESS, "")
         bt = BtTransport(address=bt_addr) if bt_addr else BtTransport()
         return PaperangP2(transport=bt)
-
-    if transport_type == TRANSPORT_BLE and BleTransport is not None:
-        ble_addr = cfg.get(CONF_BLE_ADDRESS, "")
-        ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
-        return PaperangP2(transport=ble)
 
     bus = cfg.get(CONF_USB_BUS)
     port = cfg.get(CONF_USB_PORT)

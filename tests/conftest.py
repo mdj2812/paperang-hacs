@@ -20,7 +20,6 @@ _paperang.pack_packet = MagicMock()
 _paperang.transport = MagicMock()
 _paperang.transport.Transport = object
 _paperang.transport.UsbTransport = MagicMock
-_paperang.transport.BleTransport = MagicMock
 
 sys.modules["paperang"] = _paperang
 sys.modules["paperang.transport"] = _paperang.transport

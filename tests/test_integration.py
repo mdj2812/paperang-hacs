@@ -198,35 +198,6 @@ class TestServiceCalls:
             mock_tp.assert_called_once_with(bus=1, port=[3])
             mock_p2.assert_called_once_with(transport=mock_transport)
 
-    async def test_get_printer_ble(self) -> None:
-        """_get_printer with BLE transport uses BleTransport."""
-        import custom_components.paperang as mod
-        import custom_components.paperang.core.runtime as pr
-
-        mod._transport_configs.clear()
-        mod._transport_configs["test_eid"] = {
-            "transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF",
-        }
-
-        with patch.object(pr, "BleTransport", create=True) as mock_ble_cls, patch.object(
-            pr, "PaperangP2"
-        ) as mock_p2:
-            mock_ble = MagicMock()
-            mock_ble_cls.return_value = mock_ble
-            mod._get_printer("test_eid")
-            mock_ble_cls.assert_called_once_with(address="AA:BB:CC:DD:EE:FF")
-            mock_p2.assert_called_once_with(transport=mock_ble)
-
-    async def test_get_printer_ble_skipped_polling(self, hass: HomeAssistant) -> None:
-        """BLE transport returns available=True without reading."""
-        import custom_components.paperang as mod
-        mod._transport_configs["test_eid"] = {
-            "transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF",
-        }
-
-        result = await mod._read_printer_state(hass, "test_eid")
-        assert result == {"available": True, "connected": "connected"}
-
     async def test_read_printer_state_firmware_decode(self, hass: HomeAssistant, mock_printer) -> None:
         """Firmware version 720897 is decoded to V1.0.11."""
         entry = MockConfigEntry(

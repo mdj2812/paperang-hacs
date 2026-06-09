@@ -10,29 +10,28 @@ from custom_components.paperang.config_flow import (
 )
 
 
-
 class TestConfigFlowSchema:
     def test_user_step_schema_valid_usb(self):
-        """User step schema: transport selector only (USB/BLE)."""
+        """User step schema: transport selector (USB/BT)."""
         schema = vol.Schema({
             vol.Required("transport", default="usb"): vol.In({
                 "usb": "USB",
-                "ble": "Bluetooth BLE",
+                "bt": "Bluetooth",
             }),
         })
         result = schema({"transport": "usb"})
         assert result["transport"] == "usb"
 
-    def test_user_step_schema_valid_ble(self):
-        """User step schema: BLE transport (discovery is automatic)."""
+    def test_user_step_schema_valid_bt(self):
+        """User step schema: BT transport (discovery is automatic)."""
         schema = vol.Schema({
             vol.Required("transport", default="usb"): vol.In({
                 "usb": "USB",
-                "ble": "Bluetooth BLE",
+                "bt": "Bluetooth",
             }),
         })
-        result = schema({"transport": "ble"})
-        assert result["transport"] == "ble"
+        result = schema({"transport": "bt"})
+        assert result["transport"] == "bt"
 
     def test_select_device_schema(self):
         """Select USB device dropdown schema."""
