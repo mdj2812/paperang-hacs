@@ -80,38 +80,39 @@ class TestGetPrinter:
 class TestWithPrinter:
     def test_calls_fn_and_disconnects(self):
         import custom_components.paperang as mod
-        import custom_components.paperang.core.blocking as pb
+        import custom_components.paperang.core.runtime as rt
 
         mock_printer = MagicMock()
 
-        with patch.object(pb, "_get_printer", return_value=mock_printer):
+        with patch.object(rt, "_get_printer", return_value=mock_printer):
             result = mod._with_printer(FAKE_ENTRY_ID, lambda p: "result")
             assert result == "result"
-            mock_printer.connect.assert_called_once()
+            mock_printer.connect.assert_not_called()  # persistent reuse skips connect
+            # disconnect called only for non-BT; in test context BT flag not set
             mock_printer.disconnect.assert_called_once()
 
     def test_disconnects_on_exception(self):
         import custom_components.paperang as mod
-        import custom_components.paperang.core.blocking as pb
+        import custom_components.paperang.core.runtime as rt
 
         mock_printer = MagicMock()
 
-        with patch.object(pb, "_get_printer", return_value=mock_printer):
+        with patch.object(rt, "_get_printer", return_value=mock_printer):
             with pytest.raises(ValueError, match="boom"):
                 mod._with_printer(
                     FAKE_ENTRY_ID,
                     lambda p: (_ for _ in ()).throw(ValueError("boom")),
                 )
-            mock_printer.connect.assert_called_once()
+            mock_printer.connect.assert_not_called()
             mock_printer.disconnect.assert_called_once()
 
     def test_returns_fn_result(self):
         import custom_components.paperang as mod
-        import custom_components.paperang.core.blocking as pb
+        import custom_components.paperang.core.runtime as rt
 
         mock_printer = MagicMock()
 
-        with patch.object(pb, "_get_printer", return_value=mock_printer):
+        with patch.object(rt, "_get_printer", return_value=mock_printer):
             assert mod._with_printer(FAKE_ENTRY_ID, lambda p: 42) == 42
 
 

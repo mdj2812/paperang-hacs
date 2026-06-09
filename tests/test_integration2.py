@@ -10,8 +10,7 @@ from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, CONF_TRANSPO
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
-_PATCH_STATE_GET = "custom_components.paperang.core.state._get_printer"
-_PATCH_BLOCK_GET = "custom_components.paperang.core.blocking._get_printer"
+_PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 
 
 @pytest.fixture
@@ -43,7 +42,7 @@ async def _setup_entry(hass, mock_p, extra_data=None):
     import custom_components.paperang as mod
     # Register services (async_setup is called once per HA instance)
     await mod.async_setup(hass, {})
-    with patch(_PATCH_STATE_GET, return_value=mock_p):
+    with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
         with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
             await mod.async_setup_entry(hass, entry)
     return entry
@@ -64,7 +63,7 @@ class TestServiceRegistration:
         """print_text service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_text",
                 {"text": "Hello", "font_size": 24, "heat_density": 75,
@@ -77,7 +76,7 @@ class TestServiceRegistration:
         """feed_paper service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "feed_paper",
                 {"lines": 50, "entry_id": entry.entry_id},
@@ -89,7 +88,7 @@ class TestServiceRegistration:
         """print_test_page service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_test_page",
                 {"entry_id": entry.entry_id},
@@ -101,7 +100,7 @@ class TestServiceRegistration:
         """Service without entry_id falls back to first entry."""
         await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "feed_paper", {"lines": 100}, blocking=True,
             )
@@ -111,7 +110,7 @@ class TestServiceRegistration:
         """get_status service logs printer status."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "get_status", {"entry_id": entry.entry_id}, blocking=True,
             )
@@ -120,7 +119,7 @@ class TestServiceRegistration:
         """print_image service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_image",
                 {"image_url": "http://x.com/a.png", "entry_id": entry.entry_id},
@@ -132,7 +131,7 @@ class TestServiceRegistration:
         """print_qr service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_qr",
                 {"qr_content": "https://x.com", "entry_id": entry.entry_id},
@@ -144,7 +143,7 @@ class TestServiceRegistration:
         """print_pickup_code service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
-        with patch(_PATCH_BLOCK_GET, return_value=mock_p):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
                 DOMAIN, "print_pickup_code",
                 {"pickup_code": "19-4308", "entry_id": entry.entry_id},
