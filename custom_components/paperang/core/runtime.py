@@ -11,8 +11,8 @@ from ..const import (
     TRANSPORT_BT,
     TRANSPORT_BLE,
 )
-from .paperang_lib import BtTransport, BleTransport, PaperangP2
 from ..transport.usb import UsbTransportWithPath
+from .paperang_lib import BtTransport, BleTransport, PaperangP2
 
 transport_configs: dict[str, dict[str, object]] = {}
 

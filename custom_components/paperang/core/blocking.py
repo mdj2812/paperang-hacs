@@ -5,7 +5,12 @@ from __future__ import annotations
 import threading
 import time
 
-from .runtime import _cache_bt_printer, _get_or_reuse_printer, _get_printer, _pop_bt_printer
+from .runtime import (
+    _cache_bt_printer,
+    _get_or_reuse_printer,
+    _get_printer,
+    _pop_bt_printer,
+)
 
 # Per-entry locks to serialize USB access between coordinator polling
 # and on-demand print services.
