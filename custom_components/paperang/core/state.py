@@ -123,8 +123,10 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
         dynamic_cache = _get_dynamic_cache(entry_id)
 
         # ── Get or reuse persistent BT printer ──
-        if is_bt and entry_id in _bt_persistent_printers:
+        if is_bt:
             printer = _get_or_reuse_printer(entry_id)
+        else:
+            printer = _get_printer(entry_id)
 
         # Serialize USB/BT access with print services
         lock = _get_lock(entry_id)
