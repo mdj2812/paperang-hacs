@@ -25,7 +25,9 @@ def _get_or_reuse_printer(entry_id: str):
     """Return a persistent BT printer if available, otherwise create a new one."""
     if entry_id in _bt_persistent_printers:
         return _bt_persistent_printers[entry_id]
-    return _get_printer(entry_id)
+    printer = _get_printer(entry_id)
+    printer.connect()
+    return printer
 
 
 def _cache_bt_printer(entry_id: str, printer: object) -> None:
