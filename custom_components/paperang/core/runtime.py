@@ -64,6 +64,7 @@ _persistent_printers = _PersistentPrinterCache()
 # Public API — thin wrappers around the cache instance.
 # (Kept as module-level functions for backward compat with callers.)
 
+
 def _get_or_reuse_printer(entry_id: str):
     """Return a persistent printer if available (USB/BT); None for BLE."""
     return _persistent_printers.get_or_create(entry_id)
