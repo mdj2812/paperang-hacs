@@ -8,7 +8,6 @@ import time
 
 from homeassistant.core import HomeAssistant
 
-from ..const import CONF_TRANSPORT
 from . import runtime as _rt
 from .blocking import _get_lock
 
