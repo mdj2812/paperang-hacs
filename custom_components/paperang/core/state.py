@@ -1,5 +1,5 @@
 """Blocking / async printer telemetry reads and per-entry caches."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access,duplicate-code
 
 from __future__ import annotations
 
