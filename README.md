@@ -66,7 +66,7 @@ On restart, HA will automatically import this as a config entry.
 
 **Bluetooth:** Bluetooth adapter on the HA host. Printer must be powered on and within range. Works with both `Paperang` and `MiaoMiaoJi` (喵喵机) branded devices.
 
-> 📦 Requires `paperang-p2-lib>=0.4.0rc1` (installed automatically by HA).
+> 📦 Requires `paperang-p2-lib[qr,cjk]>=1.1.1` (installed automatically by HA).
 
 ## Device Controls
 
