@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.5.0 (2026-06-09)
+
+### Added
+- **Classic Bluetooth SPP (RFCOMM) support** — `BtTransport` for wireless printing
+  via Linux `AF_BLUETOOTH` sockets. Zero extra Python dependencies.
+  Bluetooth printers are auto-discovered on the HA host and shown as a
+  notification. No manual MAC entry needed.
+- **USB persistent connections** — `_PersistentPrinterCache` keeps USB and
+  Bluetooth connections alive across polling cycles and service calls,
+  eliminating repeated connect/disconnect overhead.
+- Per-transport polling intervals: Bluetooth 30s, USB 5s.
+
+### Removed
+- **BLE transport** — `BleTransport`, `transport/ble.py`, and all BLE config
+  flow options removed. The Paperang P2 uses BR/EDR (classic Bluetooth), not
+  BLE. `BtTransport` is the wireless transport.
+
+### Changed
+- USB and Bluetooth share a unified persistent-printer cache
+- `paperang-p2-lib` bumped to `>=1.1.1`
+- README (EN + ZH) updated to reflect Bluetooth SPP, remove BLE references
+
+## v1.4.0 (2026-06-06)
+
+### Added
+- Bluetooth LE device auto-discovery via HA Bluetooth integration
+  - `manifest.json` matcher with service UUID `0000fee7`
+  - `async_step_bluetooth` / `async_step_bluetooth_confirm` in config flow
+- BLE entries use MAC-based unique_id
+
+### Changed
+- Shared `PaperangEntity` base class extracted (`entity.py`)
+  - Common `available` property, `_attr_has_entity_name`, `_attr_device_info`
+  - `button.py`, `select.py`, `text.py`, `number.py`, `sensor.py` all migrated
+- Pylint disables reduced: 24 → 8
+- CI global pylint disable: 12 rules → 2 (`E0401,W0223`)
+- Coverage minimum raised: 15% → 80%
+
+### Fixed
+- `ruff format` applied to all code
+- `.gitattributes` enforces LF line endings
+- hassfest: manifest keys sorted alphabetically
+
 ## v1.3.7 (2026-05-23)
 
 ### Fixed
