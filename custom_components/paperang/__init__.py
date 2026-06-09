@@ -49,7 +49,8 @@ PLATFORMS = [
     Platform.TEXT,
 ]
 
-UPDATE_INTERVAL = timedelta(seconds=5)
+POLL_INTERVAL_USB = timedelta(seconds=5)
+POLL_INTERVAL_BT = timedelta(seconds=30)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -83,9 +84,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     # BT (SPP/RFCOMM) polling is less frequent to reduce I/O pressure
     # on the Bluetooth stack and prevent kernel RCU stalls.
     if entry.data.get(CONF_TRANSPORT) == TRANSPORT_BT:
-        interval = timedelta(seconds=30)
+        interval = POLL_INTERVAL_BT
     else:
-        interval = timedelta(seconds=5)
+        interval = POLL_INTERVAL_USB
 
     async def _coordinator_update():
         """Read printer state, then push static info to device registry."""
