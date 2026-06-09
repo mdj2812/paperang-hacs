@@ -19,23 +19,12 @@
         "title": "Verifying Printer",
         "description": "Testing communication with the selected printer..."
       },
-      "select_ble_device": {
-        "title": "Select BLE Printer",
-        "description": "Multiple Paperang BLE printers found. Choose the one to add.",
-        "data": {
-          "ble_device": "BLE Device"
-        }
-      },
       "select_bt_device": {
         "title": "Select Bluetooth Printer",
         "description": "Multiple Paperang Bluetooth printers found. Choose the one to add.",
         "data": {
           "bt_device": "Bluetooth Device"
         }
-      },
-      "ble_verify": {
-        "title": "Verifying BLE Printer",
-        "description": "Testing communication with the selected BLE printer..."
       },
       "bt_verify": {
         "title": "Verifying Bluetooth Printer",
@@ -44,15 +33,12 @@
     },
     "error": {
       "no_usb_device_found": "No Paperang P2 printer found via USB",
-      "no_ble_device_found": "No Paperang BLE printer found",
       "no_bt_device_found": "No Paperang Bluetooth printer found",
       "communication_failed": "Unable to communicate with the printer. Check connection and power.",
-      "device_not_found": "Selected device is no longer available",
-      "bleak_not_installed": "Bluetooth BLE requires the 'bleak' Python package. Install it with: pip install bleak"
+      "device_not_found": "Selected device is no longer available"
     },
     "abort": {
       "no_usb_device_found": "No Paperang P2 printer detected on USB. Please connect the printer and try again.",
-      "no_ble_device_found": "No Paperang BLE device found",
       "no_bt_device_found": "No Paperang Bluetooth device found",
       "already_configured": "This printer is already configured"
     }
@@ -64,8 +50,7 @@
         "description": "Configure transport and connection settings.",
         "data": {
           "transport": "Connection Type",
-          "bt_address": "Bluetooth MAC Address",
-          "ble_address": "BLE MAC Address"
+          "bt_address": "Bluetooth MAC Address"
         }
       }
     }

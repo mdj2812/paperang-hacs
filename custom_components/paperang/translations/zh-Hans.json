@@ -19,23 +19,12 @@
         "title": "验证打印机",
         "description": "正在测试与所选打印机的通信..."
       },
-      "select_ble_device": {
-        "title": "选择 BLE 打印机",
-        "description": "检测到多台 Paperang BLE 打印机，请选择要添加的设备。",
-        "data": {
-          "ble_device": "BLE 设备"
-        }
-      },
       "select_bt_device": {
         "title": "选择蓝牙打印机",
         "description": "检测到多台 Paperang 蓝牙打印机，请选择要添加的设备。",
         "data": {
           "bt_device": "蓝牙设备"
         }
-      },
-      "ble_verify": {
-        "title": "验证 BLE 打印机",
-        "description": "正在测试与所选 BLE 打印机的通信..."
       },
       "bt_verify": {
         "title": "验证蓝牙打印机",
@@ -44,15 +33,12 @@
     },
     "error": {
       "no_usb_device_found": "未检测到 Paperang P2 打印机（USB）",
-      "no_ble_device_found": "未检测到 Paperang BLE 打印机",
       "no_bt_device_found": "未检测到 Paperang 蓝牙打印机",
       "communication_failed": "无法与打印机通信，请检查连接和电源。",
-      "device_not_found": "所选设备已不可用",
-      "bleak_not_installed": "蓝牙 BLE 需要安装 'bleak' Python 包。请执行: pip install bleak"
+      "device_not_found": "所选设备已不可用"
     },
     "abort": {
       "no_usb_device_found": "未检测到 Paperang P2 打印机。请连接打印机后重试。",
-      "no_ble_device_found": "未发现 Paperang BLE 设备",
       "no_bt_device_found": "未发现 Paperang 蓝牙设备",
       "already_configured": "该打印机已添加"
     }
@@ -64,8 +50,7 @@
         "description": "配置连接方式和参数。",
         "data": {
           "transport": "连接方式",
-          "bt_address": "蓝牙 MAC 地址",
-          "ble_address": "BLE MAC 地址"
+          "bt_address": "蓝牙 MAC 地址"
         }
       }
     }

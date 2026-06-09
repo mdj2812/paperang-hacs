@@ -16,7 +16,7 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import CONF_TRANSPORT, DOMAIN, TRANSPORT_USB
-from .core.paperang_lib import BleTransport, PaperangP2
+from .core.paperang_lib import PaperangP2
 from .core.blocking import (
     _do_feed_paper,
     _do_get_status,
