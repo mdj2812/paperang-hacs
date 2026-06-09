@@ -1,13 +1,13 @@
 # Paperang P2 打印机 - Home Assistant 集成
 
-通过 Home Assistant 控制和监控 Paperang P2 热敏打印机。支持通过 USB 或蓝牙 BLE 连接，从设备页面交互式打印文本、图片、QR 码、取件码，以及实时打印机遥测数据。
+通过 Home Assistant 控制和监控 Paperang P2 热敏打印机。支持通过 USB 或蓝牙连接，从设备页面交互式打印文本、图片、QR 码、取件码，以及实时打印机遥测数据。
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mdj2812&repository=paperang-hacs&category=integration)
 
 ## 功能
 
 - 🔌 **USB 自动发现** — 插入 USB 后自动检测打印机
-- 📡 **蓝牙 BLE** — 无线连接（自动扫描或指定 MAC 地址）
+- 📡 **蓝牙** — 无线连接（自动扫描）
 - 🎛️ **设备页面控制** — 交互式打印面板，含模式选择器、文本输入、参数滑杆、打印按钮
 - 📊 **6 个遥测传感器** — 电池、状态、电压、温度、加热浓度和连接状态（诊断）；静态信息（型号、固件、板版本、序列号）显示在设备卡片上
 - 🖨️ **7 个服务** — 打印文本、图片、QR 码、取件码、测试页、获取状态、进纸
@@ -38,17 +38,13 @@ cp -r paperang-hacs/custom_components/paperang /config/custom_components/paperan
 
 将 Paperang P2 插入 USB。Home Assistant 会自动检测并弹出通知 — 点击确认即可完成设置。
 
-### 蓝牙 BLE 设置
+### 蓝牙设置
 
-**设置 → 设备与服务 → 添加集成 → 搜索「Paperang P2 Printer」**
-
-在配置对话框中：
-- 选择 **Bluetooth BLE** 作为传输方式
-- 输入打印机的 BLE MAC 地址（如 `AA:BB:CC:DD:EE:FF`）— 留空则自动扫描
+**设置 → 设备与服务** — 打印机开机且在蓝牙范围内时，HA 会自动发现并弹出通知，点击确认即可添加。
 
 ### 手动设置
 
-**设置 → 设备与服务 → 添加集成 → 搜索「Paperang P2 Printer」** — 选择 **USB** 或 **Bluetooth BLE**。
+**设置 → 设备与服务 → 添加集成 → 搜索「Paperang P2 Printer」** — 选择 **USB** 或 **蓝牙**。
 
 ### YAML 导入
 
@@ -64,9 +60,9 @@ paperang:
 
 **USB：** Paperang P2 打印机通过 USB 连接到 HA 主机。USB 设备需直通到 HA VM（如果在虚拟机中运行）。
 
-**BLE：** HA 主机需配备蓝牙适配器。打印机需开机且在蓝牙范围内。支持 `Paperang` 和 `MiaoMiaoJi`（喵喵机）两种品牌名称的设备。
+**蓝牙：** HA 主机需配备蓝牙适配器。打印机需开机且在蓝牙范围内。支持 `Paperang` 和 `MiaoMiaoJi`（喵喵机）两种品牌名称的设备。
 
-> 📦 需要 `paperang-p2-lib>=0.4.0rc1`（HA 自动安装）。
+> 📦 需要 `paperang-p2-lib[qr,cjk]>=1.1.1`（HA 自动安装）。
 
 ## 设备控制
 

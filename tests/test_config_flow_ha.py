@@ -67,7 +67,7 @@ class TestConfigFlowUSB:
 class TestConfigFlowBT:
     @pytest.mark.asyncio
     async def test_bt_scan_no_devices_returns_empty(self, hass: HomeAssistant) -> None:
-        """BT scan with no bleak returns empty list."""
+        """BT scan with no BtTransport returns empty list."""
         from custom_components.paperang.transport.bt import scan_bt_devices
 
         with patch("custom_components.paperang.transport.bt.BtTransport", None):

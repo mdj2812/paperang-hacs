@@ -8,7 +8,6 @@ import time
 
 from homeassistant.core import HomeAssistant
 
-from ..const import CONF_TRANSPORT, TRANSPORT_BLE
 from . import runtime as _rt
 from .blocking import _get_lock
 
@@ -85,11 +84,7 @@ async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     """Read all printer telemetry.
 
     USB/BT (SPP): persistent connections, reuse across polls.
-    BLE: skip polling — BLE only connects during on-demand operations.
     """
-    cfg = _rt.transport_configs.get(entry_id, {})
-    if cfg.get(CONF_TRANSPORT) == TRANSPORT_BLE:
-        return {"available": True, "connected": "connected"}
     return await hass.async_add_executor_job(_blocking_read_printer_state, entry_id)
 
 

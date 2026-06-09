@@ -5,11 +5,9 @@ DOMAIN = "paperang"
 # Transport types
 TRANSPORT_USB = "usb"
 TRANSPORT_BT = "bt"
-TRANSPORT_BLE = "ble"  # deprecated — use TRANSPORT_BT
 
 # Config entry keys
 CONF_TRANSPORT = "transport"
-CONF_BLE_ADDRESS = "ble_address"
 CONF_BT_ADDRESS = "bt_address"
 CONF_USB_BUS = "usb_bus"
 CONF_USB_PORT = "usb_port"

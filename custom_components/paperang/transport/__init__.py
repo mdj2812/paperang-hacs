@@ -1,1 +1,1 @@
-"""USB and BLE transport: device classes, discovery, and verification."""
+"USB and BT SPP transport: device classes, discovery, and verification."
