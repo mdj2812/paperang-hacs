@@ -43,12 +43,12 @@ def _get_or_reuse_printer(entry_id: str):
     return printer
 
 
-def _cache_bt_printer(entry_id: str, printer: object) -> None:
+def _cache_printer(entry_id: str, printer: object) -> None:
     """Cache a printer for persistent reuse (USB or BT)."""
     _persistent_printers[entry_id] = printer
 
 
-def _pop_bt_printer(entry_id: str) -> object | None:
+def _pop_printer(entry_id: str) -> object | None:
     """Remove and return a cached persistent printer."""
     return _persistent_printers.pop(entry_id, None)
 

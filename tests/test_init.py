@@ -96,7 +96,7 @@ class TestWithPrinter:
 
         with (
             patch.object(rt, "_get_or_reuse_printer", return_value=mock_printer),
-            patch.object(rt, "_pop_bt_printer") as mock_pop,
+            patch.object(rt, "_pop_printer") as mock_pop,
         ):
             with pytest.raises(ValueError, match="boom"):
                 mod._with_printer(

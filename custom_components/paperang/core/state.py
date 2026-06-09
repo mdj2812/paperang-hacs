@@ -73,10 +73,10 @@ def clear_caches_for_entry(entry_id: str) -> None:
     """Remove cached telemetry and persistent printer for a config entry."""
     _static_caches.pop(entry_id, None)
     _dynamic_caches.pop(entry_id, None)
-    bt_printer = _rt._pop_bt_printer(entry_id)
-    if bt_printer is not None:
+    printer = _rt._pop_printer(entry_id)
+    if printer is not None:
         try:
-            bt_printer.disconnect()
+            printer.disconnect()
         except Exception:  # pylint: disable=broad-exception-caught
             pass
 
@@ -194,7 +194,7 @@ def _blocking_read_printer_state(entry_id: str):
         try:
             return _try_read_once(entry_id, static_cache, dynamic_cache)
         except Exception as err:  # pylint: disable=broad-exception-caught
-            _rt._pop_bt_printer(entry_id)
+            _rt._pop_printer(entry_id)
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",

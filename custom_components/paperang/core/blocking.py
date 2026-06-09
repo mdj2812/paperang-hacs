@@ -39,7 +39,7 @@ def _with_printer(entry_id: str, fn):
         except Exception as err:
             last_err = err
             # Connection lost — clear cache so next call reconnects
-            _rt._pop_bt_printer(entry_id)
+            _rt._pop_printer(entry_id)
             if "Resource busy" in str(err) or "Entity" in str(err):
                 time.sleep(0.5)
                 continue
