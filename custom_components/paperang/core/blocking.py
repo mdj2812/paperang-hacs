@@ -6,7 +6,6 @@ import threading
 import time
 
 from .runtime import (
-    _cache_bt_printer,
     _get_or_reuse_printer,
     _get_printer,
     _pop_bt_printer,
