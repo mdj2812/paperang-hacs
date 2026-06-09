@@ -3,14 +3,14 @@
 [![CI](https://github.com/mdj2812/paperang-hacs/actions/workflows/ci.yml/badge.svg)](https://github.com/mdj2812/paperang-hacs/actions/workflows/ci.yml)
 [![coverage](https://raw.githubusercontent.com/mdj2812/paperang-hacs/badges/coverage.svg)](https://github.com/mdj2812/paperang-hacs/actions/workflows/ci.yml)
 
-Control and monitor your Paperang P2 thermal printer through Home Assistant. Print text, images, QR codes, pickup codes — all from the device page with interactive controls, plus real-time printer telemetry via USB or Bluetooth BLE.
+Control and monitor your Paperang P2 thermal printer through Home Assistant. Print text, images, QR codes, pickup codes — all from the device page with interactive controls, plus real-time printer telemetry via USB or Bluetooth.
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mdj2812&repository=paperang-hacs&category=integration)
 
 ## Features
 
 - 🔌 **USB auto-discovery** — printer detected automatically when plugged in
-- 📡 **Bluetooth BLE** — auto-discovered or specify MAC address
+- 📡 **Bluetooth** — auto-discovered or specify MAC address
 - 🎛️ **Device page controls** — interactive print panel with mode selector, text input, parameter sliders, and print button
 - 📊 **6 telemetry sensors** — battery, status, voltage, temperature, heat density, and Connection (diagnostic); static info (model, firmware, board, serial) shown on device card
 - 🖨️ **7 services** — print text, images, QR codes, pickup codes, test page, get status, feed paper
@@ -42,15 +42,15 @@ Restart Home Assistant after installation.
 
 Plug in your Paperang P2 via USB. Home Assistant will detect it automatically and show a notification — click to confirm and the integration is ready.
 
-### Bluetooth BLE Setup
+### Bluetooth Setup
 
-**Settings → Devices & Services** — if your Paperang P2 is powered on and within BLE range, HA will auto-discover it and show a notification.
+**Settings → Devices & Services** — if your Paperang P2 is powered on and within range, HA will auto-discover it and show a notification.
 
-Or add manually: **Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **Bluetooth BLE** and enter the MAC address (e.g. `00:15:83:EB:05:17`).
+Or add manually: **Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **Bluetooth** and enter the MAC address (e.g. `00:15:83:EB:05:17`).
 
 ### Manual Setup
 
-**Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **USB** or **Bluetooth BLE**.
+**Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **USB** or **Bluetooth**.
 
 ### YAML Import
 
@@ -66,7 +66,7 @@ On restart, HA will automatically import this as a config entry.
 
 **USB:** Paperang P2 printer connected via USB to the HA host. USB device must be passed through to the HA VM (if running in a VM).
 
-**BLE:** Bluetooth adapter on the HA host. Printer must be powered on and within range. Works with both `Paperang` and `MiaoMiaoJi` (喵喵机) branded devices.
+**Bluetooth:** Bluetooth adapter on the HA host. Printer must be powered on and within range. Works with both `Paperang` and `MiaoMiaoJi` (喵喵机) branded devices.
 
 > 📦 Requires `paperang-p2-lib>=0.4.0rc1` (installed automatically by HA).
 
