@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from custom_components.paperang.config_flow import (
-    _async_verify_ble_printer,
     _scan_usb_devices,
     _verify_printer,
 )
-from custom_components.paperang.transport.ble import (
-    async_scan_ble_devices as _async_scan_ble_devices,
+from custom_components.paperang.transport.bt import (
+    scan_bt_devices,
+    verify_bt_printer,
 )
 
 
@@ -100,141 +100,97 @@ class TestUsbDiscovery:
         assert result is True  # battery was read before disconnect failed
 
 
-class TestBleDiscovery:
-    @pytest.mark.asyncio
-    async def test_scan_ble_no_bleak_returns_empty(self):
-        """_async_scan_ble_devices returns [] when bleak is missing."""
-        with patch("builtins.__import__") as mock_import:
-            mock_import.side_effect = ImportError
-            result = await _async_scan_ble_devices()
+class TestBtDiscovery:
+    def test_scan_bt_no_lib_returns_empty(self):
+        """scan_bt_devices returns [] when BtTransport is missing."""
+        with patch("custom_components.paperang.transport.bt.BtTransport", None):
+            result = scan_bt_devices()
             assert result == []
 
-    @pytest.mark.asyncio
-    async def test_scan_ble_returns_paperang_devices(self):
-        """_async_scan_ble_devices returns Paperang/MiaoMiaoJi devices."""
-        d1 = MagicMock()
-        d1.name = "Paperang_P2"
-        d1.address = "AA:BB:CC:DD:EE:01"
-
-        d2 = MagicMock()
-        d2.name = "MiaoMiaoJi_ABC"
-        d2.address = "AA:BB:CC:DD:EE:02"
-
-        d3 = MagicMock()
-        d3.name = "Other_Device"
-        d3.address = "AA:BB:CC:DD:EE:03"
-
-        async def _mock_discover(timeout=5):
-            return [d1, d2, d3]
-
-        with patch("bleak.BleakScanner") as mock_cls:
-            mock_cls.discover = _mock_discover
-            result = await _async_scan_ble_devices()
-
-        assert len(result) == 2
-        assert result[0]["name"] == "Paperang_P2"
-        assert result[0]["address"] == "AA:BB:CC:DD:EE:01"
-        assert result[1]["name"] == "MiaoMiaoJi_ABC"
-
-    @pytest.mark.asyncio
-    async def test_scan_ble_exception_returns_empty(self):
-        """_async_scan_ble_devices returns [] on exception."""
-        async def _mock_discover_fail(timeout=5):
-            raise RuntimeError("scan failed")
-
-        with patch("bleak.BleakScanner") as mock_cls:
-            mock_cls.discover = _mock_discover_fail
-            result = await _async_scan_ble_devices()
-
-        assert result == []
-
-    @pytest.mark.asyncio
-    async def test_verify_ble_no_lib_returns_false(self):
-        """_async_verify_ble_printer returns False when paperang is missing."""
-        with patch("custom_components.paperang.transport.ble.BleTransport", None):
-            result = await _async_verify_ble_printer("AA:BB:CC:DD:EE:FF")
+    def test_verify_bt_no_lib_returns_false(self):
+        """verify_bt_printer returns False when BtTransport is missing."""
+        with patch("custom_components.paperang.transport.bt.BtTransport", None):
+            result = verify_bt_printer("AA:BB:CC:DD:EE:FF")
             assert result is False
 
-    @pytest.mark.asyncio
-    async def test_verify_ble_success(self):
-        """_async_verify_ble_printer returns True on success."""
+    def test_verify_bt_success(self):
+        """verify_bt_printer returns True on success."""
         mock_p = MagicMock()
         mock_p.get_battery.return_value = 80
 
-        mock_ble = MagicMock()
+        mock_bt = MagicMock()
 
-        with patch("custom_components.paperang.transport.ble.PaperangP2", return_value=mock_p):
+        with patch("custom_components.paperang.transport.bt.PaperangP2", return_value=mock_p):
             with patch(
-                "custom_components.paperang.transport.ble.BleTransport",
-                return_value=mock_ble,
+                "custom_components.paperang.transport.bt.BtTransport",
+                return_value=mock_bt,
             ):
-                result = await _async_verify_ble_printer("AA:BB:CC:DD:EE:FF")
+                result = verify_bt_printer("AA:BB:CC:DD:EE:FF")
 
         assert result is True
         mock_p.connect.assert_called_once()
         mock_p.get_battery.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_verify_ble_exception_returns_false(self):
-        """_async_verify_ble_printer returns False on exception."""
+    def test_verify_bt_exception_returns_false(self):
+        """verify_bt_printer returns False on exception."""
         mock_p = MagicMock()
-        mock_p.connect.side_effect = RuntimeError("ble connect failed")
+        mock_p.connect.side_effect = RuntimeError("bt connect failed")
 
-        mock_ble = MagicMock()
+        mock_bt = MagicMock()
 
-        with patch("custom_components.paperang.transport.ble.PaperangP2", return_value=mock_p):
+        with patch("custom_components.paperang.transport.bt.PaperangP2", return_value=mock_p):
             with patch(
-                "custom_components.paperang.transport.ble.BleTransport",
-                return_value=mock_ble,
+                "custom_components.paperang.transport.bt.BtTransport",
+                return_value=mock_bt,
             ):
-                result = await _async_verify_ble_printer("AA:BB:CC:DD:EE:FF")
+                result = verify_bt_printer("AA:BB:CC:DD:EE:FF")
 
         assert result is False
 
 
 class TestOptionsFlow:
     def test_options_flow_schema(self):
-        """Options flow has transport and ble_address fields."""
+        """Options flow has transport and bt_address fields."""
         import voluptuous as vol
         from custom_components.paperang.const import (
             TRANSPORT_USB,
-            TRANSPORT_BLE,
+            TRANSPORT_BT,
             CONF_TRANSPORT,
-            CONF_BLE_ADDRESS,
+            CONF_BT_ADDRESS,
         )
 
         schema = vol.Schema({
             vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In({
                 TRANSPORT_USB: "USB",
-                TRANSPORT_BLE: "Bluetooth BLE",
+                TRANSPORT_BT: "Bluetooth",
             }),
-            vol.Optional(CONF_BLE_ADDRESS, default=""): str,
+            vol.Optional(CONF_BT_ADDRESS, default=""): str,
         })
 
         result = schema({CONF_TRANSPORT: TRANSPORT_USB})
         assert result[CONF_TRANSPORT] == TRANSPORT_USB
-        assert result[CONF_BLE_ADDRESS] == ""
+        assert result[CONF_BT_ADDRESS] == ""
 
-    def test_options_flow_ble_address(self):
-        """Options flow accepts BLE address."""
+    def test_options_flow_bt_address(self):
+        """Options flow accepts BT address."""
         import voluptuous as vol
         from custom_components.paperang.const import (
-            TRANSPORT_BLE,
+            TRANSPORT_BT,
             CONF_TRANSPORT,
-            CONF_BLE_ADDRESS,
+            CONF_BT_ADDRESS,
         )
 
         schema = vol.Schema({
             vol.Required(CONF_TRANSPORT, default="usb"): vol.In({
                 "usb": "USB",
-                "ble": "Bluetooth BLE",
+                "bt": "Bluetooth",
             }),
-            vol.Optional(CONF_BLE_ADDRESS, default=""): str,
+            vol.Optional(CONF_BT_ADDRESS, default=""): str,
         })
 
         result = schema({
-            CONF_TRANSPORT: TRANSPORT_BLE,
-            CONF_BLE_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            CONF_TRANSPORT: TRANSPORT_BT,
+            CONF_BT_ADDRESS: "AA:BB:CC:DD:EE:FF",
         })
-        assert result[CONF_TRANSPORT] == TRANSPORT_BLE
-        assert result[CONF_BLE_ADDRESS] == "AA:BB:CC:DD:EE:FF"
+        assert result[CONF_TRANSPORT] == TRANSPORT_BT
+        assert result[CONF_BT_ADDRESS] == "AA:BB:CC:DD:EE:FF"
