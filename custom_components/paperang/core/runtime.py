@@ -54,6 +54,7 @@ _persistent_printers = _PersistentPrinterCache()
 
 # Public API — thin wrappers around the cache instance.
 
+
 def _get_or_reuse_printer(entry_id: str):
     """Return a persistent printer if available (USB/BT)."""
     return _persistent_printers.get_or_create(entry_id)
