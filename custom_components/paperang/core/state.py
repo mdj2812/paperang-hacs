@@ -8,7 +8,7 @@ import time
 
 from homeassistant.core import HomeAssistant
 
-from ..const import CONF_TRANSPORT, TRANSPORT_BLE, TRANSPORT_BT
+from ..const import CONF_TRANSPORT, TRANSPORT_BLE
 from . import runtime as _rt
 from .blocking import _get_lock
 
@@ -84,8 +84,7 @@ def clear_caches_for_entry(entry_id: str) -> None:
 async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     """Read all printer telemetry.
 
-    USB: blocking I/O in executor thread — connect/read/disconnect each poll.
-    BT (classic SPP): blocking I/O with persistent RFCOMM connection.
+    USB/BT (SPP): persistent connections, reuse across polls.
     BLE: skip polling — BLE only connects during on-demand operations.
     """
     cfg = _rt.transport_configs.get(entry_id, {})
@@ -152,71 +151,50 @@ def _read_static(
 
 def _try_read_once(
     entry_id: str,
-    is_bt: bool,
     static_cache: dict[str, object],
     dynamic_cache: dict[str, object],
 ) -> dict[str, object]:
-    """Attempt a single connect/read/disconnect cycle.
+    """Attempt a single read cycle using a persistent printer.
 
-    Returns telemetry data dict.  Raises on any error (caller handles retries).
+    USB and BT transports share the same persistent-connection
+    pattern: ``_get_or_reuse_printer`` returns a cached (already
+    connected) printer, avoiding ``Resource busy`` on USB and
+    duplicate RFCOMM sockets on BT.
     """
-    printer: object
-    if is_bt:
-        printer = _rt._get_or_reuse_printer(entry_id)
-    else:
-        printer = _rt._get_printer(entry_id)
-
+    printer = _rt._get_or_reuse_printer(entry_id)
     data: dict[str, object] = {"available": False}
     lock = _get_lock(entry_id)
-    try:
-        with lock:
-            if not is_bt:
-                printer.connect()
+    with lock:
+        data.update(_read_dynamic(printer, dynamic_cache))
+        data.update(_read_static(printer, static_cache))
 
-            data.update(_read_dynamic(printer, dynamic_cache))
-            data.update(_read_static(printer, static_cache))
+        ver = data.get("version")
+        if ver is not None:
+            formatted = _format_version(ver)
+            if formatted is not None:
+                data["version"] = formatted
 
-            ver = data.get("version")
-            if ver is not None:
-                formatted = _format_version(ver)
-                if formatted is not None:
-                    data["version"] = formatted
-
-            data["available"] = True
-            data["connected"] = "connected"
-            if is_bt:
-                _rt._cache_bt_printer(entry_id, printer)
-            return data
-    finally:
-        if not is_bt:
-            printer.disconnect()
+        data["available"] = True
+        data["connected"] = "connected"
+        return data
 
 
 def _blocking_read_printer_state(entry_id: str):
-    """Blocking: connect to printer and read telemetry.
+    """Blocking: read printer telemetry via persistent connection.
 
-    Dynamic values (battery, status): read every poll.  If None, keep
-    the last known value so gaps don't show as unavailable.
-
-    Static values (voltage, temperature, firmware, etc.): read every
-    poll until a non-None value is obtained; thereafter reuse cache.
-
-    BT (classic SPP): keeps the RFCOMM connection open across polls.
-    Reconnects only on failure.
+    USB and BT (SPP/RFCOMM) printers keep their transport open
+    across polls.  Reconnects only on failure.
 
     Retries up to 3 times on failure; logs warning if all fail.
     """
-    cfg = _rt.transport_configs.get(entry_id, {})
-    is_bt = cfg.get(CONF_TRANSPORT) == TRANSPORT_BT
     static_cache = _get_static_cache(entry_id)
     dynamic_cache = _get_dynamic_cache(entry_id)
 
     for attempt in range(1, _RETRIES + 1):
         try:
-            return _try_read_once(entry_id, is_bt, static_cache, dynamic_cache)
+            return _try_read_once(entry_id, static_cache, dynamic_cache)
         except Exception as err:  # pylint: disable=broad-exception-caught
-            if is_bt:
-                _rt._pop_bt_printer(entry_id)
+            _rt._pop_bt_printer(entry_id)
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",

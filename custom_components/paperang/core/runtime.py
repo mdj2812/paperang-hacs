@@ -16,31 +16,41 @@ from .paperang_lib import BtTransport, BleTransport, PaperangP2
 
 transport_configs: dict[str, dict[str, object]] = {}
 
-# Persistent BT (SPP/RFCOMM) printers — reused across coordinator polls
-# and print services to avoid opening duplicate sockets.
-_bt_persistent_printers: dict[str, object] = {}
+# Persistent printers (USB + BT SPP) — reused across coordinator polls
+# and print services to avoid re-enumeration and "Resource busy" errors.
+# BLE is excluded: BLE connections are intentionally short-lived.
+_persistent_printers: dict[str, object] = {}
 
 
 def _get_or_reuse_printer(entry_id: str):
-    """Return a persistent BT printer if available; None for USB/BLE."""
+    """Return a persistent printer if available; None for BLE.
+
+    USB and BT (SPP/RFCOMM) printers are cached after the first
+    successful connect.  Subsequent calls reuse the same transport
+    to avoid USB ``Resource busy`` errors and duplicate RFCOMM sockets.
+    """
     cfg = transport_configs.get(entry_id, {})
-    if cfg.get(CONF_TRANSPORT) != TRANSPORT_BT:
+    transport = cfg.get(CONF_TRANSPORT, "")
+    if transport == TRANSPORT_BLE:
         return None
-    if entry_id in _bt_persistent_printers:
-        return _bt_persistent_printers[entry_id]
+
+    if entry_id in _persistent_printers:
+        return _persistent_printers[entry_id]
+
     printer = _get_printer(entry_id)
     printer.connect()
+    _persistent_printers[entry_id] = printer
     return printer
 
 
 def _cache_bt_printer(entry_id: str, printer: object) -> None:
-    """Cache a BT printer for reuse."""
-    _bt_persistent_printers[entry_id] = printer
+    """Cache a printer for persistent reuse (USB or BT)."""
+    _persistent_printers[entry_id] = printer
 
 
 def _pop_bt_printer(entry_id: str) -> object | None:
-    """Remove and return a cached BT printer."""
-    return _bt_persistent_printers.pop(entry_id, None)
+    """Remove and return a cached persistent printer."""
+    return _persistent_printers.pop(entry_id, None)
 
 
 def _get_printer(entry_id: str | None = None):
