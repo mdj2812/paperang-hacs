@@ -15,6 +15,15 @@ _PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 _PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
 
 
+@pytest.fixture(autouse=True)
+def _clear_persistent_printers():
+    """Clear persistent printer cache between tests."""
+    from custom_components.paperang.core.runtime import _persistent_printers
+    _persistent_printers.clear()
+    yield
+    _persistent_printers.clear()
+
+
 @pytest.fixture
 def mock_printer():
     """Return a fully mocked printer."""
