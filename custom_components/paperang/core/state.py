@@ -9,8 +9,13 @@ from homeassistant.core import HomeAssistant
 
 from ..const import CONF_TRANSPORT, TRANSPORT_BLE, TRANSPORT_BT
 from .blocking import _get_lock
-from .paperang_lib import PaperangP2
-from .runtime import _get_printer, transport_configs
+from .runtime import (
+    _cache_bt_printer,
+    _get_or_reuse_printer,
+    _get_printer,
+    _pop_bt_printer,
+    transport_configs,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +47,6 @@ _STATIC_READERS = [
 
 _static_caches: dict[str, dict[str, object]] = {}
 _dynamic_caches: dict[str, dict[str, object]] = {}
-_bt_persistent_printers: dict[str, object] = {}
 
 
 def _get_static_cache(entry_id: str) -> dict[str, object]:
@@ -74,7 +78,7 @@ def clear_caches_for_entry(entry_id: str) -> None:
     """Remove cached telemetry and persistent printer for a config entry."""
     _static_caches.pop(entry_id, None)
     _dynamic_caches.pop(entry_id, None)
-    bt_printer = _bt_persistent_printers.pop(entry_id, None)
+    bt_printer = _pop_bt_printer(entry_id)
     if bt_printer is not None:
         try:
             bt_printer.disconnect()
@@ -120,18 +124,14 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
 
         # ── Get or reuse persistent BT printer ──
         if is_bt and entry_id in _bt_persistent_printers:
-            printer = _bt_persistent_printers[entry_id]
-        else:
-            printer = _get_printer(entry_id)
+            printer = _get_or_reuse_printer(entry_id)
 
         # Serialize USB/BT access with print services
         lock = _get_lock(entry_id)
         try:
             with lock:
                 # Only connect if not already connected (BT persistent)
-                if is_bt and entry_id in _bt_persistent_printers:
-                    pass  # already connected
-                else:
+                if not is_bt:
                     printer.connect()
 
                 battery = printer.get_battery()
@@ -183,12 +183,12 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
                 data["connected"] = "connected"
                 # Cache the connected printer for reuse
                 if is_bt:
-                    _bt_persistent_printers[entry_id] = printer
+                    _cache_bt_printer(entry_id, printer)
                 return data
         except Exception as err:  # pylint: disable=broad-exception-caught
             # Connection lost — clear cached printer so next poll reconnects
             if is_bt:
-                _bt_persistent_printers.pop(entry_id, None)
+                _pop_bt_printer(entry_id)
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",

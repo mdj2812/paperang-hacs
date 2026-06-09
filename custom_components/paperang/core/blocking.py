@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 import time
 
-from .runtime import _get_printer
+from .runtime import _cache_bt_printer, _get_or_reuse_printer, _get_printer, _pop_bt_printer
 
 # Per-entry locks to serialize USB access between coordinator polling
 # and on-demand print services.
@@ -21,26 +21,40 @@ def _get_lock(entry_id: str) -> threading.Lock:
 def _with_printer(entry_id: str, fn):
     """Create a printer, connect, run *fn(printer)*, disconnect.
 
-    Uses a per-entry lock to serialize USB access between coordinator
+    Uses a per-entry lock to serialize USB/BT access between coordinator
     polling and on-demand print service calls.  Retries on USB Resource
     busy errors caused by kernel driver conflicts.
+
+    For BT transport: reuses the persistent RFCOMM connection to avoid
+    ``[Errno 16] Resource busy`` from duplicate socket opens.
     """
     lock = _get_lock(entry_id)
     last_err = None
+
+    # Check if a persistent BT printer exists — reuse to avoid duplicate socket
+    cached = _get_or_reuse_printer(entry_id)
+    already_connected = cached is not None
+
     for _ in range(3):
         with lock:
-            printer = _get_printer(entry_id)
+            printer = cached if cached is not None else _get_printer(entry_id)
             try:
-                printer.connect()
+                if not already_connected:
+                    printer.connect()
                 return fn(printer)
             except Exception as err:
                 last_err = err
+                # On BT failure, clear cached printer so next call reconnects
+                _pop_bt_printer(entry_id)
+                cached = None
+                already_connected = False
                 if "Resource busy" in str(err) or "Entity" in str(err):
                     time.sleep(0.5)
                     continue
                 raise
             finally:
-                printer.disconnect()
+                if not already_connected:
+                    printer.disconnect()
     raise last_err  # pylint: disable=raising-bad-type
 
 

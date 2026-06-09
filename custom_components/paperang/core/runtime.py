@@ -16,6 +16,27 @@ from ..transport.usb import UsbTransportWithPath
 
 transport_configs: dict[str, dict[str, object]] = {}
 
+# Persistent BT (SPP/RFCOMM) printers — reused across coordinator polls
+# and print services to avoid opening duplicate sockets.
+_bt_persistent_printers: dict[str, object] = {}
+
+
+def _get_or_reuse_printer(entry_id: str):
+    """Return a persistent BT printer if available, otherwise create a new one."""
+    if entry_id in _bt_persistent_printers:
+        return _bt_persistent_printers[entry_id]
+    return _get_printer(entry_id)
+
+
+def _cache_bt_printer(entry_id: str, printer: object) -> None:
+    """Cache a BT printer for reuse."""
+    _bt_persistent_printers[entry_id] = printer
+
+
+def _pop_bt_printer(entry_id: str) -> object | None:
+    """Remove and return a cached BT printer."""
+    return _bt_persistent_printers.pop(entry_id, None)
+
 
 def _get_printer(entry_id: str | None = None):
     """Create a PaperangP2 with the configured transport.
