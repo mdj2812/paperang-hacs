@@ -23,7 +23,10 @@ def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
     try:
         proc = subprocess.run(
             ["bluetoothctl", "devices"],
-            capture_output=True, text=True, timeout=5, check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
         )
         for line in proc.stdout.splitlines():
             if line.startswith("Device "):

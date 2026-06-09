@@ -104,11 +104,7 @@ def _format_version(val: object) -> str | None:
         return None
     try:
         ver_int = int(val)
-        return (
-            f"V{ver_int & 0xFF}."
-            f"{(ver_int >> 8) & 0xFF}."
-            f"{(ver_int >> 16) & 0xFFFF}"
-        )
+        return f"V{ver_int & 0xFF}.{(ver_int >> 8) & 0xFF}.{(ver_int >> 16) & 0xFFFF}"
     except (ValueError, TypeError):
         return str(val)
 
@@ -123,9 +119,11 @@ def _read_dynamic(
     status = printer.get_status()
 
     data: dict[str, object] = {
-        "battery": battery if battery is not None
+        "battery": battery
+        if battery is not None
         else _get_or_fallback(dynamic_cache, "battery"),
-        "status": status if status is not None
+        "status": status
+        if status is not None
         else _get_or_fallback(dynamic_cache, "status"),
     }
     _update_if_not_none(dynamic_cache, "battery", battery)
@@ -222,12 +220,15 @@ def _blocking_read_printer_state(entry_id: str):
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",
-                    attempt, _RETRIES, err,
+                    attempt,
+                    _RETRIES,
+                    err,
                 )
             else:
                 _LOGGER.warning(
                     "Printer not available after %d attempts: %s",
-                    _RETRIES, err,
+                    _RETRIES,
+                    err,
                 )
                 clear_caches_for_entry(entry_id)
 
