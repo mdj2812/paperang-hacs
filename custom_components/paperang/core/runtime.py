@@ -22,7 +22,10 @@ _bt_persistent_printers: dict[str, object] = {}
 
 
 def _get_or_reuse_printer(entry_id: str):
-    """Return a persistent BT printer if available, otherwise create a new one."""
+    """Return a persistent BT printer if available; None for USB/BLE."""
+    cfg = transport_configs.get(entry_id, {})
+    if cfg.get(CONF_TRANSPORT) != TRANSPORT_BT:
+        return None
     if entry_id in _bt_persistent_printers:
         return _bt_persistent_printers[entry_id]
     printer = _get_printer(entry_id)

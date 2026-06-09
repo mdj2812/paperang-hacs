@@ -94,7 +94,11 @@ async def _read_printer_state(hass: HomeAssistant, entry_id: str):
 
 
 def _format_version(val: object) -> str | None:
-    """Format raw version integer as Vx.y.z string.  Returns None on failure."""
+    """Format raw version integer as Vx.y.z string.
+
+    Returns formatted string on success, None if val is None,
+    or the original value if it cannot be parsed as an integer.
+    """
     if val is None:
         return None
     try:
@@ -105,7 +109,7 @@ def _format_version(val: object) -> str | None:
             f"{(ver_int >> 16) & 0xFFFF}"
         )
     except (ValueError, TypeError):
-        return None
+        return str(val)
 
 
 def _read_dynamic(
