@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from ..const import (
+    CONF_BT_ADDRESS,
     CONF_BLE_ADDRESS,
     CONF_TRANSPORT,
     CONF_USB_BUS,
     CONF_USB_PORT,
+    TRANSPORT_BT,
     TRANSPORT_BLE,
 )
-from .paperang_lib import BleTransport, PaperangP2
+from .paperang_lib import BtTransport, BleTransport, PaperangP2
 from ..transport.usb import UsbTransportWithPath
 
 transport_configs: dict[str, dict[str, object]] = {}
@@ -29,6 +31,11 @@ def _get_printer(entry_id: str | None = None):
         return PaperangP2()
 
     transport_type = cfg.get(CONF_TRANSPORT, "")
+    if transport_type == TRANSPORT_BT and BtTransport is not None:
+        bt_addr = cfg.get(CONF_BT_ADDRESS, "")
+        bt = BtTransport(address=bt_addr) if bt_addr else BtTransport()
+        return PaperangP2(transport=bt)
+
     if transport_type == TRANSPORT_BLE and BleTransport is not None:
         ble_addr = cfg.get(CONF_BLE_ADDRESS, "")
         ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()

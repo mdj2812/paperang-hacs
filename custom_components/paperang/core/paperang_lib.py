@@ -27,6 +27,11 @@ pack_packet = _lib.pack_packet  # pylint: disable=no-member
 UsbTransportBase = _lib.transport.UsbTransport  # pylint: disable=no-member
 
 try:
+    BtTransport = _lib.transport.BtTransport  # pylint: disable=no-member
+except (ImportError, AttributeError):
+    BtTransport = None  # pylint: disable=invalid-name
+
+try:
     BleTransport = _lib.transport.BleTransport  # pylint: disable=no-member
 except (ImportError, AttributeError):
     BleTransport = None  # pylint: disable=invalid-name
