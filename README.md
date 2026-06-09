@@ -44,9 +44,7 @@ Plug in your Paperang P2 via USB. Home Assistant will detect it automatically an
 
 ### Bluetooth Setup
 
-**Settings → Devices & Services** — if your Paperang P2 is powered on and within range, HA will auto-discover it and show a notification.
-
-Or add manually: **Settings → Devices & Services → Add Integration → Search "Paperang P2 Printer"** — choose **Bluetooth** and enter the MAC address (e.g. `00:15:83:EB:05:17`).
+**Settings → Devices & Services** — if your Paperang P2 is powered on and within range, HA will auto-discover it and show a notification. Confirm to add.
 
 ### Manual Setup
 
