@@ -64,17 +64,14 @@ class TestConfigFlowUSB:
         assert result["step_id"] == "select_device"
 
 
-class TestConfigFlowBLE:
+class TestConfigFlowBT:
     @pytest.mark.asyncio
-    async def test_ble_scan_no_devices_aborts(self, hass: HomeAssistant) -> None:
-        """BLE step with no devices returns empty list from scan."""
-        from custom_components.paperang.transport.ble import async_scan_ble_devices
+    async def test_bt_scan_no_devices_returns_empty(self, hass: HomeAssistant) -> None:
+        """BT scan with no bleak returns empty list."""
+        from custom_components.paperang.transport.bt import scan_bt_devices
 
-        with patch("bleak.BleakScanner") as mock_cls:
-            async def _empty(timeout=5):
-                return []
-            mock_cls.discover = _empty
-            result = await async_scan_ble_devices()
+        with patch("custom_components.paperang.transport.bt.BtTransport", None):
+            result = scan_bt_devices()
 
         assert result == []
 
@@ -96,12 +93,12 @@ class TestConfigFlowBLE:
         assert result["errors"]["base"] == "no_usb_device_found"
 
     @pytest.mark.asyncio
-    async def test_user_step_ble_no_devices_shows_error(
+    async def test_user_step_bt_no_devices_shows_error(
         self, hass: HomeAssistant
     ) -> None:
-        """User step with BLE triggers scan; no devices returns error."""
+        """User step with BT triggers scan; no devices returns error."""
         flow = PaperangConfigFlow()
         flow.hass = hass
-        result = await flow.async_step_user({"transport": "ble"})
+        result = await flow.async_step_user({"transport": "bt"})
         assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "no_ble_device_found"
+        assert result["errors"]["base"] == "no_bt_device_found"

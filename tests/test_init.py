@@ -87,8 +87,7 @@ class TestWithPrinter:
         with patch.object(rt, "_get_printer", return_value=mock_printer):
             result = mod._with_printer(FAKE_ENTRY_ID, lambda p: "result")
             assert result == "result"
-            mock_printer.connect.assert_not_called()  # persistent reuse skips connect
-            # disconnect called only for non-BT; in test context BT flag not set
+            mock_printer.connect.assert_called_once()
             mock_printer.disconnect.assert_called_once()
 
     def test_disconnects_on_exception(self):
@@ -103,7 +102,7 @@ class TestWithPrinter:
                     FAKE_ENTRY_ID,
                     lambda p: (_ for _ in ()).throw(ValueError("boom")),
                 )
-            mock_printer.connect.assert_not_called()
+            mock_printer.connect.assert_called_once()
             mock_printer.disconnect.assert_called_once()
 
     def test_returns_fn_result(self):

@@ -8,14 +8,8 @@ import time
 from homeassistant.core import HomeAssistant
 
 from ..const import CONF_TRANSPORT, TRANSPORT_BLE, TRANSPORT_BT
+from . import runtime as _rt
 from .blocking import _get_lock
-from .runtime import (
-    _cache_bt_printer,
-    _get_or_reuse_printer,
-    _get_printer,
-    _pop_bt_printer,
-    transport_configs,
-)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,7 +72,7 @@ def clear_caches_for_entry(entry_id: str) -> None:
     """Remove cached telemetry and persistent printer for a config entry."""
     _static_caches.pop(entry_id, None)
     _dynamic_caches.pop(entry_id, None)
-    bt_printer = _pop_bt_printer(entry_id)
+    bt_printer = _rt._pop_bt_printer(entry_id)
     if bt_printer is not None:
         try:
             bt_printer.disconnect()
@@ -93,7 +87,7 @@ async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     BT (classic SPP): blocking I/O with persistent RFCOMM connection.
     BLE: skip polling — BLE only connects during on-demand operations.
     """
-    cfg = transport_configs.get(entry_id, {})
+    cfg = _rt.transport_configs.get(entry_id, {})
     if cfg.get(CONF_TRANSPORT) == TRANSPORT_BLE:
         return {"available": True, "connected": "connected"}
     return await hass.async_add_executor_job(_blocking_read_printer_state, entry_id)
@@ -167,7 +161,7 @@ def _blocking_read_printer_state(entry_id: str):
 
     Retries up to 3 times on failure; logs warning if all fail.
     """
-    cfg = transport_configs.get(entry_id, {})
+    cfg = _rt.transport_configs.get(entry_id, {})
     is_bt = cfg.get(CONF_TRANSPORT) == TRANSPORT_BT
 
     for attempt in range(1, _RETRIES + 1):
@@ -176,9 +170,9 @@ def _blocking_read_printer_state(entry_id: str):
         dynamic_cache = _get_dynamic_cache(entry_id)
 
         if is_bt:
-            printer = _get_or_reuse_printer(entry_id)
+            printer = _rt._get_or_reuse_printer(entry_id)
         else:
-            printer = _get_printer(entry_id)
+            printer = _rt._get_printer(entry_id)
 
         lock = _get_lock(entry_id)
         try:
@@ -198,11 +192,11 @@ def _blocking_read_printer_state(entry_id: str):
                 data["available"] = True
                 data["connected"] = "connected"
                 if is_bt:
-                    _cache_bt_printer(entry_id, printer)
+                    _rt._cache_bt_printer(entry_id, printer)
                 return data
         except Exception as err:  # pylint: disable=broad-exception-caught
             if is_bt:
-                _pop_bt_printer(entry_id)
+                _rt._pop_bt_printer(entry_id)
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",

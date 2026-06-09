@@ -5,11 +5,7 @@ from __future__ import annotations
 import threading
 import time
 
-from .runtime import (
-    _get_or_reuse_printer,
-    _get_printer,
-    _pop_bt_printer,
-)
+from . import runtime as _rt
 
 # Per-entry locks to serialize USB access between coordinator polling
 # and on-demand print services.
@@ -36,12 +32,12 @@ def _with_printer(entry_id: str, fn):
     last_err = None
 
     # Check if a persistent BT printer exists — reuse to avoid duplicate socket
-    cached = _get_or_reuse_printer(entry_id)
+    cached = _rt._get_or_reuse_printer(entry_id)
     already_connected = cached is not None
 
     for _ in range(3):
         with lock:
-            printer = cached if cached is not None else _get_printer(entry_id)
+            printer = cached if cached is not None else _rt._get_printer(entry_id)
             try:
                 if not already_connected:
                     printer.connect()
@@ -49,7 +45,7 @@ def _with_printer(entry_id: str, fn):
             except Exception as err:
                 last_err = err
                 # On BT failure, clear cached printer so next call reconnects
-                _pop_bt_printer(entry_id)
+                _rt._pop_bt_printer(entry_id)
                 cached = None
                 already_connected = False
                 if "Resource busy" in str(err) or "Entity" in str(err):
