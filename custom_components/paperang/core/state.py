@@ -1,4 +1,5 @@
 """Blocking / async printer telemetry reads and per-entry caches."""
+# pylint: disable=protected-access
 
 from __future__ import annotations
 
@@ -151,6 +152,48 @@ def _read_static(
     return data
 
 
+def _try_read_once(
+    entry_id: str,
+    is_bt: bool,
+    static_cache: dict[str, object],
+    dynamic_cache: dict[str, object],
+) -> dict[str, object]:
+    """Attempt a single connect/read/disconnect cycle.
+
+    Returns telemetry data dict.  Raises on any error (caller handles retries).
+    """
+    printer: object
+    if is_bt:
+        printer = _rt._get_or_reuse_printer(entry_id)
+    else:
+        printer = _rt._get_printer(entry_id)
+
+    data: dict[str, object] = {"available": False}
+    lock = _get_lock(entry_id)
+    try:
+        with lock:
+            if not is_bt:
+                printer.connect()
+
+            data.update(_read_dynamic(printer, dynamic_cache))
+            data.update(_read_static(printer, static_cache))
+
+            ver = data.get("version")
+            if ver is not None:
+                formatted = _format_version(ver)
+                if formatted is not None:
+                    data["version"] = formatted
+
+            data["available"] = True
+            data["connected"] = "connected"
+            if is_bt:
+                _rt._cache_bt_printer(entry_id, printer)
+            return data
+    finally:
+        if not is_bt:
+            printer.disconnect()
+
+
 def _blocking_read_printer_state(entry_id: str):
     """Blocking: connect to printer and read telemetry.
 
@@ -167,37 +210,12 @@ def _blocking_read_printer_state(entry_id: str):
     """
     cfg = _rt.transport_configs.get(entry_id, {})
     is_bt = cfg.get(CONF_TRANSPORT) == TRANSPORT_BT
+    static_cache = _get_static_cache(entry_id)
+    dynamic_cache = _get_dynamic_cache(entry_id)
 
     for attempt in range(1, _RETRIES + 1):
-        data: dict[str, object] = {"available": False}
-        static_cache = _get_static_cache(entry_id)
-        dynamic_cache = _get_dynamic_cache(entry_id)
-
-        if is_bt:
-            printer = _rt._get_or_reuse_printer(entry_id)
-        else:
-            printer = _rt._get_printer(entry_id)
-
-        lock = _get_lock(entry_id)
         try:
-            with lock:
-                if not is_bt:
-                    printer.connect()
-
-                data.update(_read_dynamic(printer, dynamic_cache))
-                data.update(_read_static(printer, static_cache))
-
-                ver = data.get("version")
-                if ver is not None:
-                    formatted = _format_version(ver)
-                    if formatted is not None:
-                        data["version"] = formatted
-
-                data["available"] = True
-                data["connected"] = "connected"
-                if is_bt:
-                    _rt._cache_bt_printer(entry_id, printer)
-                return data
+            return _try_read_once(entry_id, is_bt, static_cache, dynamic_cache)
         except Exception as err:  # pylint: disable=broad-exception-caught
             if is_bt:
                 _rt._pop_bt_printer(entry_id)
@@ -212,8 +230,5 @@ def _blocking_read_printer_state(entry_id: str):
                     _RETRIES, err,
                 )
                 clear_caches_for_entry(entry_id)
-        finally:
-            if not is_bt:
-                printer.disconnect()
 
     return {"available": False, "connected": "disconnected"}
