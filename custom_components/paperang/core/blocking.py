@@ -1,13 +1,14 @@
 """Blocking printer operations (connect → work → disconnect)."""
+# pylint: disable=protected-access
 
 from __future__ import annotations
 
 import threading
 import time
 
-from .runtime import _get_printer
+from . import runtime as _rt
 
-# Per-entry locks to serialize USB access between coordinator polling
+# Per-entry locks to serialize USB/BT access between coordinator polling
 # and on-demand print services.
 _locks: dict[str, threading.Lock] = {}
 
@@ -19,28 +20,30 @@ def _get_lock(entry_id: str) -> threading.Lock:
 
 
 def _with_printer(entry_id: str, fn):
-    """Create a printer, connect, run *fn(printer)*, disconnect.
+    """Run *fn(printer)* on a persistent (USB or BT SPP) connection.
 
-    Uses a per-entry lock to serialize USB access between coordinator
-    polling and on-demand print service calls.  Retries on USB Resource
-    busy errors caused by kernel driver conflicts.
+    USB and BT printers both use persistent connections:
+    ``_get_or_reuse_printer`` caches the connected transport so
+    subsequent calls skip USB enumeration and RFCOMM socket setup.
+
+    Retries on ``Resource busy`` / ``Entity`` errors (up to 3 times).
     """
     lock = _get_lock(entry_id)
     last_err = None
+
     for _ in range(3):
-        with lock:
-            printer = _get_printer(entry_id)
-            try:
-                printer.connect()
+        printer = _rt._get_or_reuse_printer(entry_id)
+        try:
+            with lock:
                 return fn(printer)
-            except Exception as err:
-                last_err = err
-                if "Resource busy" in str(err) or "Entity" in str(err):
-                    time.sleep(0.5)
-                    continue
-                raise
-            finally:
-                printer.disconnect()
+        except Exception as err:
+            last_err = err
+            # Connection lost — clear cache so next call reconnects
+            _rt._pop_printer(entry_id)
+            if "Resource busy" in str(err) or "Entity" in str(err):
+                time.sleep(0.5)
+                continue
+            raise
     raise last_err  # pylint: disable=raising-bad-type
 
 

@@ -1,4 +1,5 @@
 """Blocking / async printer telemetry reads and per-entry caches."""
+# pylint: disable=protected-access,duplicate-code
 
 from __future__ import annotations
 
@@ -8,8 +9,8 @@ import time
 from homeassistant.core import HomeAssistant
 
 from ..const import CONF_TRANSPORT, TRANSPORT_BLE
+from . import runtime as _rt
 from .blocking import _get_lock
-from .runtime import _get_printer, transport_configs
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,96 +70,131 @@ def _get_or_fallback(cache: dict[str, object], key: str) -> object:
 
 
 def clear_caches_for_entry(entry_id: str) -> None:
-    """Remove cached telemetry for a config entry."""
+    """Remove cached telemetry and persistent printer for a config entry."""
     _static_caches.pop(entry_id, None)
     _dynamic_caches.pop(entry_id, None)
+    printer = _rt._pop_printer(entry_id)
+    if printer is not None:
+        try:
+            printer.disconnect()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
 
 
 async def _read_printer_state(hass: HomeAssistant, entry_id: str):
     """Read all printer telemetry.
 
-    USB: blocking I/O in executor thread.
+    USB/BT (SPP): persistent connections, reuse across polls.
     BLE: skip polling — BLE only connects during on-demand operations.
     """
-    cfg = transport_configs.get(entry_id, {})
+    cfg = _rt.transport_configs.get(entry_id, {})
     if cfg.get(CONF_TRANSPORT) == TRANSPORT_BLE:
         return {"available": True, "connected": "connected"}
     return await hass.async_add_executor_job(_blocking_read_printer_state, entry_id)
 
 
-def _blocking_read_printer_state(entry_id: str):  # noqa: C901
-    # pylint: disable=too-many-locals
-    """Blocking: connect to printer and read telemetry.
+def _format_version(val: object) -> str | None:
+    """Format raw version integer as Vx.y.z string.
 
-    Dynamic values (battery, status): read every poll.  If None, keep
-    the last known value so gaps don't show as unavailable.
+    Returns formatted string on success, None if val is None,
+    or the original value if it cannot be parsed as an integer.
+    """
+    if val is None:
+        return None
+    try:
+        ver_int = int(val)
+        return f"V{ver_int & 0xFF}.{(ver_int >> 8) & 0xFF}.{(ver_int >> 16) & 0xFFFF}"
+    except (ValueError, TypeError):
+        return str(val)
 
-    Static values (voltage, temperature, firmware, etc.): read every
-    poll until a non-None value is obtained; thereafter reuse cache.
+
+def _read_dynamic(
+    printer: object,
+    dynamic_cache: dict[str, object],
+) -> dict[str, object]:
+    """Read battery + status, applying cache fallback."""
+    battery = printer.get_battery()
+    time.sleep(0.05)
+    status = printer.get_status()
+
+    data: dict[str, object] = {
+        "battery": battery
+        if battery is not None
+        else _get_or_fallback(dynamic_cache, "battery"),
+        "status": status
+        if status is not None
+        else _get_or_fallback(dynamic_cache, "status"),
+    }
+    _update_if_not_none(dynamic_cache, "battery", battery)
+    _update_if_not_none(dynamic_cache, "status", status)
+    return data
+
+
+def _read_static(
+    printer: object,
+    static_cache: dict[str, object],
+) -> dict[str, object]:
+    """Read all static telemetry values, skipping already-cached keys."""
+    data: dict[str, object] = {}
+    for key, reader in _STATIC_READERS:
+        if key in static_cache:
+            data[key] = static_cache[key]
+            continue
+        time.sleep(0.05)
+        val = reader(printer)
+        if key == "version":
+            val = _format_version(val)
+        _update_if_not_none(static_cache, key, val)
+        data[key] = _get_or_fallback(static_cache, key)
+    return data
+
+
+def _try_read_once(
+    entry_id: str,
+    static_cache: dict[str, object],
+    dynamic_cache: dict[str, object],
+) -> dict[str, object]:
+    """Attempt a single read cycle using a persistent printer.
+
+    USB and BT transports share the same persistent-connection
+    pattern: ``_get_or_reuse_printer`` returns a cached (already
+    connected) printer, avoiding ``Resource busy`` on USB and
+    duplicate RFCOMM sockets on BT.
+    """
+    printer = _rt._get_or_reuse_printer(entry_id)
+    data: dict[str, object] = {"available": False}
+    lock = _get_lock(entry_id)
+    with lock:
+        data.update(_read_dynamic(printer, dynamic_cache))
+        data.update(_read_static(printer, static_cache))
+
+        ver = data.get("version")
+        if ver is not None:
+            formatted = _format_version(ver)
+            if formatted is not None:
+                data["version"] = formatted
+
+        data["available"] = True
+        data["connected"] = "connected"
+        return data
+
+
+def _blocking_read_printer_state(entry_id: str):
+    """Blocking: read printer telemetry via persistent connection.
+
+    USB and BT (SPP/RFCOMM) printers keep their transport open
+    across polls.  Reconnects only on failure.
 
     Retries up to 3 times on failure; logs warning if all fail.
     """
+    static_cache = _get_static_cache(entry_id)
+    dynamic_cache = _get_dynamic_cache(entry_id)
+
     for attempt in range(1, _RETRIES + 1):
-        data: dict[str, object] = {"available": False}
-        static_cache = _get_static_cache(entry_id)
-        dynamic_cache = _get_dynamic_cache(entry_id)
-        printer = _get_printer(entry_id)
-
-        # Serialize USB access with print services
-        lock = _get_lock(entry_id)
         try:
-            with lock:
-                printer.connect()
-
-                battery = printer.get_battery()
-                time.sleep(0.05)
-                status = printer.get_status()
-                data["battery"] = (
-                    battery
-                    if battery is not None
-                    else _get_or_fallback(dynamic_cache, "battery")
-                )
-                data["status"] = (
-                    status
-                    if status is not None
-                    else _get_or_fallback(dynamic_cache, "status")
-                )
-                _update_if_not_none(dynamic_cache, "battery", battery)
-                _update_if_not_none(dynamic_cache, "status", status)
-
-                for key, reader in _STATIC_READERS:
-                    time.sleep(0.05)
-                    val = reader(printer)
-                    if key == "version" and val is not None:
-                        try:
-                            ver_int = int(val)
-                            val = (
-                                f"V{ver_int & 0xFF}."
-                                f"{(ver_int >> 8) & 0xFF}."
-                                f"{(ver_int >> 16) & 0xFFFF}"
-                            )
-                        except (ValueError, TypeError):
-                            pass
-                    _update_if_not_none(static_cache, key, val)
-
-                for key in _STATIC_KEYS:
-                    data[key] = _get_or_fallback(static_cache, key)
-                ver = data.get("version")
-                if ver is not None:
-                    try:
-                        ver_int = int(ver)
-                        data["version"] = (
-                            f"V{ver_int & 0xFF}."
-                            f"{(ver_int >> 8) & 0xFF}."
-                            f"{(ver_int >> 16) & 0xFFFF}"
-                        )
-                    except (ValueError, TypeError):
-                        pass
-
-                data["available"] = True
-                data["connected"] = "connected"
-                return data
+            return _try_read_once(entry_id, static_cache, dynamic_cache)
         except Exception as err:  # pylint: disable=broad-exception-caught
+            _rt._pop_printer(entry_id)
             if attempt < _RETRIES:
                 _LOGGER.debug(
                     "Printer read attempt %d/%d failed: %s",
@@ -173,7 +209,5 @@ def _blocking_read_printer_state(entry_id: str):  # noqa: C901
                     err,
                 )
                 clear_caches_for_entry(entry_id)
-        finally:
-            printer.disconnect()
 
     return {"available": False, "connected": "disconnected"}

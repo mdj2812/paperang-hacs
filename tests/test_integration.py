@@ -11,9 +11,17 @@ from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, CONF_TRANSPO
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
-_PATCH_STATE_GET = "custom_components.paperang.core.state._get_printer"
+_PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 _PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
-_PATCH_BLOCK_GET = "custom_components.paperang.core.blocking._get_printer"
+
+
+@pytest.fixture(autouse=True)
+def _clear_persistent_printers():
+    """Clear persistent printer cache between tests."""
+    from custom_components.paperang.core.runtime import _persistent_printers
+    _persistent_printers.clear()
+    yield
+    _persistent_printers.clear()
 
 
 @pytest.fixture
@@ -46,7 +54,7 @@ class TestSetupEntry:
 
         import custom_components.paperang as mod
 
-        with patch(_PATCH_STATE_GET, return_value=mock_printer):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
                 with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
                     result = await mod.async_setup_entry(hass, entry)
@@ -66,7 +74,7 @@ class TestSetupEntry:
 
         import custom_components.paperang as mod
 
-        with patch(_PATCH_STATE_GET, return_value=mock_printer):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
                 with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
                     result = await mod.async_setup_entry(hass, entry)
@@ -87,7 +95,7 @@ class TestSetupEntry:
 
         import custom_components.paperang as mod
 
-        with patch(_PATCH_STATE_GET, return_value=mock_printer):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
                 with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
                     await mod.async_setup_entry(hass, entry)
@@ -231,7 +239,7 @@ class TestServiceCalls:
         import custom_components.paperang as mod
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
-        with patch(_PATCH_STATE_GET, return_value=mock_printer):
+        with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             result = await mod._read_printer_state(hass, entry.entry_id)
 
         assert result["version"] == "V1.0.11"
@@ -251,7 +259,7 @@ class TestServiceCalls:
         bad = MagicMock()
         bad.connect.side_effect = RuntimeError("boom")
 
-        with patch(_PATCH_STATE_GET, return_value=bad):
+        with patch(_PATCH_RUNTIME_GET, return_value=bad):
             result = await mod._read_printer_state(hass, entry.entry_id)
 
         assert result == {"available": False, "connected": "disconnected"}
@@ -278,7 +286,7 @@ class TestServiceCalls:
         """_do_get_status returns error dict on failure."""
         import custom_components.paperang as mod
 
-        with patch(_PATCH_BLOCK_GET, side_effect=RuntimeError("offline")):
+        with patch(_PATCH_RUNTIME_GET, side_effect=RuntimeError("offline")):
             result = mod._do_get_status("test")
 
         assert result["available"] is False

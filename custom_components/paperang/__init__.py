@@ -15,8 +15,8 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import CONF_TRANSPORT, DOMAIN, TRANSPORT_USB
-from .core.paperang_lib import BleTransport, PaperangP2
+from .const import CONF_TRANSPORT, DOMAIN, TRANSPORT_BT, TRANSPORT_USB
+from .core.paperang_lib import PaperangP2
 from .core.blocking import (
     _do_feed_paper,
     _do_get_status,
@@ -49,7 +49,8 @@ PLATFORMS = [
     Platform.TEXT,
 ]
 
-UPDATE_INTERVAL = timedelta(seconds=5)
+POLL_INTERVAL_USB = timedelta(seconds=5)
+POLL_INTERVAL_BT = timedelta(seconds=30)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +81,13 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up from config entry (also called after YAML import)."""
     transport_configs[entry.entry_id] = dict(entry.data)
 
+    # BT (SPP/RFCOMM) polling is less frequent to reduce I/O pressure
+    # on the Bluetooth stack and prevent kernel RCU stalls.
+    if entry.data.get(CONF_TRANSPORT) == TRANSPORT_BT:
+        interval = POLL_INTERVAL_BT
+    else:
+        interval = POLL_INTERVAL_USB
+
     async def _coordinator_update():
         """Read printer state, then push static info to device registry."""
         data = await _read_printer_state(hass, entry.entry_id)
@@ -103,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         _LOGGER,
         name="paperang",
         update_method=_coordinator_update,
-        update_interval=UPDATE_INTERVAL,
+        update_interval=interval,
     )
     await coordinator.async_config_entry_first_refresh()
     _LOGGER.info("Paperang coordinator data: %s", coordinator.data)

@@ -44,27 +44,24 @@ class TestConfigFlowCreateEntry:
         assert result["data"]["usb_port"] == [3]
 
     @pytest.mark.asyncio
-    async def test_ble_verify_success_creates_entry(self, hass: HomeAssistant) -> None:
-        """BLE verify step creates entry on successful communication."""
+    async def test_bt_verify_success_creates_entry(self, hass: HomeAssistant) -> None:
+        """BT verify step creates entry on successful communication."""
         flow = _make_flow(hass)
-        flow._selected_ble = {
+        flow._selected_bt = {
             "name": "Paperang_P2",
             "address": "AA:BB:CC:DD:EE:FF",
         }
 
-        async def _verify_ok(address):
-            return True
-
         with patch(
-            "custom_components.paperang.config_flow._async_verify_ble_printer",
-            side_effect=_verify_ok,
+            "custom_components.paperang.config_flow._verify_bt_printer",
+            return_value=True,
         ):
-            result = await flow.async_step_ble_verify()
+            result = await flow.async_step_bt_verify()
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert "Paperang_P2" in result["title"]
-        assert result["data"]["transport"] == "ble"
-        assert result["data"]["ble_address"] == "AA:BB:CC:DD:EE:FF"
+        assert result["data"]["transport"] == "bt"
+        assert result["data"]["bt_address"] == "AA:BB:CC:DD:EE:FF"
 
     @pytest.mark.asyncio
     async def test_user_step_usb_single_device_creates_entry(
@@ -88,48 +85,45 @@ class TestConfigFlowCreateEntry:
         assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
-    async def test_user_step_ble_single_device_creates_entry(
+    async def test_user_step_bt_no_devices_shows_error(
         self, hass: HomeAssistant
     ) -> None:
-        """User step with BLE triggers scan; no devices returns error."""
+        """User step with BT triggers scan; no devices returns error."""
         flow = _make_flow(hass)
-        result = await flow.async_step_user({"transport": "ble"})
+        result = await flow.async_step_user({"transport": "bt"})
         assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "no_ble_device_found"
+        assert result["errors"]["base"] == "no_bt_device_found"
 
     @pytest.mark.asyncio
-    async def test_select_ble_device_form(self, hass: HomeAssistant) -> None:
-        """Select BLE device step shows dropdown."""
+    async def test_select_bt_device_form(self, hass: HomeAssistant) -> None:
+        """Select BT device step shows dropdown."""
         flow = _make_flow(hass)
-        flow._ble_discovered = [
+        flow._bt_discovered = [
             {"name": "Paperang_P2", "address": "AA:BB:CC:DD:EE:01"},
             {"name": "MiaoMiaoJi", "address": "AA:BB:CC:DD:EE:02"},
         ]
 
-        result = await flow.async_step_select_ble_device()
+        result = await flow.async_step_select_bt_device()
 
         assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "select_ble_device"
+        assert result["step_id"] == "select_bt_device"
 
     @pytest.mark.asyncio
-    async def test_select_ble_device_submit_goes_to_verify(
+    async def test_select_bt_device_submit_goes_to_verify(
         self, hass: HomeAssistant
     ) -> None:
-        """Select BLE device submit triggers verify."""
+        """Select BT device submit triggers verify."""
         flow = _make_flow(hass)
-        flow._ble_discovered = [
+        flow._bt_discovered = [
             {"name": "Paperang_P2", "address": "AA:BB:CC:DD:EE:01"},
         ]
 
-        async def _verify_ok(address):
-            return True
-
         with patch(
-            "custom_components.paperang.config_flow._async_verify_ble_printer",
-            side_effect=_verify_ok,
+            "custom_components.paperang.config_flow._verify_bt_printer",
+            return_value=True,
         ):
-            result = await flow.async_step_select_ble_device(
-                {"ble_device": "AA:BB:CC:DD:EE:01"}
+            result = await flow.async_step_select_bt_device(
+                {"bt_device": "AA:BB:CC:DD:EE:01"}
             )
 
         assert result["type"] == FlowResultType.CREATE_ENTRY

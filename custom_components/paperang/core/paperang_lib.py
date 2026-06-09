@@ -15,7 +15,8 @@ _custom_paths = [p for p in sys.path if "custom_components" in p]
 for _p in _custom_paths:
     sys.path.remove(_p)
 
-import paperang as _lib  # noqa: E402 pylint: disable=import-outside-toplevel,import-error,wrong-import-position
+# pylint: disable-next=import-outside-toplevel,import-error,wrong-import-position
+import paperang as _lib  # noqa: E402 pylint: disable=no-member
 
 for _p in _custom_paths:
     sys.path.insert(0, _p)
@@ -25,6 +26,11 @@ load_profiles = _lib.load_profiles  # pylint: disable=no-member
 crc32_paperang = _lib.crc32_paperang  # pylint: disable=no-member
 pack_packet = _lib.pack_packet  # pylint: disable=no-member
 UsbTransportBase = _lib.transport.UsbTransport  # pylint: disable=no-member
+
+try:
+    BtTransport = _lib.transport.BtTransport  # pylint: disable=no-member
+except (ImportError, AttributeError):
+    BtTransport = None  # pylint: disable=invalid-name
 
 try:
     BleTransport = _lib.transport.BleTransport  # pylint: disable=no-member
