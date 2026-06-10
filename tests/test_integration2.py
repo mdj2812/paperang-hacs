@@ -17,6 +17,7 @@ _PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 def _clear_persistent_printers():
     """Clear persistent printer cache between tests."""
     from custom_components.paperang.core.runtime import _persistent_printers
+
     _persistent_printers.clear()
     yield
     _persistent_printers.clear()
@@ -49,10 +50,13 @@ async def _setup_entry(hass, mock_p, extra_data=None):
     entry.add_to_hass(hass)
 
     import custom_components.paperang as mod
+
     # Register services (async_setup is called once per HA instance)
     await mod.async_setup(hass, {})
     with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
-        with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
+        with patch.object(
+            hass.config_entries, "async_forward_entry_setups", return_value=None
+        ):
             await mod.async_setup_entry(hass, entry)
     return entry
 
@@ -64,8 +68,15 @@ class TestServiceRegistration:
 
         await mod.async_setup(hass, {})
 
-        for svc in ("print_text", "print_image", "print_qr", "print_pickup_code",
-                     "get_status", "feed_paper", "print_test_page"):
+        for svc in (
+            "print_text",
+            "print_image",
+            "print_qr",
+            "print_pickup_code",
+            "get_status",
+            "feed_paper",
+            "print_test_page",
+        ):
             assert hass.services.has_service(DOMAIN, svc), f"Missing service: {svc}"
 
     async def test_print_text_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
@@ -74,9 +85,14 @@ class TestServiceRegistration:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "print_text",
-                {"text": "Hello", "font_size": 24, "heat_density": 75,
-                 "entry_id": entry.entry_id},
+                DOMAIN,
+                "print_text",
+                {
+                    "text": "Hello",
+                    "font_size": 24,
+                    "heat_density": 75,
+                    "entry_id": entry.entry_id,
+                },
                 blocking=True,
             )
         mock_p.print_text.assert_called_once()
@@ -87,19 +103,23 @@ class TestServiceRegistration:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "feed_paper",
+                DOMAIN,
+                "feed_paper",
                 {"lines": 50, "entry_id": entry.entry_id},
                 blocking=True,
             )
         mock_p.feed.assert_called_once()
 
-    async def test_print_test_page_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
+    async def test_print_test_page_calls_printer(
+        self, hass: HomeAssistant, mock_p
+    ) -> None:
         """print_test_page service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "print_test_page",
+                DOMAIN,
+                "print_test_page",
                 {"entry_id": entry.entry_id},
                 blocking=True,
             )
@@ -111,7 +131,10 @@ class TestServiceRegistration:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "feed_paper", {"lines": 100}, blocking=True,
+                DOMAIN,
+                "feed_paper",
+                {"lines": 100},
+                blocking=True,
             )
         mock_p.feed.assert_called_once()
 
@@ -121,7 +144,10 @@ class TestServiceRegistration:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "get_status", {"entry_id": entry.entry_id}, blocking=True,
+                DOMAIN,
+                "get_status",
+                {"entry_id": entry.entry_id},
+                blocking=True,
             )
 
     async def test_print_image_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
@@ -130,7 +156,8 @@ class TestServiceRegistration:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "print_image",
+                DOMAIN,
+                "print_image",
                 {"image_url": "http://x.com/a.png", "entry_id": entry.entry_id},
                 blocking=True,
             )
@@ -142,19 +169,23 @@ class TestServiceRegistration:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "print_qr",
+                DOMAIN,
+                "print_qr",
                 {"qr_content": "https://x.com", "entry_id": entry.entry_id},
                 blocking=True,
             )
         mock_p.print_qr.assert_called_once()
 
-    async def test_print_pickup_code_calls_printer(self, hass: HomeAssistant, mock_p) -> None:
+    async def test_print_pickup_code_calls_printer(
+        self, hass: HomeAssistant, mock_p
+    ) -> None:
         """print_pickup_code service dispatches to printer."""
         entry = await _setup_entry(hass, mock_p)
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_p):
             await hass.services.async_call(
-                DOMAIN, "print_pickup_code",
+                DOMAIN,
+                "print_pickup_code",
                 {"pickup_code": "19-4308", "entry_id": entry.entry_id},
                 blocking=True,
             )
@@ -188,7 +219,9 @@ class TestServiceRegistration:
 
 
 class TestCoordinator:
-    async def test_coordinator_reads_all_keys(self, hass: HomeAssistant, mock_p) -> None:
+    async def test_coordinator_reads_all_keys(
+        self, hass: HomeAssistant, mock_p
+    ) -> None:
         """Coordinator data contains all expected keys after refresh."""
         entry = await _setup_entry(hass, mock_p)
 
@@ -205,7 +238,9 @@ class TestCoordinator:
 
         import custom_components.paperang as mod
 
-        with patch.object(hass.config_entries, "async_unload_platforms", return_value=True):
+        with patch.object(
+            hass.config_entries, "async_unload_platforms", return_value=True
+        ):
             result = await mod.async_unload_entry(hass, entry)
 
         assert result is True
@@ -213,11 +248,14 @@ class TestCoordinator:
         assert entry.entry_id not in mod._static_caches
         assert entry.entry_id not in mod._dynamic_caches
 
-    async def test_diagnostics_returns_static_info(self, hass: HomeAssistant, mock_p) -> None:
+    async def test_diagnostics_returns_static_info(
+        self, hass: HomeAssistant, mock_p
+    ) -> None:
         """async_get_config_entry_diagnostics returns static printer info."""
         entry = await _setup_entry(hass, mock_p)
 
         import custom_components.paperang as mod
+
         diag = await mod.async_get_config_entry_diagnostics(hass, entry)
 
         assert diag["board_version"] == "V1.0"
@@ -225,7 +263,9 @@ class TestCoordinator:
         assert diag["model"] == "P2"
         assert diag["serial_number"] == "SN123"
 
-    async def test_diagnostics_empty_without_coordinator(self, hass: HomeAssistant) -> None:
+    async def test_diagnostics_empty_without_coordinator(
+        self, hass: HomeAssistant
+    ) -> None:
         """Diagnostics returns empty dict when no coordinator."""
         import custom_components.paperang as mod
 
@@ -237,7 +277,9 @@ class TestCoordinator:
 
 
 class TestVersionDecode:
-    async def test_version_already_string_passed_through(self, hass: HomeAssistant, mock_p) -> None:
+    async def test_version_already_string_passed_through(
+        self, hass: HomeAssistant, mock_p
+    ) -> None:
         """If version is already 'V1.0.11', it's passed through."""
         mock_p.get_version.return_value = "720897"
         entry = await _setup_entry(hass, mock_p)
@@ -245,7 +287,9 @@ class TestVersionDecode:
         coordinator = hass.data[DOMAIN][entry.entry_id]
         assert coordinator.data["version"] == "V1.0.11"
 
-    async def test_version_readable_string_preserved(self, hass: HomeAssistant, mock_p) -> None:
+    async def test_version_readable_string_preserved(
+        self, hass: HomeAssistant, mock_p
+    ) -> None:
         """If version is already '1.2.3', decode is skipped."""
         mock_p.get_version.return_value = "1.2.3"
         entry = await _setup_entry(hass, mock_p)

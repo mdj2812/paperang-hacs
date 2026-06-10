@@ -4,7 +4,12 @@ import pytest
 from unittest.mock import MagicMock
 
 from homeassistant.core import HomeAssistant
-from homeassistant.const import PERCENTAGE, UnitOfElectricPotential, UnitOfTemperature, EntityCategory
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
+    EntityCategory,
+)
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.paperang.const import DOMAIN
@@ -111,7 +116,9 @@ class TestSensors:
         assert by_key["heat_density"].entity_category is None
         assert by_key["connected"].entity_category == EntityCategory.DIAGNOSTIC
 
-    async def test_sensor_unavailable_when_printer_offline(self, hass: HomeAssistant) -> None:
+    async def test_sensor_unavailable_when_printer_offline(
+        self, hass: HomeAssistant
+    ) -> None:
         """Sensor shows unavailable when coordinator data signals offline."""
         entry = MockConfigEntry(domain=DOMAIN, title="Paperang P2 (USB 1-3)")
         entry.add_to_hass(hass)

@@ -51,12 +51,21 @@ def _do_print_text(entry_id, text, font_size, heat_density, vertical=False):
     """Blocking: print text."""
     _with_printer(
         entry_id,
-        lambda p: p.print_text(text, font_size=font_size, heat_density=heat_density, vertical=vertical),
+        lambda p: p.print_text(
+            text, font_size=font_size, heat_density=heat_density, vertical=vertical
+        ),
     )
 
 
 def _do_print_image(
-    entry_id, *, image_url, heat_density, threshold, brightness, contrast, vertical=False
+    entry_id,
+    *,
+    image_url,
+    heat_density,
+    threshold,
+    brightness,
+    contrast,
+    vertical=False,
 ):  # pylint: disable=too-many-arguments
     """Blocking: print image."""
     _with_printer(
@@ -76,13 +85,17 @@ def _do_print_qr(entry_id, qr_content, qr_size, heat_density, vertical=False):
     """Blocking: print QR code."""
     _with_printer(
         entry_id,
-        lambda p: p.print_qr(qr_content, heat_density=heat_density, max_width=qr_size, vertical=vertical),
+        lambda p: p.print_qr(
+            qr_content, heat_density=heat_density, max_width=qr_size, vertical=vertical
+        ),
     )
 
 
 def _do_print_pickup_code(entry_id, pickup_code, vertical=False):
     """Blocking: print pickup code."""
-    _with_printer(entry_id, lambda p: p.print_pickup_code(pickup_code, vertical=vertical))
+    _with_printer(
+        entry_id, lambda p: p.print_pickup_code(pickup_code, vertical=vertical)
+    )
 
 
 def _do_print_test_page(entry_id):

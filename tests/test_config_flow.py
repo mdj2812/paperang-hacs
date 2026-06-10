@@ -1,7 +1,7 @@
 """Tests for paperang config flow — schema and class constants."""
+
 from unittest.mock import MagicMock
 
-import pytest
 import voluptuous as vol
 
 from custom_components.paperang.config_flow import (
@@ -13,34 +13,46 @@ from custom_components.paperang.config_flow import (
 class TestConfigFlowSchema:
     def test_user_step_schema_valid_usb(self):
         """User step schema: transport selector (USB/BT)."""
-        schema = vol.Schema({
-            vol.Required("transport", default="usb"): vol.In({
-                "usb": "USB",
-                "bt": "Bluetooth",
-            }),
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("transport", default="usb"): vol.In(
+                    {
+                        "usb": "USB",
+                        "bt": "Bluetooth",
+                    }
+                ),
+            }
+        )
         result = schema({"transport": "usb"})
         assert result["transport"] == "usb"
 
     def test_user_step_schema_valid_bt(self):
         """User step schema: BT transport (discovery is automatic)."""
-        schema = vol.Schema({
-            vol.Required("transport", default="usb"): vol.In({
-                "usb": "USB",
-                "bt": "Bluetooth",
-            }),
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("transport", default="usb"): vol.In(
+                    {
+                        "usb": "USB",
+                        "bt": "Bluetooth",
+                    }
+                ),
+            }
+        )
         result = schema({"transport": "bt"})
         assert result["transport"] == "bt"
 
     def test_select_device_schema(self):
         """Select USB device dropdown schema."""
-        schema = vol.Schema({
-            vol.Required("usb_device"): vol.In({
-                "1-3": "Paperang P2 — USB 1-3 (bus 1, addr 5)",
-                "2-1": "Paperang P2 — USB 2-1 (bus 2, addr 8)",
-            }),
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("usb_device"): vol.In(
+                    {
+                        "1-3": "Paperang P2 — USB 1-3 (bus 1, addr 5)",
+                        "2-1": "Paperang P2 — USB 2-1 (bus 2, addr 8)",
+                    }
+                ),
+            }
+        )
         result = schema({"usb_device": "1-3"})
         assert result["usb_device"] == "1-3"
 
