@@ -16,8 +16,8 @@ PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 
 
 @pytest.fixture(autouse=True)
-def _clear_persistent_printers() -> None:
-    """Clear persistent printer cache between tests."""
+def _clear_caches() -> None:
+    """Clear persistent caches between tests."""
     from custom_components.paperang.core.runtime import _persistent_printers
 
     _persistent_printers.clear()
@@ -63,9 +63,6 @@ class TestMultiDevice:
         with (
             patch(PATCH_RUNTIME_GET, return_value=mock_printer),
             patch.object(mod, "async_setup", return_value=True),
-            patch.object(
-                hass.config_entries, "async_forward_entry_setups", return_value=None
-            ),
         ):
             await mod.async_setup_entry(hass, entry1)
             await mod.async_setup_entry(hass, entry2)
@@ -74,7 +71,7 @@ class TestMultiDevice:
         eid1 = entry1.entry_id
         eid2 = entry2.entry_id
 
-        # Both entries get their own battery sensor
+        # Both get their own battery sensor
         uid1 = f"paperang_{eid1}_battery"
         uid2 = f"paperang_{eid2}_battery"
         entity1 = registry.async_get_entity_id("sensor", DOMAIN, uid1)
@@ -114,9 +111,6 @@ class TestMultiDevice:
         with (
             patch(PATCH_RUNTIME_GET, return_value=mock_printer),
             patch.object(mod, "async_setup", return_value=True),
-            patch.object(
-                hass.config_entries, "async_forward_entry_setups", return_value=None
-            ),
         ):
             await mod.async_setup_entry(hass, entry1)
             await mod.async_setup_entry(hass, entry2)
@@ -131,7 +125,7 @@ class TestMultiDevice:
 
 
 class TestMultiDeviceCoordinators:
-    """Each device has its own coordinator with its own data."""
+    """Each device has its own coordinator."""
 
     async def test_coordinators_independent(
         self, hass: HomeAssistant, mock_printer: MagicMock
@@ -160,14 +154,8 @@ class TestMultiDeviceCoordinators:
             return mock_printer if entry_id == entry1.entry_id else mock2
 
         with (
-            patch(
-                PATCH_RUNTIME_GET,
-                side_effect=_get_printer_side_effect,
-            ),
+            patch(PATCH_RUNTIME_GET, side_effect=_get_printer_side_effect),
             patch.object(mod, "async_setup", return_value=True),
-            patch.object(
-                hass.config_entries, "async_forward_entry_setups", return_value=None
-            ),
         ):
             await mod.async_setup_entry(hass, entry1)
             await mod.async_setup_entry(hass, entry2)

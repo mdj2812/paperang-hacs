@@ -12,7 +12,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.paperang.const import CONF_TRANSPORT, DOMAIN, TRANSPORT_USB
+from custom_components.paperang.const import (
+    CONF_TRANSPORT,
+    DOMAIN,
+    TRANSPORT_BT,
+    TRANSPORT_USB,
+)
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
@@ -20,8 +25,8 @@ PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 
 
 @pytest.fixture(autouse=True)
-def _clear_persistent_printers() -> None:
-    """Clear persistent printer cache between tests."""
+def _clear_caches() -> None:
+    """Clear persistent caches between tests."""
     from custom_components.paperang.core.runtime import _persistent_printers
 
     _persistent_printers.clear()
@@ -48,7 +53,7 @@ def mock_printer() -> MagicMock:
 
 
 async def _setup_entry(hass: HomeAssistant, mock_printer: MagicMock) -> MockConfigEntry:
-    """Create a config entry and set it up (mocks forward_entry_setups)."""
+    """Create config entry and set it up — entities created for real."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_TRANSPORT: TRANSPORT_USB},
@@ -61,17 +66,15 @@ async def _setup_entry(hass: HomeAssistant, mock_printer: MagicMock) -> MockConf
     with (
         patch(PATCH_RUNTIME_GET, return_value=mock_printer),
         patch.object(mod, "async_setup", return_value=True),
-        patch.object(
-            hass.config_entries, "async_forward_entry_setups", return_value=None
-        ),
     ):
+        # Let async_forward_entry_setups run — entities get created
         await mod.async_setup_entry(hass, entry)
 
     return entry
 
 
 class TestSensorEntities:
-    """Verify sensor entities are created with correct unique IDs."""
+    """Verify sensor entities are created."""
 
     async def test_sensors_created(
         self, hass: HomeAssistant, mock_printer: MagicMock
@@ -90,8 +93,8 @@ class TestSensorEntities:
         ]
         for suffix in expected:
             uid = f"paperang_{eid}_{suffix}"
-            entity = registry.async_get_entity_id("sensor", DOMAIN, uid)
-            assert entity is not None, f"sensor.{suffix} not found"
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, uid)
+            assert entity_id is not None, f"sensor.{suffix} ({uid}) not found"
 
 
 class TestSelectEntities:
@@ -106,8 +109,8 @@ class TestSelectEntities:
         eid = entry.entry_id
         for suffix in ("print_mode", "image_profile"):
             uid = f"paperang_{eid}_{suffix}"
-            entity = registry.async_get_entity_id("select", DOMAIN, uid)
-            assert entity is not None, f"select.{suffix} not found"
+            entity_id = registry.async_get_entity_id("select", DOMAIN, uid)
+            assert entity_id is not None, f"select.{suffix} not found"
 
 
 class TestNumberEntities:
@@ -122,8 +125,8 @@ class TestNumberEntities:
         eid = entry.entry_id
         for suffix in ("font_size", "heat_density", "qr_size", "feed_lines"):
             uid = f"paperang_{eid}_{suffix}"
-            entity = registry.async_get_entity_id("number", DOMAIN, uid)
-            assert entity is not None, f"number.{suffix} not found"
+            entity_id = registry.async_get_entity_id("number", DOMAIN, uid)
+            assert entity_id is not None, f"number.{suffix} not found"
 
 
 class TestButtonEntities:
@@ -138,8 +141,8 @@ class TestButtonEntities:
         eid = entry.entry_id
         for suffix in ("btn_print", "btn_feed_paper", "btn_test_print"):
             uid = f"paperang_{eid}_{suffix}"
-            entity = registry.async_get_entity_id("button", DOMAIN, uid)
-            assert entity is not None, f"button.{suffix} not found"
+            entity_id = registry.async_get_entity_id("button", DOMAIN, uid)
+            assert entity_id is not None, f"button.{suffix} not found"
 
 
 class TestTextEntity:
@@ -153,8 +156,8 @@ class TestTextEntity:
         registry = er.async_get(hass)
         eid = entry.entry_id
         uid = f"paperang_{eid}_print_content"
-        entity = registry.async_get_entity_id("text", DOMAIN, uid)
-        assert entity is not None
+        entity_id = registry.async_get_entity_id("text", DOMAIN, uid)
+        assert entity_id is not None
 
 
 class TestSwitchEntity:
@@ -168,8 +171,8 @@ class TestSwitchEntity:
         registry = er.async_get(hass)
         eid = entry.entry_id
         uid = f"paperang_{eid}_vertical"
-        entity = registry.async_get_entity_id("switch", DOMAIN, uid)
-        assert entity is not None
+        entity_id = registry.async_get_entity_id("switch", DOMAIN, uid)
+        assert entity_id is not None
 
 
 class TestEntityCleanup:
@@ -199,7 +202,7 @@ class TestBTEntryPollingInterval:
         """BT transport → 30s interval."""
         entry = MockConfigEntry(
             domain=DOMAIN,
-            data={CONF_TRANSPORT: "bluetooth"},
+            data={CONF_TRANSPORT: TRANSPORT_BT},
             title="Paperang P2 (BT)",
         )
         entry.add_to_hass(hass)
@@ -209,9 +212,6 @@ class TestBTEntryPollingInterval:
         with (
             patch(PATCH_RUNTIME_GET, return_value=mock_printer),
             patch.object(mod, "async_setup", return_value=True),
-            patch.object(
-                hass.config_entries, "async_forward_entry_setups", return_value=None
-            ),
         ):
             await mod.async_setup_entry(hass, entry)
 

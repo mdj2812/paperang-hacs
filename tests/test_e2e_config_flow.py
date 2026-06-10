@@ -27,6 +27,16 @@ from custom_components.paperang.const import (
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
+# Patch targets must match the local import aliases in config_flow.py:
+#   from .transport.usb import scan_usb_devices as _scan_usb_devices
+#   from .transport.usb import verify_printer as _verify_printer
+#   from .transport.bt import scan_bt_devices as _scan_bt_devices
+#   from .transport.bt import verify_bt_printer as _verify_bt_printer
+_PATCH_USB_SCAN = "custom_components.paperang.config_flow._scan_usb_devices"
+_PATCH_USB_VERIFY = "custom_components.paperang.config_flow._verify_printer"
+_PATCH_BT_SCAN = "custom_components.paperang.config_flow._scan_bt_devices"
+_PATCH_BT_VERIFY = "custom_components.paperang.config_flow._verify_bt_printer"
+
 # ── Mock USB scan data ────────────────────────────────────────────
 FAKE_USB_DEVICES = [
     {
@@ -64,21 +74,12 @@ class TestConfigFlowUSB:
     async def test_usb_single_device_auto_select(self, hass: HomeAssistant) -> None:
         """Single USB device → skip select → verify → create entry."""
         with (
-            patch(
-                "custom_components.paperang.transport.usb.scan_usb_devices",
-                return_value=FAKE_USB_DEVICES[:1],
-            ),
-            patch(
-                "custom_components.paperang.transport.usb.verify_printer",
-                return_value=True,
-            ),
+            patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
+            patch(_PATCH_USB_VERIFY, return_value=True),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
             )
-            # Single device skips select_device, goes straight to usb_verify
-            # The verify step shows a form on failure, but on success we
-            # should get a create_entry result
             assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
             assert result["title"] == "Paperang P2 (USB 1-3)"
             assert result["data"][CONF_TRANSPORT] == TRANSPORT_USB
@@ -89,14 +90,8 @@ class TestConfigFlowUSB:
     async def test_usb_single_device_verify_fails(self, hass: HomeAssistant) -> None:
         """Verify fails → shows form with error."""
         with (
-            patch(
-                "custom_components.paperang.transport.usb.scan_usb_devices",
-                return_value=FAKE_USB_DEVICES[:1],
-            ),
-            patch(
-                "custom_components.paperang.transport.usb.verify_printer",
-                return_value=False,
-            ),
+            patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
+            patch(_PATCH_USB_VERIFY, return_value=False),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
@@ -107,10 +102,7 @@ class TestConfigFlowUSB:
 
     async def test_usb_no_devices_aborts(self, hass: HomeAssistant) -> None:
         """No USB devices found → abort."""
-        with patch(
-            "custom_components.paperang.transport.usb.scan_usb_devices",
-            return_value=[],
-        ):
+        with patch(_PATCH_USB_SCAN, return_value=[]):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
             )
@@ -124,25 +116,17 @@ class TestConfigFlowUSBMulti:
     async def test_usb_multi_device_select_then_verify(
         self, hass: HomeAssistant
     ) -> None:
-        """Multiple USB devices → select_device → pick one → verify → create."""
+        """Multiple USB devices → select_device → pick → verify → create."""
         with (
-            patch(
-                "custom_components.paperang.transport.usb.scan_usb_devices",
-                return_value=FAKE_USB_DEVICES,
-            ),
-            patch(
-                "custom_components.paperang.transport.usb.verify_printer",
-                return_value=True,
-            ),
+            patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES),
+            patch(_PATCH_USB_VERIFY, return_value=True),
         ):
-            # Step 1: start flow → should show select_device
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
             )
             assert result["type"] == data_entry_flow.FlowResultType.FORM
             assert result["step_id"] == "select_device"
 
-            # Step 2: pick device 2-1
             result = await hass.config_entries.flow.async_configure(
                 result["flow_id"],
                 {"usb_device": "2-1"},
@@ -154,10 +138,7 @@ class TestConfigFlowUSBMulti:
 
     async def test_usb_multi_device_select_invalid(self, hass: HomeAssistant) -> None:
         """Select a device not in the list → shows error."""
-        with patch(
-            "custom_components.paperang.transport.usb.scan_usb_devices",
-            return_value=FAKE_USB_DEVICES,
-        ):
+        with patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
             )
@@ -177,20 +158,12 @@ class TestConfigFlowBT:
     async def test_bt_single_device_auto_select(self, hass: HomeAssistant) -> None:
         """Single BT device → auto-skip select → verify → create entry."""
         with (
-            patch(
-                "custom_components.paperang.config_flow._scan_bt_devices",
-                return_value=FAKE_BT_DEVICES[:1],
-            ),
-            patch(
-                "custom_components.paperang.config_flow._verify_bt_printer",
-                return_value=True,
-            ),
+            patch(_PATCH_BT_SCAN, return_value=FAKE_BT_DEVICES[:1]),
+            patch(_PATCH_BT_VERIFY, return_value=True),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": "classic_bluetooth"}
             )
-
-            # Single BT device goes straight to verify → create
             assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
             assert "Paperang P2" in result["title"]
             assert result["data"][CONF_TRANSPORT] == TRANSPORT_BT
@@ -198,10 +171,7 @@ class TestConfigFlowBT:
 
     async def test_bt_no_devices_aborts(self, hass: HomeAssistant) -> None:
         """No BT devices found → abort."""
-        with patch(
-            "custom_components.paperang.config_flow._scan_bt_devices",
-            return_value=[],
-        ):
+        with patch(_PATCH_BT_SCAN, return_value=[]):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": "classic_bluetooth"}
             )
@@ -214,23 +184,15 @@ class TestConfigFlowUser:
     async def test_user_flow_selects_usb(self, hass: HomeAssistant) -> None:
         """User flow → pick USB → scan → verify → create."""
         with (
-            patch(
-                "custom_components.paperang.transport.usb.scan_usb_devices",
-                return_value=FAKE_USB_DEVICES[:1],
-            ),
-            patch(
-                "custom_components.paperang.transport.usb.verify_printer",
-                return_value=True,
-            ),
+            patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
+            patch(_PATCH_USB_VERIFY, return_value=True),
         ):
-            # Step 1: user menu → pick USB
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USER}
             )
             assert result["type"] == data_entry_flow.FlowResultType.MENU
             assert "usb" in result["menu_options"]
 
-            # Step 2: pick USB → auto-select + verify → create
             result = await hass.config_entries.flow.async_configure(
                 result["flow_id"],
                 {"next_step_id": "usb"},
@@ -279,8 +241,8 @@ class TestConfigFlowMigration:
 class TestConfigFlowOptions:
     """Options flow for existing config entries."""
 
-    async def test_options_flow_shows_menu(self, hass: HomeAssistant) -> None:
-        """Options flow starts with transport menu."""
+    async def test_options_flow_shows_form(self, hass: HomeAssistant) -> None:
+        """Options flow shows transport form."""
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={CONF_TRANSPORT: TRANSPORT_USB, CONF_USB_BUS: 1, CONF_USB_PORT: 3},
@@ -290,7 +252,6 @@ class TestConfigFlowOptions:
         entry.add_to_hass(hass)
 
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        # Options flow shows a form to reconfigure
         assert result["type"] in (
             data_entry_flow.FlowResultType.FORM,
             data_entry_flow.FlowResultType.MENU,
@@ -298,7 +259,6 @@ class TestConfigFlowOptions:
 
     async def test_duplicate_entry_blocked(self, hass: HomeAssistant) -> None:
         """Second entry with same unique_id is aborted."""
-        # Create first entry
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={CONF_TRANSPORT: TRANSPORT_USB, CONF_USB_BUS: 1, CONF_USB_PORT: 3},
@@ -308,20 +268,12 @@ class TestConfigFlowOptions:
         )
         entry.add_to_hass(hass)
 
-        # Try to create a second flow with same unique_id
         with (
-            patch(
-                "custom_components.paperang.transport.usb.scan_usb_devices",
-                return_value=FAKE_USB_DEVICES[:1],
-            ),
-            patch(
-                "custom_components.paperang.transport.usb.verify_printer",
-                return_value=True,
-            ),
+            patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
+            patch(_PATCH_USB_VERIFY, return_value=True),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
             )
-            # Should abort because unique_id already configured
             assert result["type"] == data_entry_flow.FlowResultType.ABORT
             assert result["reason"] == "already_configured"
