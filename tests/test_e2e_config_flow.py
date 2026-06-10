@@ -137,19 +137,20 @@ class TestConfigFlowUSBMulti:
             assert result["data"][CONF_USB_PORT] == 1
 
     async def test_usb_multi_device_select_invalid(self, hass: HomeAssistant) -> None:
-        """Select a device not in the list → shows error."""
+        """Select a device not in the list → raises InvalidData."""
+        import voluptuous as vol
+
         with patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
             )
             assert result["step_id"] == "select_device"
 
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"usb_device": "9-9"},
-            )
-            assert result["type"] == data_entry_flow.FlowResultType.FORM
-            assert result["errors"] == {"usb_device": "device_not_found"}
+            with pytest.raises(vol.Invalid):
+                await hass.config_entries.flow.async_configure(
+                    result["flow_id"],
+                    {"usb_device": "9-9"},
+                )
 
 
 class TestConfigFlowBT:
@@ -182,7 +183,7 @@ class TestConfigFlowUser:
     """User-initiated config flow (manual setup)."""
 
     async def test_user_flow_selects_usb(self, hass: HomeAssistant) -> None:
-        """User flow → pick USB → scan → verify → create."""
+        """User flow → pick USB transport → scan → verify → create."""
         with (
             patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
             patch(_PATCH_USB_VERIFY, return_value=True),
@@ -190,12 +191,12 @@ class TestConfigFlowUser:
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USER}
             )
-            assert result["type"] == data_entry_flow.FlowResultType.MENU
-            assert "usb" in result["menu_options"]
+            assert result["type"] == data_entry_flow.FlowResultType.FORM
+            assert result["step_id"] == "user"
 
             result = await hass.config_entries.flow.async_configure(
                 result["flow_id"],
-                {"next_step_id": "usb"},
+                {CONF_TRANSPORT: TRANSPORT_USB},
             )
             assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
 

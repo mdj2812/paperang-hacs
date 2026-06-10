@@ -100,7 +100,7 @@ class TestCoordinatorData:
         entry = await _setup_entry(hass)
         coordinator = hass.data[DOMAIN][entry.entry_id]
         assert coordinator.data.get("model") == "P2"
-        assert coordinator.data.get("version") == "720897"
+        assert coordinator.data.get("version") == "V1.0.11"
         assert coordinator.data.get("serial") == "SN123"
         assert coordinator.data.get("board") == "V1.0"
 
