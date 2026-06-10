@@ -37,24 +37,6 @@ class TestGetPrinter:
             mock_tp.assert_called_once_with(bus=1, port=[3])
             mock_p2.assert_called_once_with(transport=mock_transport)
 
-    def test_ble_with_address(self):
-        import custom_components.paperang as mod
-        import custom_components.paperang.core.runtime as pr
-
-        mod._transport_configs[FAKE_ENTRY_ID] = {
-            "transport": "ble", "ble_address": "AA:BB:CC:DD:EE:FF",
-        }
-
-        with (
-            patch.object(pr, "BleTransport", create=True) as mock_ble_cls,
-            patch.object(pr, "PaperangP2") as mock_p2,
-        ):
-            mock_ble = MagicMock()
-            mock_ble_cls.return_value = mock_ble
-            mod._get_printer(FAKE_ENTRY_ID)
-            mock_ble_cls.assert_called_once_with(address="AA:BB:CC:DD:EE:FF")
-            mock_p2.assert_called_once_with(transport=mock_ble)
-
     def test_no_transport_configs_falls_back_to_usb(self):
         import custom_components.paperang as mod
         import custom_components.paperang.core.runtime as pr
@@ -78,40 +60,40 @@ class TestGetPrinter:
 
 
 class TestWithPrinter:
-    def test_calls_fn_and_disconnects(self):
+    def test_calls_fn_and_returns_result(self):
         import custom_components.paperang as mod
-        import custom_components.paperang.core.blocking as pb
+        import custom_components.paperang.core.runtime as rt
 
         mock_printer = MagicMock()
 
-        with patch.object(pb, "_get_printer", return_value=mock_printer):
+        with patch.object(rt, "_get_or_reuse_printer", return_value=mock_printer):
             result = mod._with_printer(FAKE_ENTRY_ID, lambda p: "result")
             assert result == "result"
-            mock_printer.connect.assert_called_once()
-            mock_printer.disconnect.assert_called_once()
 
-    def test_disconnects_on_exception(self):
+    def test_exception_pops_cache_and_propagates(self):
         import custom_components.paperang as mod
-        import custom_components.paperang.core.blocking as pb
+        import custom_components.paperang.core.runtime as rt
 
         mock_printer = MagicMock()
 
-        with patch.object(pb, "_get_printer", return_value=mock_printer):
+        with (
+            patch.object(rt, "_get_or_reuse_printer", return_value=mock_printer),
+            patch.object(rt, "_pop_printer") as mock_pop,
+        ):
             with pytest.raises(ValueError, match="boom"):
                 mod._with_printer(
                     FAKE_ENTRY_ID,
                     lambda p: (_ for _ in ()).throw(ValueError("boom")),
                 )
-            mock_printer.connect.assert_called_once()
-            mock_printer.disconnect.assert_called_once()
+            mock_pop.assert_called_once_with(FAKE_ENTRY_ID)
 
     def test_returns_fn_result(self):
         import custom_components.paperang as mod
-        import custom_components.paperang.core.blocking as pb
+        import custom_components.paperang.core.runtime as rt
 
         mock_printer = MagicMock()
 
-        with patch.object(pb, "_get_printer", return_value=mock_printer):
+        with patch.object(rt, "_get_or_reuse_printer", return_value=mock_printer):
             assert mod._with_printer(FAKE_ENTRY_ID, lambda p: 42) == 42
 
 

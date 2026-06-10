@@ -10,20 +10,20 @@ class TestConstants:
     def test_transport_types(self):
         from custom_components.paperang.const import (
             TRANSPORT_USB,
-            TRANSPORT_BLE,
+            TRANSPORT_BT,
         )
 
         assert TRANSPORT_USB == "usb"
-        assert TRANSPORT_BLE == "ble"
+        assert TRANSPORT_BT == "bt"
 
     def test_config_keys(self):
         from custom_components.paperang.const import (
             CONF_TRANSPORT,
-            CONF_BLE_ADDRESS,
+            CONF_BT_ADDRESS,
         )
 
         assert CONF_TRANSPORT == "transport"
-        assert CONF_BLE_ADDRESS == "ble_address"
+        assert CONF_BT_ADDRESS == "bt_address"
 
     def test_service_names(self):
         from custom_components.paperang.const import (

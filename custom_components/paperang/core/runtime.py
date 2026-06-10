@@ -3,16 +3,71 @@
 from __future__ import annotations
 
 from ..const import (
-    CONF_BLE_ADDRESS,
+    CONF_BT_ADDRESS,
     CONF_TRANSPORT,
     CONF_USB_BUS,
     CONF_USB_PORT,
-    TRANSPORT_BLE,
+    TRANSPORT_BT,
 )
-from .paperang_lib import BleTransport, PaperangP2
 from ..transport.usb import UsbTransportWithPath
+from .paperang_lib import BtTransport, PaperangP2
 
 transport_configs: dict[str, dict[str, object]] = {}
+
+
+class _PersistentPrinterCache:
+    """Cache of connected printers (USB + BT SPP), keyed by entry_id.
+
+    Printers are cached after the first successful connect.
+    Subsequent calls reuse the same transport to avoid USB ``Resource
+    busy`` errors and duplicate RFCOMM sockets.
+    """
+
+    def __init__(self) -> None:
+        self._printers: dict[str, object] = {}
+
+    def get_or_create(self, entry_id: str) -> object:
+        """Return a cached (already connected) printer, or create + connect."""
+        if entry_id in self._printers:
+            return self._printers[entry_id]
+
+        printer = _get_printer(entry_id)
+        printer.connect()
+        self._printers[entry_id] = printer
+        return printer
+
+    def cache(self, entry_id: str, printer: object) -> None:
+        """Store a connected printer for reuse."""
+        self._printers[entry_id] = printer
+
+    def pop(self, entry_id: str) -> object | None:
+        """Remove and return a cached printer (e.g. on connection loss)."""
+        return self._printers.pop(entry_id, None)
+
+    def clear(self) -> None:
+        """Remove all cached printers."""
+        self._printers.clear()
+
+
+_persistent_printers = _PersistentPrinterCache()
+
+
+# Public API — thin wrappers around the cache instance.
+
+
+def _get_or_reuse_printer(entry_id: str):
+    """Return a persistent printer if available (USB/BT)."""
+    return _persistent_printers.get_or_create(entry_id)
+
+
+def _cache_printer(entry_id: str, printer: object) -> None:
+    """Cache a printer for persistent reuse (USB or BT)."""
+    _persistent_printers.cache(entry_id, printer)
+
+
+def _pop_printer(entry_id: str) -> object | None:
+    """Remove and return a cached persistent printer."""
+    return _persistent_printers.pop(entry_id)
 
 
 def _get_printer(entry_id: str | None = None):
@@ -29,10 +84,10 @@ def _get_printer(entry_id: str | None = None):
         return PaperangP2()
 
     transport_type = cfg.get(CONF_TRANSPORT, "")
-    if transport_type == TRANSPORT_BLE and BleTransport is not None:
-        ble_addr = cfg.get(CONF_BLE_ADDRESS, "")
-        ble = BleTransport(address=ble_addr) if ble_addr else BleTransport()
-        return PaperangP2(transport=ble)
+    if transport_type == TRANSPORT_BT and BtTransport is not None:
+        bt_addr = cfg.get(CONF_BT_ADDRESS, "")
+        bt = BtTransport(address=bt_addr) if bt_addr else BtTransport()
+        return PaperangP2(transport=bt)
 
     bus = cfg.get(CONF_USB_BUS)
     port = cfg.get(CONF_USB_PORT)
