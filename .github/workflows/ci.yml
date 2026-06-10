@@ -53,6 +53,19 @@ jobs:
         with:
           name: coverage-badge
           path: coverage.svg
+  integration-test:
+    name: HA Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: python3 -m pip install pytest pytest-homeassistant-custom-component pyusb
+      - name: Run e2e integration tests
+        run: python3 -m pytest tests/test_e2e_*.py -v --tb=short
   coverage-badge:
     name: Coverage Badge
     runs-on: ubuntu-latest
