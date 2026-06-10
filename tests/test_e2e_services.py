@@ -23,32 +23,6 @@ PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
 PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 
 
-@pytest.fixture(autouse=True)
-def _clear_caches() -> None:
-    """Clear persistent caches between tests."""
-    from custom_components.paperang.core.runtime import _persistent_printers
-    from custom_components.paperang.core.state import _dynamic_caches, _static_caches
-
-    _persistent_printers.clear()
-    _static_caches.clear()
-    _dynamic_caches.clear()
-    yield
-    _persistent_printers.clear()
-    _static_caches.clear()
-    _dynamic_caches.clear()
-
-
-@pytest.fixture
-def mock_printer() -> MagicMock:
-    """Return a fully mocked printer with print methods."""
-    mock_p = MagicMock()
-    mock_p.get_battery.return_value = 80
-    mock_p.get_status.return_value = "online"
-    mock_p.get_voltage.return_value = 4200
-    mock_p.get_temperature.return_value = 35
-    mock_p.get_heat_density.return_value = 75
-    return mock_p
-
 
 async def _setup_entry(hass: HomeAssistant, mock_printer: MagicMock) -> str:
     """Set up a config entry and return entry_id."""

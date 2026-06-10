@@ -15,41 +15,6 @@ _PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 _PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
 
 
-@pytest.fixture(autouse=True)
-def _clear_persistent_printers():
-    """Clear persistent printer connection cache between tests.
-
-    Only clears the transport-level connection cache — NOT the data
-    caches (_static_caches / _dynamic_caches).  Those are per-entry
-    and the production code clears them via ``clear_caches_for_entry``
-    on ``async_unload_entry``.  Tests must NOT manually clear them,
-    otherwise they'd hide bugs where the production cleanup fails.
-    """
-    from custom_components.paperang.core.runtime import _persistent_printers
-
-    _persistent_printers.clear()
-    yield
-    _persistent_printers.clear()
-
-
-@pytest.fixture
-def mock_printer():
-    """Return a fully mocked printer."""
-    mock_p = MagicMock()
-    mock_p.get_battery.return_value = 80
-    mock_p.get_status.return_value = "online"
-    mock_p.get_voltage.return_value = 4200
-    mock_p.get_temperature.return_value = 35
-    mock_p.get_heat_density.return_value = 75
-    mock_p.get_paper_type.return_value = "normal"
-    mock_p.get_version.return_value = "720897"
-    mock_p.get_model.return_value = "P2"
-    mock_p.get_sn.return_value = "SN123"
-    mock_p.get_board_version.return_value = "V1.0"
-    mock_p.get_hw_info.return_value = "ABC"
-    return mock_p
-
-
 class TestSetupEntry:
     async def test_setup_entry_stores_transport_config(
         self, hass: HomeAssistant, mock_printer
