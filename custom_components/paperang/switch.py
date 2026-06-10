@@ -33,7 +33,7 @@ class PaperangVerticalSwitch(PaperangEntity, SwitchEntity):
             entry_id,
             "Vertical",
             "vertical",
-            "mdi:rotate-90-degrees-ccw",
+            "mdi:rotate-right",
             device_info=device_info,
         )
         self._attr_is_on = False
