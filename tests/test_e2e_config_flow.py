@@ -65,6 +65,7 @@ FAKE_USB_DEVICES = [
 FAKE_BT_DEVICES = [
     {"address": "00:15:83:EB:05:17", "name": "Paperang_P2"},
     {"address": "00:15:83:AB:12:34", "name": "Paperang_P2"},
+    {"address": "DC:0D:30:AA:BB:CC", "name": "Paperang_Office"},
 ]
 
 
