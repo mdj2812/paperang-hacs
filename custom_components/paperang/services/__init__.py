@@ -1,5 +1,7 @@
 """Home Assistant service registration and handlers for Paperang."""
 
+# pylint: disable=R0801
+
 from __future__ import annotations
 
 import logging
