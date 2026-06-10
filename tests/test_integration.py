@@ -17,7 +17,14 @@ _PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
 
 @pytest.fixture(autouse=True)
 def _clear_persistent_printers():
-    """Clear persistent printer cache between tests."""
+    """Clear persistent printer connection cache between tests.
+
+    Only clears the transport-level connection cache — NOT the data
+    caches (_static_caches / _dynamic_caches).  Those are per-entry
+    and the production code clears them via ``clear_caches_for_entry``
+    on ``async_unload_entry``.  Tests must NOT manually clear them,
+    otherwise they'd hide bugs where the production cleanup fails.
+    """
     from custom_components.paperang.core.runtime import _persistent_printers
 
     _persistent_printers.clear()
@@ -96,7 +103,7 @@ class TestSetupEntry:
     async def test_unload_entry_cleans_up(
         self, hass: HomeAssistant, mock_printer
     ) -> None:
-        """Unload removes coordinator and clears caches."""
+        """Unload removes coordinator, clears caches and transport config."""
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={CONF_TRANSPORT: TRANSPORT_USB},
@@ -114,6 +121,9 @@ class TestSetupEntry:
                     await mod.async_setup_entry(hass, entry)
 
         assert entry.entry_id in hass.data[DOMAIN]
+        # Verify caches were populated during setup
+        assert entry.entry_id in mod._static_caches
+        assert entry.entry_id in mod._dynamic_caches
 
         with patch.object(
             hass.config_entries, "async_unload_platforms", return_value=True
@@ -122,6 +132,10 @@ class TestSetupEntry:
 
         assert result is True
         assert entry.entry_id not in hass.data[DOMAIN]
+        # Verify production code cleared per-entry caches
+        assert entry.entry_id not in mod._static_caches
+        assert entry.entry_id not in mod._dynamic_caches
+        assert entry.entry_id not in mod._transport_configs
 
 
 class TestServiceCalls:

@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 
-
 class TestUsbTransportWithPath:
     """Tests for UsbTransportWithPath constructor."""
 

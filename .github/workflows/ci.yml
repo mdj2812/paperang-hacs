@@ -33,8 +33,10 @@ jobs:
           python-version: "3.11"
       - name: Install test dependencies
         run: python3 -m pip install pytest pytest-cov voluptuous pytest-homeassistant-custom-component pyusb
-      - name: Run tests with coverage
-        run: python3 -m pytest tests/ -v --cov=custom_components/paperang --cov-report=xml --cov-report=term
+      - name: Run unit tests with coverage
+        run: python3 -m pytest tests/ --ignore=tests/test_e2e_*.py -v --cov=custom_components/paperang --cov-report=xml --cov-report=term
+      - name: Run e2e integration tests
+        run: python3 -m pytest tests/test_e2e_*.py -v --tb=short
       - name: Code Coverage Summary
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
