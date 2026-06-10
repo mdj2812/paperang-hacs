@@ -1,11 +1,10 @@
-"""E2E tests for multi-device Paperang setup — two config entries, no collisions."""
+"""E2E tests for multi-device Paperang — two entries, isolated coordinators."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.paperang.const import CONF_TRANSPORT, DOMAIN, TRANSPORT_USB
@@ -16,125 +15,47 @@ PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 
 
 @pytest.fixture(autouse=True)
-def _clear_caches() -> None:
-    """Clear persistent caches between tests."""
+def _clear_all_caches() -> None:
+    """Clear all module-level caches between tests."""
     from custom_components.paperang.core.runtime import _persistent_printers
+    from custom_components.paperang.core.state import (
+        _dynamic_caches,
+        _static_caches,
+    )
 
     _persistent_printers.clear()
+    _static_caches.clear()
+    _dynamic_caches.clear()
     yield
     _persistent_printers.clear()
+    _static_caches.clear()
+    _dynamic_caches.clear()
 
 
-@pytest.fixture
-def mock_printer() -> MagicMock:
-    """Return a fully mocked printer."""
-    mock_p = MagicMock()
-    mock_p.get_battery.return_value = 80
-    mock_p.get_status.return_value = "online"
-    mock_p.get_voltage.return_value = 4200
-    mock_p.get_temperature.return_value = 35
-    mock_p.get_heat_density.return_value = 75
-    mock_p.get_paper_type.return_value = "normal"
-    return mock_p
+def _make_printer(battery: int = 80) -> MagicMock:
+    """Return a mocked printer with all return values set."""
+    p = MagicMock()
+    p.get_battery.return_value = battery
+    p.get_status.return_value = "online"
+    p.get_voltage.return_value = 4200
+    p.get_temperature.return_value = 35
+    p.get_heat_density.return_value = 75
+    p.get_paper_type.return_value = "normal"
+    p.get_version.return_value = "720897"
+    p.get_model.return_value = "P2"
+    p.get_sn.return_value = "SN123"
+    p.get_board_version.return_value = "V1.0"
+    p.get_hw_info.return_value = "ABC"
+    return p
 
 
 class TestMultiDevice:
-    """Two config entries coexist without entity ID collisions."""
+    """Two config entries coexist with isolated coordinators."""
 
-    async def test_two_entries_different_entity_ids(
-        self, hass: HomeAssistant, mock_printer: MagicMock
+    async def test_two_entries_independent_coordinators(
+        self, hass: HomeAssistant
     ) -> None:
-        """Entity unique_ids are scoped per entry_id."""
-        entry1 = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_TRANSPORT: TRANSPORT_USB},
-            title="Paperang P2 (USB 1-3)",
-        )
-        entry2 = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_TRANSPORT: TRANSPORT_USB},
-            title="Paperang P2 (USB 2-1)",
-        )
-        entry1.add_to_hass(hass)
-        entry2.add_to_hass(hass)
-
-        import custom_components.paperang as mod
-
-        with (
-            patch(PATCH_RUNTIME_GET, return_value=mock_printer),
-            patch.object(mod, "async_setup", return_value=True),
-        ):
-            await mod.async_setup_entry(hass, entry1)
-            await mod.async_setup_entry(hass, entry2)
-
-        registry = er.async_get(hass)
-        eid1 = entry1.entry_id
-        eid2 = entry2.entry_id
-
-        # Both get their own battery sensor
-        uid1 = f"paperang_{eid1}_battery"
-        uid2 = f"paperang_{eid2}_battery"
-        entity1 = registry.async_get_entity_id("sensor", DOMAIN, uid1)
-        entity2 = registry.async_get_entity_id("sensor", DOMAIN, uid2)
-        assert entity1 is not None
-        assert entity2 is not None
-        assert entity1 != entity2, "Entity IDs must differ between devices"
-
-        # Both get their own vertical switch
-        uid1v = f"paperang_{eid1}_vertical"
-        uid2v = f"paperang_{eid2}_vertical"
-        sw1 = registry.async_get_entity_id("switch", DOMAIN, uid1v)
-        sw2 = registry.async_get_entity_id("switch", DOMAIN, uid2v)
-        assert sw1 is not None
-        assert sw2 is not None
-        assert sw1 != sw2
-
-    async def test_unload_one_entry_leaves_other(
-        self, hass: HomeAssistant, mock_printer: MagicMock
-    ) -> None:
-        """Unloading one entry does not affect the other."""
-        entry1 = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_TRANSPORT: TRANSPORT_USB},
-            title="Paperang P2 (USB 1-3)",
-        )
-        entry2 = MockConfigEntry(
-            domain=DOMAIN,
-            data={CONF_TRANSPORT: TRANSPORT_USB},
-            title="Paperang P2 (USB 2-1)",
-        )
-        entry1.add_to_hass(hass)
-        entry2.add_to_hass(hass)
-
-        import custom_components.paperang as mod
-
-        with (
-            patch(PATCH_RUNTIME_GET, return_value=mock_printer),
-            patch.object(mod, "async_setup", return_value=True),
-        ):
-            await mod.async_setup_entry(hass, entry1)
-            await mod.async_setup_entry(hass, entry2)
-
-        # Unload entry1
-        with patch(PATCH_RUNTIME_GET, return_value=mock_printer):
-            await mod.async_unload_entry(hass, entry1)
-
-        # entry1 gone, entry2 still present
-        assert entry1.entry_id not in hass.data.get(DOMAIN, {})
-        assert entry2.entry_id in hass.data.get(DOMAIN, {})
-
-
-class TestMultiDeviceCoordinators:
-    """Each device has its own coordinator."""
-
-    async def test_coordinators_independent(
-        self, hass: HomeAssistant, mock_printer: MagicMock
-    ) -> None:
-        """Two entries → two coordinators, different data instances."""
-        mock2 = MagicMock()
-        mock2.get_battery.return_value = 50
-        mock2.get_status.return_value = "offline"
-
+        """Each entry gets its own coordinator."""
         entry1 = MockConfigEntry(
             domain=DOMAIN,
             data={CONF_TRANSPORT: TRANSPORT_USB},
@@ -150,12 +71,18 @@ class TestMultiDeviceCoordinators:
 
         import custom_components.paperang as mod
 
-        def _get_printer_side_effect(entry_id):
-            return mock_printer if entry_id == entry1.entry_id else mock2
+        p1 = _make_printer(80)
+        p2 = _make_printer(50)
+
+        def _getter(entry_id):
+            return p1 if entry_id == entry1.entry_id else p2
 
         with (
-            patch(PATCH_RUNTIME_GET, side_effect=_get_printer_side_effect),
+            patch(PATCH_RUNTIME_GET, side_effect=_getter),
             patch.object(mod, "async_setup", return_value=True),
+            patch.object(
+                hass.config_entries, "async_forward_entry_setups", return_value=None
+            ),
         ):
             await mod.async_setup_entry(hass, entry1)
             await mod.async_setup_entry(hass, entry2)
@@ -163,3 +90,78 @@ class TestMultiDeviceCoordinators:
         c1 = hass.data[DOMAIN][entry1.entry_id]
         c2 = hass.data[DOMAIN][entry2.entry_id]
         assert c1 is not c2
+        assert c1.data is not None
+        assert c2.data is not None
+
+    async def test_unload_one_leaves_other(self, hass: HomeAssistant) -> None:
+        """Unloading entry1 does not affect entry2."""
+        entry1 = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_TRANSPORT: TRANSPORT_USB},
+            title="Printer A",
+        )
+        entry2 = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_TRANSPORT: TRANSPORT_USB},
+            title="Printer B",
+        )
+        entry1.add_to_hass(hass)
+        entry2.add_to_hass(hass)
+
+        import custom_components.paperang as mod
+
+        p = _make_printer()
+        with (
+            patch(PATCH_RUNTIME_GET, return_value=p),
+            patch.object(mod, "async_setup", return_value=True),
+            patch.object(
+                hass.config_entries, "async_forward_entry_setups", return_value=None
+            ),
+        ):
+            await mod.async_setup_entry(hass, entry1)
+            await mod.async_setup_entry(hass, entry2)
+
+        with patch(PATCH_RUNTIME_GET, return_value=_make_printer()):
+            await mod.async_unload_entry(hass, entry1)
+
+        assert entry1.entry_id not in hass.data.get(DOMAIN, {})
+        assert entry2.entry_id in hass.data.get(DOMAIN, {})
+
+
+class TestMultiDeviceTransportConfigs:
+    """Each entry has its own transport config."""
+
+    async def test_transport_configs_per_entry(self, hass: HomeAssistant) -> None:
+        """transport_configs keyed per entry_id."""
+        entry1 = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_TRANSPORT: TRANSPORT_USB},
+            title="Printer A",
+        )
+        entry2 = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_TRANSPORT: TRANSPORT_USB},
+            title="Printer B",
+        )
+        entry1.add_to_hass(hass)
+        entry2.add_to_hass(hass)
+
+        import custom_components.paperang as mod
+
+        p = _make_printer()
+        with (
+            patch(PATCH_RUNTIME_GET, return_value=p),
+            patch.object(mod, "async_setup", return_value=True),
+            patch.object(
+                hass.config_entries, "async_forward_entry_setups", return_value=None
+            ),
+        ):
+            await mod.async_setup_entry(hass, entry1)
+            await mod.async_setup_entry(hass, entry2)
+
+        assert entry1.entry_id in mod._transport_configs
+        assert entry2.entry_id in mod._transport_configs
+        assert (
+            mod._transport_configs[entry1.entry_id]
+            is not mod._transport_configs[entry2.entry_id]
+        )

@@ -17,10 +17,15 @@ _PATCH_RUNTIME_GET = "custom_components.paperang.core.runtime._get_printer"
 def _clear_persistent_printers():
     """Clear persistent printer cache between tests."""
     from custom_components.paperang.core.runtime import _persistent_printers
+    from custom_components.paperang.core.state import _dynamic_caches, _static_caches
 
     _persistent_printers.clear()
+    _static_caches.clear()
+    _dynamic_caches.clear()
     yield
     _persistent_printers.clear()
+    _static_caches.clear()
+    _dynamic_caches.clear()
 
 
 @pytest.fixture
