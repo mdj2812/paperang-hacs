@@ -19,6 +19,7 @@ from ..const import (
     ATTR_QR_CONTENT,
     ATTR_QR_SIZE,
     ATTR_TEXT,
+    ATTR_VERTICAL,
     DOMAIN,
     SERVICE_FEED_PAPER,
     SERVICE_GET_STATUS,
@@ -64,8 +65,9 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         text = call.data.get(ATTR_TEXT, "")
         font_size = call.data.get(ATTR_FONT_SIZE, 24)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
+        vertical = call.data.get(ATTR_VERTICAL, False)
         await hass.async_add_executor_job(
-            _do_print_text, entry_id, text, font_size, heat_density
+            _do_print_text, entry_id, text, font_size, heat_density, vertical
         )
 
     async def handle_print_image(call: ServiceCall) -> None:
@@ -75,6 +77,7 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         image_url = call.data.get(ATTR_IMAGE_URL, "")
         profile = call.data.get(ATTR_PROFILE)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
+        vertical = call.data.get(ATTR_VERTICAL, False)
 
         profiles = await hass.async_add_executor_job(load_profiles)
         profile_settings = profiles.get(profile, {}) if profile else {}
@@ -94,6 +97,7 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
                 threshold=threshold,
                 brightness=brightness,
                 contrast=contrast,
+                vertical=vertical,
             )
         )
 
@@ -104,8 +108,9 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         qr_content = call.data.get(ATTR_QR_CONTENT, "")
         qr_size = call.data.get(ATTR_QR_SIZE, 500)
         heat_density = call.data.get(ATTR_HEAT_DENSITY, 75)
+        vertical = call.data.get(ATTR_VERTICAL, False)
         await hass.async_add_executor_job(
-            _do_print_qr, entry_id, qr_content, qr_size, heat_density
+            _do_print_qr, entry_id, qr_content, qr_size, heat_density, vertical
         )
 
     async def handle_print_pickup_code(call: ServiceCall) -> None:
@@ -113,10 +118,11 @@ def async_setup_services(hass: HomeAssistant, config: ConfigType) -> None:
         if not entry_id:
             return
         pickup_code = call.data.get(ATTR_PICKUP_CODE, "")
+        vertical = call.data.get(ATTR_VERTICAL, False)
         # Support multiple codes: comma/space/newline separated
         codes = [c.strip() for c in pickup_code.replace(",", " ").split() if c.strip()]
         await hass.async_add_executor_job(
-            _do_print_pickup_code, entry_id, codes if len(codes) > 1 else codes[0]
+            _do_print_pickup_code, entry_id, codes if len(codes) > 1 else codes[0], vertical
         )
 
     async def handle_get_status(_call: ServiceCall) -> None:

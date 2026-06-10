@@ -31,6 +31,7 @@ ATTR_QR_CONTENT = "qr_content"
 ATTR_QR_SIZE = "qr_size"
 ATTR_PICKUP_CODE = "pickup_code"
 ATTR_LINES = "lines"
+ATTR_VERTICAL = "vertical"
 
 # Sensors
 SENSOR_BATTERY = "battery"

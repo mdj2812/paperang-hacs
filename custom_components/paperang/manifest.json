@@ -14,7 +14,7 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/mdj2812/paperang-hacs/issues",
-  "requirements": ["paperang-p2-lib[qr,cjk,ble]>=1.0.1"],
+  "requirements": ["paperang-p2-lib[qr,cjk,ble]>=1.2.0"],
   "usb": [
     {
       "vid": "4348",
@@ -23,5 +23,5 @@
       "description": "*paperang*"
     }
   ],
-  "version": "1.4.0"
+  "version": "1.5.0"
 }

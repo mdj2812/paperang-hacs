@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.5.0 (2026-06-10)
+
+### Added
+- **Vertical printing** — `vertical` service field for `print_text`, `print_image`,
+  `print_qr`, and `print_pickup_code`. Passes through to paperang-p2-lib v1.2.0
+  vertical API (rotates output 90° clockwise).
+
+### Changed
+- Minimum `paperang-p2-lib` dependency bumped to `>=1.2.0`
+
 ## v1.3.7 (2026-05-23)
 
 ### Fixed
