@@ -55,6 +55,22 @@ jobs:
         with:
           name: coverage-badge
           path: coverage.svg
+  smoke-test:
+    name: HA Container Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: tests/smoke/Dockerfile.ha-test
+          tags: paperang-ha-test:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run smoke test
+        run: bash tests/smoke/run.sh --skip-build
   coverage-badge:
     name: Coverage Badge
     runs-on: ubuntu-latest
