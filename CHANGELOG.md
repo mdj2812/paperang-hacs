@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.5.1 (2026-06-10)
+
+### Added
+- **Vertical printing switch** — device page toggle for vertical mode.
+  Print button reads the switch state and passes `vertical` to all 4 print
+  services automatically.
+
+### Fixed
+- Test assertions updated for new `vertical=False` default kwarg
+- Pylint R0801 duplicate-code suppressed in services pass-through
+- Ruff formatting applied across all files
+
 ## v1.5.0 (2026-06-09)
 
 ### Added

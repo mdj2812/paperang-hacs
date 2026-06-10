@@ -77,6 +77,7 @@ paperang:
 | QR Size | 数字 (100–576px) | QR 码尺寸 |
 | Image Profile | 选择器 | portrait / landscape / document / high_contrast / light |
 | Feed Lines | 数字 (10–500) | 进纸行数 |
+| Vertical | 开关 | 切换竖版（旋转）打印 |
 
 | 按钮 | 动作 |
 |------|------|
@@ -108,6 +109,7 @@ paperang:
 | text | string | — | 要打印的文本 |
 | font_size | number | 24 | 字体大小（12–96） |
 | heat_density | number | 75 | 加热浓度（0–100） |
+| vertical | bool | false | 竖版打印（旋转 90°） |
 
 ### paperang.print_image
 
@@ -118,6 +120,7 @@ paperang:
 | image_url | string | — | 图片 URL 或本地文件路径 |
 | profile | select | document | portrait / landscape / document / high_contrast / light |
 | heat_density | number | 75 | 加热浓度（0–100） |
+| vertical | bool | false | 竖版打印（旋转 90°） |
 
 ### paperang.print_qr
 
@@ -128,6 +131,7 @@ paperang:
 | qr_content | string | — | QR 码内容 |
 | qr_size | number | 500 | QR 码大小（100–576） |
 | heat_density | number | 75 | 加热浓度（0–100） |
+| vertical | bool | false | 竖版打印（旋转 90°） |
 
 ### paperang.print_pickup_code
 
@@ -136,6 +140,7 @@ paperang:
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | pickup_code | string | — | 取件码，如 "19-4308" |
+| vertical | bool | false | 竖版打印（旋转 90°） |
 
 ### paperang.print_test_page
 

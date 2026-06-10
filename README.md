@@ -81,6 +81,7 @@ The device page provides an interactive print panel:
 | QR Size | number (100–576px) | QR code dimensions |
 | Image Profile | select | portrait / landscape / document / high_contrast / light |
 | Feed Lines | number (10–500) | Lines to feed |
+| Vertical | switch | Toggle vertical (rotated) printing |
 
 | Button | Action |
 |--------|--------|
@@ -112,6 +113,7 @@ Print text content.
 | text | string | — | Text to print |
 | font_size | number | 24 | Font size in pixels (12–96) |
 | heat_density | number | 75 | Print heat density (0–100) |
+| vertical | bool | false | Print vertically (rotated 90°) |
 
 ### paperang.print_image
 
@@ -122,6 +124,7 @@ Print an image from a local file path or remote URL.
 | image_url | string | — | Image URL or local file path |
 | profile | select | document | portrait / landscape / document / high_contrast / light |
 | heat_density | number | 75 | Print heat density (0–100) |
+| vertical | bool | false | Print vertically (rotated 90°) |
 
 ### paperang.print_qr
 
@@ -132,6 +135,7 @@ Print a QR code.
 | qr_content | string | — | Content to encode in the QR code |
 | qr_size | number | 500 | QR code size in pixels (100–576) |
 | heat_density | number | 75 | Print heat density (0–100) |
+| vertical | bool | false | Print vertically (rotated 90°) |
 
 ### paperang.print_pickup_code
 
@@ -140,6 +144,7 @@ Print large pickup codes (e.g., for package lockers).
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | pickup_code | string | — | Pickup code, e.g. "19-4308" |
+| vertical | bool | false | Print vertically (rotated 90°) |
 
 ### paperang.print_test_page
 
