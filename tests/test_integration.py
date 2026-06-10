@@ -7,7 +7,7 @@ import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, CONF_TRANSPORT
+from custom_components.paperang.const import DOMAIN, TRANSPORT_USB, TRANSPORT_BT, CONF_TRANSPORT
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
@@ -349,3 +349,44 @@ class TestServiceCalls:
             contrast=1.0,
             vertical=False,
         )
+
+
+class TestPollingInterval:
+    """Polling interval depends on transport type."""
+
+    @pytest.mark.parametrize(
+        "transport, expected_seconds",
+        [
+            (TRANSPORT_USB, 5),
+            (TRANSPORT_BT, 30),
+        ],
+        ids=["USB_5s", "BT_30s"],
+    )
+    async def test_polling_interval_by_transport(
+        self,
+        hass: HomeAssistant,
+        mock_printer: MagicMock,
+        transport: str,
+        expected_seconds: int,
+    ) -> None:
+        """Transport type sets correct polling interval."""
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={CONF_TRANSPORT: transport},
+            title=f"Paperang P2 ({transport})",
+        )
+        entry.add_to_hass(hass)
+
+        import custom_components.paperang as mod
+
+        with (
+            patch(_PATCH_RUNTIME_GET, return_value=mock_printer),
+            patch.object(mod, "async_setup", return_value=True),
+            patch.object(
+                hass.config_entries, "async_forward_entry_setups", return_value=None
+            ),
+        ):
+            await mod.async_setup_entry(hass, entry)
+
+        coordinator = hass.data[DOMAIN][entry.entry_id]
+        assert coordinator.update_interval.seconds == expected_seconds

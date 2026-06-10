@@ -110,15 +110,29 @@ class TestEntryLifecycle:
         assert entry.entry_id not in hass.data.get(DOMAIN, {})
 
 
-class TestBTEntryPollingInterval:
-    """BT entry uses 30s poll interval."""
+class TestPollingInterval:
+    """Polling interval depends on transport type."""
 
-    async def test_bt_entry_30s_poll(self, hass: HomeAssistant, mock_printer: MagicMock) -> None:
-        """BT transport → 30s interval."""
+    @pytest.mark.parametrize(
+        "transport, expected_seconds",
+        [
+            (TRANSPORT_USB, 5),
+            (TRANSPORT_BT, 30),
+        ],
+        ids=["USB_5s", "BT_30s"],
+    )
+    async def test_polling_interval_by_transport(
+        self,
+        hass: HomeAssistant,
+        mock_printer: MagicMock,
+        transport: str,
+        expected_seconds: int,
+    ) -> None:
+        """Transport type sets correct polling interval."""
         entry = MockConfigEntry(
             domain=DOMAIN,
-            data={CONF_TRANSPORT: TRANSPORT_BT},
-            title="Paperang P2 (BT)",
+            data={CONF_TRANSPORT: transport},
+            title=f"Paperang P2 ({transport})",
         )
         entry.add_to_hass(hass)
 
@@ -134,7 +148,7 @@ class TestBTEntryPollingInterval:
             await mod.async_setup_entry(hass, entry)
 
         coordinator = hass.data[DOMAIN][entry.entry_id]
-        assert coordinator.update_interval.seconds == 30
+        assert coordinator.update_interval.seconds == expected_seconds
 
 
 class TestEntityImports:
