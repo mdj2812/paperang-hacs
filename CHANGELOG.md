@@ -11,6 +11,9 @@
   Bluetooth connections alive across polling cycles and service calls,
   eliminating repeated connect/disconnect overhead.
 - Per-transport polling intervals: Bluetooth 30s, USB 5s.
+- **Vertical printing** — `vertical` service field for `print_text`, `print_image`,
+  `print_qr`, and `print_pickup_code`. Passes through to paperang-p2-lib v1.2.0
+  vertical API (rotates output 90° clockwise).
 
 ### Removed
 - **BLE transport** — `BleTransport`, `transport/ble.py`, and all BLE config
@@ -19,7 +22,7 @@
 
 ### Changed
 - USB and Bluetooth share a unified persistent-printer cache
-- `paperang-p2-lib` bumped to `>=1.1.1`
+- `paperang-p2-lib` bumped to `>=1.2.0`
 - README (EN + ZH) updated to reflect Bluetooth SPP, remove BLE references
 
 ## v1.4.0 (2026-06-06)

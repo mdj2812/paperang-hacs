@@ -49,6 +49,8 @@ _NAME_ZH: dict[str, str] = {
     "Feed Lines": "送纸行数",
     # Text
     "Print Content": "打印内容",
+    # Switches
+    "Vertical": "竖版打印",
 }
 
 

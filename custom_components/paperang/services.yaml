@@ -17,6 +17,11 @@ print_text:
       description: "Print heat density 0-100 (default: 75)"
       default: 75
       example: 75
+    vertical:
+      name: Vertical
+      description: "Print vertically (rotate 90° clockwise)"
+      default: false
+      example: false
 
 print_image:
   name: Print Image
@@ -37,6 +42,11 @@ print_image:
       description: "Print heat density 0-100 (default: 75)"
       default: 75
       example: 75
+    vertical:
+      name: Vertical
+      description: "Print vertically (rotate 90° clockwise)"
+      default: false
+      example: false
 
 print_qr:
   name: Print QR Code
@@ -57,6 +67,11 @@ print_qr:
       description: "Print heat density 0-100 (default: 75)"
       default: 75
       example: 75
+    vertical:
+      name: Vertical
+      description: "Print vertically (rotate 90° clockwise)"
+      default: false
+      example: false
 
 print_pickup_code:
   name: Print Pickup Code
@@ -67,6 +82,11 @@ print_pickup_code:
       description: "Pickup code in format like '19-4308'"
       required: true
       example: "19-4308"
+    vertical:
+      name: Vertical
+      description: "Print vertically (rotate 90° clockwise)"
+      default: false
+      example: false
 
 get_status:
   name: Get Printer Status

@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 
 class TestUsbTransportWithPath:
@@ -44,7 +43,10 @@ class TestScanUsbDevices:
 
         assert len(result) == 1
         assert result[0] == {
-            "usb_path": "2-1-3", "bus": 2, "port": [1, 3], "address": 5,
+            "usb_path": "2-1-3",
+            "bus": 2,
+            "port": [1, 3],
+            "address": 5,
         }
 
     def test_returns_empty(self):
@@ -81,11 +83,12 @@ class TestVerifyPrinter:
         mock_printer = MagicMock()
         mock_printer.get_battery.return_value = 80
 
-        with patch(
-            "custom_components.paperang.transport.usb.PaperangP2",
-            return_value=mock_printer,
-        ), patch(
-            "custom_components.paperang.transport.usb.UsbTransportWithPath"
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                return_value=mock_printer,
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
         ):
             result = verify_printer(bus=1, port=[3])
 
@@ -101,11 +104,12 @@ class TestVerifyPrinter:
         mock_printer = MagicMock()
         mock_printer.get_battery.return_value = None
 
-        with patch(
-            "custom_components.paperang.transport.usb.PaperangP2",
-            return_value=mock_printer,
-        ), patch(
-            "custom_components.paperang.transport.usb.UsbTransportWithPath"
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                return_value=mock_printer,
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
         ):
             result = verify_printer(bus=1, port=[3])
         assert result is False
@@ -117,11 +121,12 @@ class TestVerifyPrinter:
         mock_printer = MagicMock()
         mock_printer.connect.side_effect = RuntimeError("boom")
 
-        with patch(
-            "custom_components.paperang.transport.usb.PaperangP2",
-            return_value=mock_printer,
-        ), patch(
-            "custom_components.paperang.transport.usb.UsbTransportWithPath"
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                return_value=mock_printer,
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
         ):
             result = verify_printer(bus=1, port=[3])
         assert result is False
@@ -134,11 +139,12 @@ class TestVerifyPrinter:
         mock_printer.get_battery.return_value = 80
         mock_printer.disconnect.side_effect = RuntimeError("fail")
 
-        with patch(
-            "custom_components.paperang.transport.usb.PaperangP2",
-            return_value=mock_printer,
-        ), patch(
-            "custom_components.paperang.transport.usb.UsbTransportWithPath"
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                return_value=mock_printer,
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
         ):
             result = verify_printer(bus=1, port=[3])
         assert result is True
@@ -150,11 +156,12 @@ class TestVerifyPrinter:
         mock_printer = MagicMock()
         mock_printer.connect.side_effect = OSError("port error")
 
-        with patch(
-            "custom_components.paperang.transport.usb.PaperangP2",
-            return_value=mock_printer,
-        ), patch(
-            "custom_components.paperang.transport.usb.UsbTransportWithPath"
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                return_value=mock_printer,
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
         ):
             result = verify_printer(bus=1, port=[3])
         assert result is False

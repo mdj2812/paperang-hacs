@@ -19,6 +19,7 @@ _PATCH_BLOCK_WITH = "custom_components.paperang.core.blocking._with_printer"
 def _clear_persistent_printers():
     """Clear persistent printer cache between tests."""
     from custom_components.paperang.core.runtime import _persistent_printers
+
     _persistent_printers.clear()
     yield
     _persistent_printers.clear()
@@ -43,7 +44,9 @@ def mock_printer():
 
 
 class TestSetupEntry:
-    async def test_setup_entry_stores_transport_config(self, hass: HomeAssistant, mock_printer) -> None:
+    async def test_setup_entry_stores_transport_config(
+        self, hass: HomeAssistant, mock_printer
+    ) -> None:
         """Setup stores per-entry transport config."""
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -56,14 +59,18 @@ class TestSetupEntry:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
-                with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
+                with patch.object(
+                    hass.config_entries, "async_forward_entry_setups", return_value=None
+                ):
                     result = await mod.async_setup_entry(hass, entry)
 
         assert result is True
         assert entry.entry_id in mod._transport_configs
         assert entry.entry_id in hass.data[DOMAIN]
 
-    async def test_setup_entry_refreshes_coordinator(self, hass: HomeAssistant, mock_printer) -> None:
+    async def test_setup_entry_refreshes_coordinator(
+        self, hass: HomeAssistant, mock_printer
+    ) -> None:
         """Setup triggers an initial coordinator refresh."""
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -76,7 +83,9 @@ class TestSetupEntry:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
-                with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
+                with patch.object(
+                    hass.config_entries, "async_forward_entry_setups", return_value=None
+                ):
                     result = await mod.async_setup_entry(hass, entry)
 
         assert result is True
@@ -84,7 +93,9 @@ class TestSetupEntry:
         assert coordinator.data is not None
         assert coordinator.data.get("available") is True
 
-    async def test_unload_entry_cleans_up(self, hass: HomeAssistant, mock_printer) -> None:
+    async def test_unload_entry_cleans_up(
+        self, hass: HomeAssistant, mock_printer
+    ) -> None:
         """Unload removes coordinator and clears caches."""
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -97,12 +108,16 @@ class TestSetupEntry:
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
             with patch.object(mod, "async_setup", return_value=True):
-                with patch.object(hass.config_entries, "async_forward_entry_setups", return_value=None):
+                with patch.object(
+                    hass.config_entries, "async_forward_entry_setups", return_value=None
+                ):
                     await mod.async_setup_entry(hass, entry)
 
         assert entry.entry_id in hass.data[DOMAIN]
 
-        with patch.object(hass.config_entries, "async_unload_platforms", return_value=True):
+        with patch.object(
+            hass.config_entries, "async_unload_platforms", return_value=True
+        ):
             result = await mod.async_unload_entry(hass, entry)
 
         assert result is True
@@ -120,13 +135,16 @@ class TestServiceCalls:
         entry.add_to_hass(hass)
 
         import custom_components.paperang as mod
+
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             # Call the do-function directly
             mod._do_print_text(entry.entry_id, "Hello", 24, 75)
 
-        mock_printer.print_text.assert_called_once_with("Hello", font_size=24, heat_density=75)
+        mock_printer.print_text.assert_called_once_with(
+            "Hello", font_size=24, heat_density=75, vertical=False
+        )
 
     async def test_feed_paper_service(self, hass: HomeAssistant, mock_printer) -> None:
         """feed_paper service calls the printer."""
@@ -138,6 +156,7 @@ class TestServiceCalls:
         entry.add_to_hass(hass)
 
         import custom_components.paperang as mod
+
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
@@ -145,7 +164,9 @@ class TestServiceCalls:
 
         mock_printer.feed.assert_called_once_with(100)
 
-    async def test_print_test_page_service(self, hass: HomeAssistant, mock_printer) -> None:
+    async def test_print_test_page_service(
+        self, hass: HomeAssistant, mock_printer
+    ) -> None:
         """print_test_page service calls the printer."""
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -155,6 +176,7 @@ class TestServiceCalls:
         entry.add_to_hass(hass)
 
         import custom_components.paperang as mod
+
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
@@ -172,6 +194,7 @@ class TestServiceCalls:
         entry.add_to_hass(hass)
 
         import custom_components.paperang as mod
+
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
@@ -186,19 +209,24 @@ class TestServiceCalls:
 
         mod._transport_configs.clear()
         mod._transport_configs["test_eid"] = {
-            "transport": "usb", "usb_bus": 1, "usb_port": [3],
+            "transport": "usb",
+            "usb_bus": 1,
+            "usb_port": [3],
         }
 
-        with patch.object(pr, "UsbTransportWithPath") as mock_tp, patch.object(
-            pr, "PaperangP2"
-        ) as mock_p2:
+        with (
+            patch.object(pr, "UsbTransportWithPath") as mock_tp,
+            patch.object(pr, "PaperangP2") as mock_p2,
+        ):
             mock_transport = MagicMock()
             mock_tp.return_value = mock_transport
             mod._get_printer("test_eid")
             mock_tp.assert_called_once_with(bus=1, port=[3])
             mock_p2.assert_called_once_with(transport=mock_transport)
 
-    async def test_read_printer_state_firmware_decode(self, hass: HomeAssistant, mock_printer) -> None:
+    async def test_read_printer_state_firmware_decode(
+        self, hass: HomeAssistant, mock_printer
+    ) -> None:
         """Firmware version 720897 is decoded to V1.0.11."""
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -208,6 +236,7 @@ class TestServiceCalls:
         entry.add_to_hass(hass)
 
         import custom_components.paperang as mod
+
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
         with patch(_PATCH_RUNTIME_GET, return_value=mock_printer):
@@ -225,6 +254,7 @@ class TestServiceCalls:
         entry.add_to_hass(hass)
 
         import custom_components.paperang as mod
+
         mod._transport_configs[entry.entry_id] = dict(entry.data)
 
         bad = MagicMock()
@@ -242,7 +272,9 @@ class TestServiceCalls:
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_qr("test", "https://x.com", 400, 70)
 
-        mock_printer.print_qr.assert_called_once_with("https://x.com", heat_density=70, max_width=400)
+        mock_printer.print_qr.assert_called_once_with(
+            "https://x.com", heat_density=70, max_width=400, vertical=False
+        )
 
     async def test_do_print_pickup_code(self, mock_printer) -> None:
         """_do_print_pickup_code calls print_pickup_code."""
@@ -251,7 +283,9 @@ class TestServiceCalls:
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_pickup_code("test", "19-4308")
 
-        mock_printer.print_pickup_code.assert_called_once_with("19-4308")
+        mock_printer.print_pickup_code.assert_called_once_with(
+            "19-4308", vertical=False
+        )
 
     async def test_do_get_status_failure(self, hass: HomeAssistant) -> None:
         """_do_get_status returns error dict on failure."""
@@ -277,6 +311,7 @@ class TestServiceCalls:
     async def test_update_if_not_none(self) -> None:
         """_update_if_not_none updates when value is not None."""
         import custom_components.paperang as mod
+
         cache = {}
         mod._update_if_not_none(cache, "key", "value")
         assert cache["key"] == "value"
@@ -286,6 +321,7 @@ class TestServiceCalls:
     async def test_get_or_fallback(self) -> None:
         """_get_or_fallback returns cached value or None."""
         import custom_components.paperang as mod
+
         cache = {"a": 1}
         assert mod._get_or_fallback(cache, "a") == 1
         assert mod._get_or_fallback(cache, "b") is None
@@ -293,6 +329,7 @@ class TestServiceCalls:
     async def test_get_static_dynamic_cache(self) -> None:
         """_get_static_cache and _get_dynamic_cache create and return per-entry dicts."""
         import custom_components.paperang as mod
+
         mod._static_caches.clear()
         mod._dynamic_caches.clear()
         sc = mod._get_static_cache("eid1")
@@ -305,15 +342,31 @@ class TestServiceCalls:
     async def test_do_print_text(self, mock_printer) -> None:
         """_do_print_text calls print_text with correct args."""
         import custom_components.paperang as mod
+
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
             mod._do_print_text("test", "Hello", 24, 75)
-        mock_printer.print_text.assert_called_once_with("Hello", font_size=24, heat_density=75)
+        mock_printer.print_text.assert_called_once_with(
+            "Hello", font_size=24, heat_density=75, vertical=False
+        )
 
     async def test_do_print_image(self, mock_printer) -> None:
         """_do_print_image calls print_image with correct args."""
         import custom_components.paperang as mod
+
         with patch(_PATCH_BLOCK_WITH, wraps=lambda eid, fn: fn(mock_printer)):
-            mod._do_print_image("test", image_url="http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0)
+            mod._do_print_image(
+                "test",
+                image_url="http://img",
+                heat_density=70,
+                threshold=128,
+                brightness=1.0,
+                contrast=1.0,
+            )
         mock_printer.print_image.assert_called_once_with(
-            "http://img", heat_density=70, threshold=128, brightness=1.0, contrast=1.0
+            "http://img",
+            heat_density=70,
+            threshold=128,
+            brightness=1.0,
+            contrast=1.0,
+            vertical=False,
         )

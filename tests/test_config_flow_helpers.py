@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from custom_components.paperang.config_flow import (
     _scan_usb_devices,
@@ -38,7 +37,9 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+        with patch(
+            "custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p
+        ):
             with patch(
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
@@ -57,7 +58,9 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+        with patch(
+            "custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p
+        ):
             with patch(
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
@@ -73,7 +76,9 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+        with patch(
+            "custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p
+        ):
             with patch(
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
@@ -90,7 +95,9 @@ class TestUsbDiscovery:
 
         mock_tp = MagicMock()
 
-        with patch("custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p):
+        with patch(
+            "custom_components.paperang.transport.usb.PaperangP2", return_value=mock_p
+        ):
             with patch(
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
@@ -120,7 +127,9 @@ class TestBtDiscovery:
 
         mock_bt = MagicMock()
 
-        with patch("custom_components.paperang.transport.bt.PaperangP2", return_value=mock_p):
+        with patch(
+            "custom_components.paperang.transport.bt.PaperangP2", return_value=mock_p
+        ):
             with patch(
                 "custom_components.paperang.transport.bt.BtTransport",
                 return_value=mock_bt,
@@ -138,7 +147,9 @@ class TestBtDiscovery:
 
         mock_bt = MagicMock()
 
-        with patch("custom_components.paperang.transport.bt.PaperangP2", return_value=mock_p):
+        with patch(
+            "custom_components.paperang.transport.bt.PaperangP2", return_value=mock_p
+        ):
             with patch(
                 "custom_components.paperang.transport.bt.BtTransport",
                 return_value=mock_bt,
@@ -159,13 +170,17 @@ class TestOptionsFlow:
             CONF_BT_ADDRESS,
         )
 
-        schema = vol.Schema({
-            vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In({
-                TRANSPORT_USB: "USB",
-                TRANSPORT_BT: "Bluetooth",
-            }),
-            vol.Optional(CONF_BT_ADDRESS, default=""): str,
-        })
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_TRANSPORT, default=TRANSPORT_USB): vol.In(
+                    {
+                        TRANSPORT_USB: "USB",
+                        TRANSPORT_BT: "Bluetooth",
+                    }
+                ),
+                vol.Optional(CONF_BT_ADDRESS, default=""): str,
+            }
+        )
 
         result = schema({CONF_TRANSPORT: TRANSPORT_USB})
         assert result[CONF_TRANSPORT] == TRANSPORT_USB
@@ -180,17 +195,23 @@ class TestOptionsFlow:
             CONF_BT_ADDRESS,
         )
 
-        schema = vol.Schema({
-            vol.Required(CONF_TRANSPORT, default="usb"): vol.In({
-                "usb": "USB",
-                "bt": "Bluetooth",
-            }),
-            vol.Optional(CONF_BT_ADDRESS, default=""): str,
-        })
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_TRANSPORT, default="usb"): vol.In(
+                    {
+                        "usb": "USB",
+                        "bt": "Bluetooth",
+                    }
+                ),
+                vol.Optional(CONF_BT_ADDRESS, default=""): str,
+            }
+        )
 
-        result = schema({
-            CONF_TRANSPORT: TRANSPORT_BT,
-            CONF_BT_ADDRESS: "AA:BB:CC:DD:EE:FF",
-        })
+        result = schema(
+            {
+                CONF_TRANSPORT: TRANSPORT_BT,
+                CONF_BT_ADDRESS: "AA:BB:CC:DD:EE:FF",
+            }
+        )
         assert result[CONF_TRANSPORT] == TRANSPORT_BT
         assert result[CONF_BT_ADDRESS] == "AA:BB:CC:DD:EE:FF"

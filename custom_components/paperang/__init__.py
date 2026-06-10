@@ -47,6 +47,7 @@ PLATFORMS = [
     Platform.SELECT,
     Platform.NUMBER,
     Platform.TEXT,
+    Platform.SWITCH,
 ]
 
 POLL_INTERVAL_USB = timedelta(seconds=5)

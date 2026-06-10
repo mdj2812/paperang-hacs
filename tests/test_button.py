@@ -60,7 +60,6 @@ class TestPrintButton:
 
         from custom_components.paperang.button import PaperangPrintButton
 
-        eid = entry.entry_id
         btn = _make_btn(PaperangPrintButton, hass, entry)
 
         calls = []

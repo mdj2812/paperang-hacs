@@ -129,7 +129,9 @@ class TestConfigFlowCreateEntry:
         assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
-    async def test_select_usb_device_invalid_selection(self, hass: HomeAssistant) -> None:
+    async def test_select_usb_device_invalid_selection(
+        self, hass: HomeAssistant
+    ) -> None:
         """Select USB device with invalid path shows error."""
         flow = _make_flow(hass)
         flow._usb_discovered = [

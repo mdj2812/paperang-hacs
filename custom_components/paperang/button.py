@@ -71,6 +71,7 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         heat_density = 75
         qr_size = 500
         profile = "document"
+        vertical = False
 
         if (
             state := self._get_state_by_unique_id(
@@ -115,6 +116,13 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
         ) is not None:
             profile = state.state
 
+        if (
+            state := self._get_state_by_unique_id(
+                hass, f"paperang_{eid}_vertical", f"switch.paperang_{eid}_vertical"
+            )
+        ) is not None:
+            vertical = state.state == "on"
+
         if not content.strip():
             _LOGGER.warning("Print content is empty")
             return
@@ -127,6 +135,7 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
                     "text": content,
                     "font_size": font_size,
                     "heat_density": heat_density,
+                    "vertical": vertical,
                 }
             )
             await hass.services.async_call(
@@ -141,6 +150,7 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
                     "image_url": content,
                     "heat_density": heat_density,
                     "profile": profile,
+                    "vertical": vertical,
                 }
             )
             await hass.services.async_call(
@@ -155,6 +165,7 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
                     "qr_content": content,
                     "qr_size": qr_size,
                     "heat_density": heat_density,
+                    "vertical": vertical,
                 }
             )
             await hass.services.async_call(
@@ -164,7 +175,7 @@ class PaperangPrintButton(PaperangEntity, ButtonEntity):
                 blocking=False,
             )
         elif mode == "pickup_code":
-            svc_data.update({"pickup_code": content})
+            svc_data.update({"pickup_code": content, "vertical": vertical})
             await hass.services.async_call(
                 DOMAIN,
                 "print_pickup_code",

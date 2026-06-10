@@ -1,4 +1,5 @@
 """Tests for paperang __init__.py — factory functions, helpers, migration."""
+
 import asyncio
 from unittest.mock import MagicMock, patch
 
@@ -24,7 +25,9 @@ class TestGetPrinter:
         import custom_components.paperang.core.runtime as pr
 
         mod._transport_configs[FAKE_ENTRY_ID] = {
-            "transport": "usb", "usb_bus": 1, "usb_port": [3],
+            "transport": "usb",
+            "usb_bus": 1,
+            "usb_port": [3],
         }
 
         with (
@@ -108,7 +111,9 @@ class TestDoFunctions:
             fn = mock_with.call_args[0][1]
             mock_p = MagicMock()
             fn(mock_p)
-            mock_p.print_text.assert_called_once_with("hello", font_size=24, heat_density=75)
+            mock_p.print_text.assert_called_once_with(
+                "hello", font_size=24, heat_density=75, vertical=False
+            )
 
     def test_do_print_qr_uses_with_printer(self):
         import custom_components.paperang as mod
@@ -120,7 +125,9 @@ class TestDoFunctions:
             fn = mock_with.call_args[0][1]
             mock_p = MagicMock()
             fn(mock_p)
-            mock_p.print_qr.assert_called_once_with("https://example.com", heat_density=50, max_width=500)
+            mock_p.print_qr.assert_called_once_with(
+                "https://example.com", heat_density=50, max_width=500, vertical=False
+            )
 
     def test_do_print_pickup_code_uses_with_printer(self):
         import custom_components.paperang as mod
@@ -132,7 +139,7 @@ class TestDoFunctions:
             fn = mock_with.call_args[0][1]
             mock_p = MagicMock()
             fn(mock_p)
-            mock_p.print_pickup_code.assert_called_once_with("19-4308")
+            mock_p.print_pickup_code.assert_called_once_with("19-4308", vertical=False)
 
     def test_do_print_test_page_uses_with_printer(self):
         import custom_components.paperang as mod
@@ -181,7 +188,12 @@ class TestDoFunctions:
 
         with patch.object(pb, "_with_printer", side_effect=fake_with):
             result = mod._do_get_status(FAKE_ENTRY_ID)
-            assert result == {"battery": None, "status": None, "available": False, "error": "printer offline"}
+            assert result == {
+                "battery": None,
+                "status": None,
+                "available": False,
+                "error": "printer offline",
+            }
 
 
 class TestUsbTransportWithPath:
@@ -212,6 +224,7 @@ class TestMigrationHandler:
 
     def test_migrate_v2_noop(self):
         from custom_components.paperang.__init__ import async_migrate_entry
+
         entry = MagicMock()
         entry.version = 2
         entry.data = {"transport": "usb"}
