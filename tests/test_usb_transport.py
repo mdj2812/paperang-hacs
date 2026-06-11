@@ -249,6 +249,8 @@ class TestUsbTransportConnect:
         mock_ep_in = MagicMock()
 
         t = UsbTransportWithPath(bus=2, port=[1, 3])
+        t.vid = 0x4348  # set by real UsbTransportBase.__init__; mocked here
+        t.pid = 0x5584
 
         with (
             patch("usb.core.find", return_value=[mock_dev]),
@@ -272,6 +274,8 @@ class TestUsbTransportConnect:
         wrong_dev.port_numbers = [9, 9]
 
         t = UsbTransportWithPath(bus=2, port=[1, 3])
+        t.vid = 0x4348
+        t.pid = 0x5584
 
         with patch("usb.core.find", return_value=[wrong_dev]):
             with pytest.raises(
@@ -293,6 +297,8 @@ class TestUsbTransportConnect:
         mock_dev.get_active_configuration.return_value = mock_cfg
 
         t = UsbTransportWithPath(bus=1, port=[4])
+        t.vid = 0x4348
+        t.pid = 0x5584
 
         with (
             patch("usb.core.find", return_value=[mock_dev]),
