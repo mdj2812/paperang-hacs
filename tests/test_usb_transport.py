@@ -231,14 +231,41 @@ class TestUsbTransportConnect:
     """Tests for UsbTransportWithPath.connect() — mocked USB stack.
 
     ``connect()`` does ``import usb.core`` / ``import usb.util`` inside
-    the function body.  Standard ``patch("usb.core.find")`` sometimes
-    fails to take effect across local imports, so we inject full mock
-    modules into ``sys.modules`` via ``patch.dict`` (auto-restored).
+    the function body.  Standard ``patch()`` sometimes fails across local
+    imports, so we inject mock modules directly into ``sys.modules``
+    (with manual save/restore).
     """
 
+    def setup_method(self):
+        """Save original usb.* modules before each test."""
+        import sys
+
+        self._orig_usb = sys.modules.pop("usb", None)
+        self._orig_usb_core = sys.modules.pop("usb.core", None)
+        self._orig_usb_util = sys.modules.pop("usb.util", None)
+
+    def teardown_method(self):
+        """Restore original usb.* modules after each test."""
+        import sys
+
+        # Remove our injected mocks
+        sys.modules.pop("usb.core", None)
+        sys.modules.pop("usb.util", None)
+        sys.modules.pop("usb", None)
+
+        # Restore originals
+        if self._orig_usb is not None:
+            sys.modules["usb"] = self._orig_usb
+        if self._orig_usb_core is not None:
+            sys.modules["usb.core"] = self._orig_usb_core
+        if self._orig_usb_util is not None:
+            sys.modules["usb.util"] = self._orig_usb_util
+
     @staticmethod
-    def _build_usb_modules(mock_dev, mock_ep_out, mock_ep_in):
-        """Return {name: mock_module} dict for sys.modules injection."""
+    def _inject_usb_modules(mock_dev, mock_ep_out, mock_ep_in):
+        """Inject mock usb.* modules into sys.modules."""
+        import sys
+
         mock_usb_core = MagicMock()
         mock_usb_core.find.return_value = [mock_dev]
 
@@ -248,16 +275,13 @@ class TestUsbTransportConnect:
         mock_usb_util.ENDPOINT_IN = 0x80
         mock_usb_util.endpoint_direction.side_effect = lambda addr: addr & 0x80
 
-        # Reusable top-level 'usb' package mock so sub-attributes resolve
         usb_pkg = MagicMock()
         usb_pkg.core = mock_usb_core
         usb_pkg.util = mock_usb_util
 
-        return {
-            "usb": usb_pkg,
-            "usb.core": mock_usb_core,
-            "usb.util": mock_usb_util,
-        }
+        sys.modules["usb"] = usb_pkg
+        sys.modules["usb.core"] = mock_usb_core
+        sys.modules["usb.util"] = mock_usb_util
 
     def test_connect_finds_and_configures_device(self):
         """connect() locates device, detaches kernel driver, configures endpoints."""
@@ -280,9 +304,8 @@ class TestUsbTransportConnect:
         t.vid = 0x4348
         t.pid = 0x5584
 
-        usb_mods = self._build_usb_modules(mock_dev, mock_ep_out, mock_ep_in)
-        with patch.dict("sys.modules", usb_mods):
-            result = t.connect()
+        self._inject_usb_modules(mock_dev, mock_ep_out, mock_ep_in)
+        result = t.connect()
 
         assert result is True
         assert t._dev is mock_dev
@@ -303,12 +326,11 @@ class TestUsbTransportConnect:
         t.vid = 0x4348
         t.pid = 0x5584
 
-        usb_mods = self._build_usb_modules(wrong_dev, MagicMock(), MagicMock())
-        with patch.dict("sys.modules", usb_mods):
-            with pytest.raises(
-                RuntimeError, match="Paperang P2 not found at bus=2"
-            ):
-                t.connect()
+        self._inject_usb_modules(wrong_dev, MagicMock(), MagicMock())
+        with pytest.raises(
+            RuntimeError, match="Paperang P2 not found at bus=2"
+        ):
+            t.connect()
 
     def test_connect_no_kernel_driver(self):
         """connect() works when kernel driver is not active."""
@@ -327,9 +349,8 @@ class TestUsbTransportConnect:
         t.vid = 0x4348
         t.pid = 0x5584
 
-        usb_mods = self._build_usb_modules(mock_dev, MagicMock(), MagicMock())
-        with patch.dict("sys.modules", usb_mods):
-            result = t.connect()
+        self._inject_usb_modules(mock_dev, MagicMock(), MagicMock())
+        result = t.connect()
 
         assert result is True
         mock_dev.detach_kernel_driver.assert_not_called()
