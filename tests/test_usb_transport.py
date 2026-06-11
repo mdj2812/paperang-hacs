@@ -228,7 +228,36 @@ class TestScanUsbDevicesImportError:
 
 
 class TestUsbTransportConnect:
-    """Tests for UsbTransportWithPath.connect() — mocked USB stack."""
+    """Tests for UsbTransportWithPath.connect() — mocked USB stack.
+
+    ``connect()`` does ``import usb.core`` / ``import usb.util`` inside
+    the function body.  Standard ``patch("usb.core.find")`` sometimes
+    fails to take effect across local imports, so we inject full mock
+    modules into ``sys.modules`` via ``patch.dict`` (auto-restored).
+    """
+
+    @staticmethod
+    def _build_usb_modules(mock_dev, mock_ep_out, mock_ep_in):
+        """Return {name: mock_module} dict for sys.modules injection."""
+        mock_usb_core = MagicMock()
+        mock_usb_core.find.return_value = [mock_dev]
+
+        mock_usb_util = MagicMock()
+        mock_usb_util.find_descriptor.side_effect = [mock_ep_out, mock_ep_in]
+        mock_usb_util.ENDPOINT_OUT = 0x00
+        mock_usb_util.ENDPOINT_IN = 0x80
+        mock_usb_util.endpoint_direction.side_effect = lambda addr: addr & 0x80
+
+        # Reusable top-level 'usb' package mock so sub-attributes resolve
+        usb_pkg = MagicMock()
+        usb_pkg.core = mock_usb_core
+        usb_pkg.util = mock_usb_util
+
+        return {
+            "usb": usb_pkg,
+            "usb.core": mock_usb_core,
+            "usb.util": mock_usb_util,
+        }
 
     def test_connect_finds_and_configures_device(self):
         """connect() locates device, detaches kernel driver, configures endpoints."""
@@ -244,18 +273,15 @@ class TestUsbTransportConnect:
         mock_cfg.__getitem__.return_value = mock_intf
         mock_dev.get_active_configuration.return_value = mock_cfg
 
-        # find_descriptor returns different mocks for OUT and IN
         mock_ep_out = MagicMock()
         mock_ep_in = MagicMock()
 
         t = UsbTransportWithPath(bus=2, port=[1, 3])
-        t.vid = 0x4348  # set by real UsbTransportBase.__init__; mocked here
+        t.vid = 0x4348
         t.pid = 0x5584
 
-        with (
-            patch("usb.core.find", return_value=[mock_dev]),
-            patch("usb.util.find_descriptor", side_effect=[mock_ep_out, mock_ep_in]),
-        ):
+        usb_mods = self._build_usb_modules(mock_dev, mock_ep_out, mock_ep_in)
+        with patch.dict("sys.modules", usb_mods):
             result = t.connect()
 
         assert result is True
@@ -277,7 +303,8 @@ class TestUsbTransportConnect:
         t.vid = 0x4348
         t.pid = 0x5584
 
-        with patch("usb.core.find", return_value=[wrong_dev]):
+        usb_mods = self._build_usb_modules(wrong_dev, MagicMock(), MagicMock())
+        with patch.dict("sys.modules", usb_mods):
             with pytest.raises(
                 RuntimeError, match="Paperang P2 not found at bus=2"
             ):
@@ -300,10 +327,8 @@ class TestUsbTransportConnect:
         t.vid = 0x4348
         t.pid = 0x5584
 
-        with (
-            patch("usb.core.find", return_value=[mock_dev]),
-            patch("usb.util.find_descriptor", side_effect=[MagicMock(), MagicMock()]),
-        ):
+        usb_mods = self._build_usb_modules(mock_dev, MagicMock(), MagicMock())
+        with patch.dict("sys.modules", usb_mods):
             result = t.connect()
 
         assert result is True
