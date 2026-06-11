@@ -15,7 +15,7 @@ Control and monitor your Paperang P2 thermal printer through Home Assistant. Pri
 - 🔄 **Vertical printing** — switch toggle for vertical print orientation
 - 📊 **6 telemetry sensors** — battery, status, voltage, temperature, heat density, and Connection (diagnostic); static info (model, firmware, board, serial) shown on device card
 - 🖨️ **7 services** — print text, images, QR codes, pickup codes, test page, get status, feed paper
-- 📦 **Single device** — all entities grouped under one "Paperang P2 Printer" device
+- 📦 **Multi-device** — supports multiple printers with isolated coordinators and transport configs
 
 ## Installation
 
