@@ -63,7 +63,7 @@ paperang:
 
 **蓝牙：** HA 主机需配备蓝牙适配器。打印机需开机且在蓝牙范围内。支持 `Paperang` 和 `MiaoMiaoJi`（喵喵机）两种品牌名称的设备。
 
-> 📦 需要 `paperang-p2-lib[qr,cjk]>=1.1.1`（HA 自动安装）。
+> 📦 需要 `paperang-p2-lib[qr,cjk]>=1.2.0`（HA 自动安装）。
 
 ## 设备控制
 
