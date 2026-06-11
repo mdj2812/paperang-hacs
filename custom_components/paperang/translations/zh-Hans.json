@@ -1,0 +1,215 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Paperang P2 打印机",
+        "description": "添加 Paperang P2 热敏打印机。",
+        "data": {
+          "transport": "连接方式"
+        }
+      },
+      "select_device": {
+        "title": "选择打印机",
+        "description": "检测到多台 Paperang 打印机，请选择要添加的设备。",
+        "data": {
+          "usb_device": "USB 设备"
+        }
+      },
+      "usb_verify": {
+        "title": "验证打印机",
+        "description": "正在测试与所选打印机的通信..."
+      },
+      "select_bt_device": {
+        "title": "选择蓝牙打印机",
+        "description": "检测到多台 Paperang 蓝牙打印机，请选择要添加的设备。",
+        "data": {
+          "bt_device": "蓝牙设备"
+        }
+      },
+      "bt_verify": {
+        "title": "验证蓝牙打印机",
+        "description": "正在测试与所选蓝牙打印机的通信..."
+      }
+    },
+    "error": {
+      "no_usb_device_found": "未检测到 Paperang P2 打印机（USB）",
+      "no_bt_device_found": "未检测到 Paperang 蓝牙打印机",
+      "communication_failed": "无法与打印机通信，请检查连接和电源。",
+      "device_not_found": "所选设备已不可用"
+    },
+    "abort": {
+      "no_usb_device_found": "未检测到 Paperang P2 打印机。请连接打印机后重试。",
+      "no_bt_device_found": "未发现 Paperang 蓝牙设备",
+      "already_configured": "该打印机已添加"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Paperang P2 选项",
+        "description": "配置连接方式和参数。",
+        "data": {
+          "transport": "连接方式",
+          "bt_address": "蓝牙 MAC 地址"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "电池电量"
+      },
+      "status": {
+        "name": "状态"
+      },
+      "voltage": {
+        "name": "电压"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "heat_density": {
+        "name": "加热浓度"
+      },
+      "connected": {
+        "name": "连接状态"
+      }
+    },
+    "button": {
+      "btn_print": {
+        "name": "打印"
+      },
+      "btn_feed": {
+        "name": "送纸"
+      },
+      "btn_test_print": {
+        "name": "测试打印"
+      }
+    },
+    "select": {
+      "print_mode": {
+        "name": "打印模式",
+        "state": {
+          "text": "文本",
+          "image": "图片",
+          "qr": "二维码",
+          "pickup_code": "取件码"
+        }
+      },
+      "image_profile": {
+        "name": "图片配置",
+        "state": {
+          "portrait": "竖版",
+          "landscape": "横版",
+          "document": "文档",
+          "high_contrast": "高对比度",
+          "light": "浅色"
+        }
+      }
+    },
+    "number": {
+      "num_font_size": {
+        "name": "字体大小"
+      },
+      "num_heat_density": {
+        "name": "加热浓度"
+      },
+      "num_qr_size": {
+        "name": "二维码大小"
+      },
+      "num_feed_lines": {
+        "name": "送纸行数"
+      }
+    },
+    "text": {
+      "print_content": {
+        "name": "打印内容"
+      }
+    }
+  },
+  "services": {
+    "print_text": {
+      "name": "打印文本",
+      "description": "在 Paperang P2 打印机上打印文本内容。",
+      "fields": {
+        "text": {
+          "name": "文本",
+          "description": "要打印的文本内容。"
+        },
+        "font_size": {
+          "name": "字体大小",
+          "description": "字体大小，单位像素（12-96）。"
+        },
+        "heat_density": {
+          "name": "加热浓度",
+          "description": "打印浓度（0-100）。"
+        }
+      }
+    },
+    "print_image": {
+      "name": "打印图片",
+      "description": "从 URL 或本地路径打印图片。",
+      "fields": {
+        "image_url": {
+          "name": "图片地址",
+          "description": "要打印的图片 URL 或文件路径。"
+        },
+        "profile": {
+          "name": "图片配置",
+          "description": "图片处理配置。"
+        },
+        "heat_density": {
+          "name": "加热浓度",
+          "description": "打印浓度（0-100）。"
+        }
+      }
+    },
+    "print_qr": {
+      "name": "打印二维码",
+      "description": "打印二维码。",
+      "fields": {
+        "qr_content": {
+          "name": "二维码内容",
+          "description": "二维码中编码的内容。"
+        },
+        "qr_size": {
+          "name": "二维码大小",
+          "description": "二维码尺寸，单位像素（100-576）。"
+        },
+        "heat_density": {
+          "name": "加热浓度",
+          "description": "打印浓度（0-100）。"
+        }
+      }
+    },
+    "print_pickup_code": {
+      "name": "打印取件码",
+      "description": "打印大号取件码（如快递柜取件码）。",
+      "fields": {
+        "pickup_code": {
+          "name": "取件码",
+          "description": "要打印的取件码（如 19-4308）。"
+        }
+      }
+    },
+    "get_status": {
+      "name": "获取打印机状态",
+      "description": "查询电池电量和状态。"
+    },
+    "feed_paper": {
+      "name": "送纸",
+      "description": "进纸指定行数。",
+      "fields": {
+        "lines": {
+          "name": "行数",
+          "description": "送纸行数（10-500）。"
+        }
+      }
+    },
+    "print_test_page": {
+      "name": "打印测试页",
+      "description": "打印内置测试页。"
+    }
+  }
+}

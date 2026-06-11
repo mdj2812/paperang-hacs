@@ -1,0 +1,215 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Paperang P2 Printer",
+        "description": "Add a Paperang P2 thermal printer.",
+        "data": {
+          "transport": "Connection Type"
+        }
+      },
+      "select_device": {
+        "title": "Select Printer",
+        "description": "Multiple Paperang printers found. Choose the one to add.",
+        "data": {
+          "usb_device": "USB Device"
+        }
+      },
+      "usb_verify": {
+        "title": "Verifying Printer",
+        "description": "Testing communication with the selected printer..."
+      },
+      "select_bt_device": {
+        "title": "Select Bluetooth Printer",
+        "description": "Multiple Paperang Bluetooth printers found. Choose the one to add.",
+        "data": {
+          "bt_device": "Bluetooth Device"
+        }
+      },
+      "bt_verify": {
+        "title": "Verifying Bluetooth Printer",
+        "description": "Testing communication with the selected Bluetooth printer..."
+      }
+    },
+    "error": {
+      "no_usb_device_found": "No Paperang P2 printer found via USB",
+      "no_bt_device_found": "No Paperang Bluetooth printer found",
+      "communication_failed": "Unable to communicate with the printer. Check connection and power.",
+      "device_not_found": "Selected device is no longer available"
+    },
+    "abort": {
+      "no_usb_device_found": "No Paperang P2 printer detected on USB. Please connect the printer and try again.",
+      "no_bt_device_found": "No Paperang Bluetooth device found",
+      "already_configured": "This printer is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Paperang P2 Options",
+        "description": "Configure transport and connection settings.",
+        "data": {
+          "transport": "Connection Type",
+          "bt_address": "Bluetooth MAC Address"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      },
+      "status": {
+        "name": "Status"
+      },
+      "voltage": {
+        "name": "Voltage"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "heat_density": {
+        "name": "Heat Density"
+      },
+      "connected": {
+        "name": "Connection"
+      }
+    },
+    "button": {
+      "btn_print": {
+        "name": "Print"
+      },
+      "btn_feed": {
+        "name": "Feed Paper"
+      },
+      "btn_test_print": {
+        "name": "Test Print"
+      }
+    },
+    "select": {
+      "print_mode": {
+        "name": "Print Mode",
+        "state": {
+          "text": "Text",
+          "image": "Image",
+          "qr": "QR Code",
+          "pickup_code": "Pickup Code"
+        }
+      },
+      "image_profile": {
+        "name": "Image Profile",
+        "state": {
+          "portrait": "Portrait",
+          "landscape": "Landscape",
+          "document": "Document",
+          "high_contrast": "High Contrast",
+          "light": "Light"
+        }
+      }
+    },
+    "number": {
+      "num_font_size": {
+        "name": "Font Size"
+      },
+      "num_heat_density": {
+        "name": "Heat Density"
+      },
+      "num_qr_size": {
+        "name": "QR Size"
+      },
+      "num_feed_lines": {
+        "name": "Feed Lines"
+      }
+    },
+    "text": {
+      "print_content": {
+        "name": "Print Content"
+      }
+    }
+  },
+  "services": {
+    "print_text": {
+      "name": "Print text",
+      "description": "Print text content on the Paperang P2 printer.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "Text content to print."
+        },
+        "font_size": {
+          "name": "Font Size",
+          "description": "Font size in pixels (12-96)."
+        },
+        "heat_density": {
+          "name": "Heat Density",
+          "description": "Print darkness (0-100)."
+        }
+      }
+    },
+    "print_image": {
+      "name": "Print image",
+      "description": "Print an image from a URL or local path.",
+      "fields": {
+        "image_url": {
+          "name": "Image URL",
+          "description": "URL or file path of the image to print."
+        },
+        "profile": {
+          "name": "Image Profile",
+          "description": "Image processing profile."
+        },
+        "heat_density": {
+          "name": "Heat Density",
+          "description": "Print darkness (0-100)."
+        }
+      }
+    },
+    "print_qr": {
+      "name": "Print QR code",
+      "description": "Print a QR code.",
+      "fields": {
+        "qr_content": {
+          "name": "QR Content",
+          "description": "Content to encode in the QR code."
+        },
+        "qr_size": {
+          "name": "QR Size",
+          "description": "QR code size in pixels (100-576)."
+        },
+        "heat_density": {
+          "name": "Heat Density",
+          "description": "Print darkness (0-100)."
+        }
+      }
+    },
+    "print_pickup_code": {
+      "name": "Print pickup code",
+      "description": "Print a large-format pickup code (e.g. for package lockers).",
+      "fields": {
+        "pickup_code": {
+          "name": "Pickup Code",
+          "description": "Pickup code to print (e.g. 19-4308)."
+        }
+      }
+    },
+    "get_status": {
+      "name": "Get printer status",
+      "description": "Query battery level and status."
+    },
+    "feed_paper": {
+      "name": "Feed paper",
+      "description": "Advance paper by a number of lines.",
+      "fields": {
+        "lines": {
+          "name": "Lines",
+          "description": "Number of lines to feed (10-500)."
+        }
+      }
+    },
+    "print_test_page": {
+      "name": "Print test page",
+      "description": "Print a built-in test page."
+    }
+  }
+}

@@ -1,0 +1,356 @@
+# Changelog
+
+## v1.5.1 (2026-06-10)
+
+### Added
+- **Vertical printing switch** — device page toggle for vertical mode.
+  Print button reads the switch state and passes `vertical` to all 4 print
+  services automatically.
+
+### Fixed
+- Test assertions updated for new `vertical=False` default kwarg
+- Pylint R0801 duplicate-code suppressed in services pass-through
+- Ruff formatting applied across all files
+
+## v1.5.0 (2026-06-09)
+
+### Added
+- **Classic Bluetooth SPP (RFCOMM) support** — `BtTransport` for wireless printing
+  via Linux `AF_BLUETOOTH` sockets. Zero extra Python dependencies.
+  Bluetooth printers are auto-discovered on the HA host and shown as a
+  notification. No manual MAC entry needed.
+- **USB persistent connections** — `_PersistentPrinterCache` keeps USB and
+  Bluetooth connections alive across polling cycles and service calls,
+  eliminating repeated connect/disconnect overhead.
+- Per-transport polling intervals: Bluetooth 30s, USB 5s.
+- **Vertical printing** — `vertical` service field for `print_text`, `print_image`,
+  `print_qr`, and `print_pickup_code`. Passes through to paperang-p2-lib v1.2.0
+  vertical API (rotates output 90° clockwise).
+
+### Removed
+- **BLE transport** — `BleTransport`, `transport/ble.py`, and all BLE config
+  flow options removed. The Paperang P2 uses BR/EDR (classic Bluetooth), not
+  BLE. `BtTransport` is the wireless transport.
+
+### Changed
+- USB and Bluetooth share a unified persistent-printer cache
+- `paperang-p2-lib` bumped to `>=1.2.0`
+- README (EN + ZH) updated to reflect Bluetooth SPP, remove BLE references
+
+## v1.4.0 (2026-06-06)
+
+### Added
+- Bluetooth LE device auto-discovery via HA Bluetooth integration
+  - `manifest.json` matcher with service UUID `0000fee7`
+  - `async_step_bluetooth` / `async_step_bluetooth_confirm` in config flow
+- BLE entries use MAC-based unique_id
+
+### Changed
+- Shared `PaperangEntity` base class extracted (`entity.py`)
+  - Common `available` property, `_attr_has_entity_name`, `_attr_device_info`
+  - `button.py`, `select.py`, `text.py`, `number.py`, `sensor.py` all migrated
+- Pylint disables reduced: 24 → 8
+- CI global pylint disable: 12 rules → 2 (`E0401,W0223`)
+- Coverage minimum raised: 15% → 80%
+
+### Fixed
+- `ruff format` applied to all code
+- `.gitattributes` enforces LF line endings
+- hassfest: manifest keys sorted alphabetically
+
+## v1.3.7 (2026-05-23)
+
+### Fixed
+- **i18n: button entities now work in Chinese locale** — button.py uses entity
+  registry unique_id lookup with entity_id fallback instead of hardcoding
+  English entity_id suffixes (fixes "Print content is empty" in Chinese)
+- **USB access serialization** — coordinator polling and print services now
+  share a per-entry threading lock to prevent Resource busy conflicts
+
+### Dependencies
+- Bump `paperang-p2-lib` to `>=0.4.0rc2`
+
+## v1.4.0rc1 (2026-05-14) — *unreleased*
+
+> **Note:** v1.3.x releases are cut from this branch with BLE disabled.
+> The BLE features listed below are present in code but disabled
+> in the config flow until stability issues are resolved.
+
+## v1.3.6 (2026-05-22)
+
+### Changed
+- **Refactored code structure** — monolithic `__init__.py` (500+ lines) split into
+  `core/`, `transport/`, and `services/` sub-packages for better maintainability
+- Test coverage: 125 tests, 91% (up from 109 tests, 87%)
+
+### Fixed
+- Concurrent USB access between coordinator polling and service calls now uses
+  retry-on-busy (3 attempts, 0.5s backoff) instead of failing immediately
+- Config flow: `KeyError` when YAML import data lacks `transport` key
+- Config flow class tests no longer skipped unnecessarily
+
+## v1.3.5 (2026-05-22)
+
+### Fixed
+- **Device info now updates on every poll** — firmware version, model, serial
+  number and other static info no longer stay "unknown" if the first poll
+  misses them; subsequent successful polls will fill in missing values
+- Remove unused import (ruff F401)
+
+## v1.3.4 (2026-05-21)
+
+### Added
+- **Chinese (zh-Hans) translations** — config flow, options, services, and entity
+  names all display in Chinese when HA language is set to zh-Hans
+- Entity name translation: sensors (电池电量/状态/电压/温度/加热浓度/连接状态),
+  buttons (打印/送纸/测试打印), selects (打印模式/图片配置), numbers (字体大小/
+  二维码大小/送纸行数), text (打印内容)
+- Select state translations: print mode options (文本/图片/二维码/取件码),
+  image profile options (竖版/横版/文档/高对比度/浅色)
+
+### Fixed
+- HACS icon now displays correctly (`icon.png` added at repo root)
+
+## v1.3.3 (2026-05-21)
+
+### Changed
+- **Static info moved to device registry** — model, firmware version, board version,
+  and serial number are now shown on the device info card (no longer separate sensors)
+- **Diagnostic sensors reduced** — only `Connection` remains (connected/disconnected);
+  the old board/version/hw_info/model/serial sensors removed
+- Sensor count: 11 → 6 (5 live + 1 diagnostic)
+
+### Added
+- **Connection diagnostic sensor** — shows `connected` or `disconnected`;
+  usable in automations (e.g. trigger on reconnect)
+
+### Fixed
+- Tests updated for sensor layout change (109 passed, 2 skipped)
+
+## v1.3.2 (2026-05-21)
+
+### Added
+- **Multi-device USB support** — multiple Paperang printers can coexist
+  - USB device scanning at integration add time
+  - Dropdown selection when multiple devices are connected
+  - Communication verification (connect + read battery) before adding
+  - Device title includes USB port path (e.g. "Paperang P2 (USB 1-3)")
+  - `UsbTransportWithPath` for per-device USB bus/port targeting
+- **Per-entry configs and caches** — `_transport_configs`, `_static_caches`,
+  `_dynamic_caches` keyed by `entry_id`; cleared on unload
+- **Per-entry entity unique_ids and DeviceInfo** — no collisions across devices
+- **Diagnostic sensor tab** — Board Version, Firmware Version, Hardware Info,
+  Model, Serial Number live in a separate "Diagnostic" tab on the device page
+- **Service routing** — services accept optional `entry_id` parameter for
+  multi-device targeting; fall back to first configured entry
+- `make_device_info()` helper in `entity.py` eliminates duplicate setup code
+- Extensive test suite: **109 tests, 85% coverage** (up from 35 / 33%)
+
+### Changed
+- **Polling interval**: 60s → 5s (`UPDATE_INTERVAL`), faster sensor updates
+- **Inter-command sleep**: 200ms → 50ms for quicker per-poll cycles
+- `PaperangEntity` constructor simplified — `entry_id` serves as both
+  identity and unique-id prefix
+- `async_step_user` refactored: `_user_schema()`, `_handle_usb_user_selection()`,
+  `_handle_ble_user_selection()` extracted (pylint R0911)
+- `_do_print_image` uses keyword-only args (pylint R0913)
+
+### Fixed
+- **Firmware version decode**: raw string `"720897"` → `V1.0.11`
+  (bits 0-7=major, 8-15=minor, 16-31=patch)
+- **Stale cache after re-add**: per-entry caches cleared on unload
+- Already-configured abort message is now user-friendly
+- `async_get_config_entry_diagnostics` KeyError when domain not in hass.data
+
+### Disabled
+- BLE device discovery temporarily hidden from config flow (unstable)
+
+## v1.4.0rc1 (2026-05-14)
+
+### Added
+- Bluetooth LE device auto-discovery via HA Bluetooth integration
+  - `manifest.json` matcher with service UUID `0000fee7` (Paperang_P2 SPP)
+  - `async_step_bluetooth` / `async_step_bluetooth_confirm` in config flow
+  - BLE entries use MAC-based unique_id (`paperang_p2_ble_{MAC}`)
+- Coordinator skip for BLE transport (avoids event-loop errors at startup)
+
+### Changed
+- Shared `PaperangEntity` base class extracted (`entity.py`)
+  - Common `available` property, `_attr_has_entity_name`, `_attr_device_info`
+  - `button.py`, `select.py`, `text.py`, `number.py`, `sensor.py` all migrated
+- `NumberRange` dataclass for numeric entity parameters (replaces long arg lists)
+- `SensorConfig` dataclass for sensor-specific attributes
+- Pylint disables reduced: **24 → 8** (all in `__init__.py`; other files: 0)
+- CI global pylint disable: **12 rules → 2** (`E0401,W0223`)
+- `--disable=E0401,C0115,C0116,W0718,W0612,W0613,C0415,W0212,E1101,R0903,W1514,C0103`
+  → `--disable=E0401,W0223`
+- Coverage minimum threshold raised: **15% → 80%** (current: 97%, 56 tests)
+
+### Fixed
+- `ruff format` applied to all code (15 files)
+- `.gitattributes` enforces LF line endings
+- Production code pylint score: **10.00/10**
+- hassfest: manifest keys sorted alphabetically
+
+## v1.3.1 (2026-05-12)
+
+### Added
+- Device controls: Print button, Print Mode selector (text/image/qr/pickup_code),
+  Image Profile selector, Print Content text input
+- Configurable parameters: Font Size (12–96), Heat Density (0–100%),
+  QR Size (100–576px), Feed Lines (10–500)
+- Feed Paper and Test Print buttons on device page
+- Brand logo with @2x assets for device page
+
+### Fixed
+- `print_image()` now supports remote URLs (http/https)
+- `load_profiles()` wrapped in executor to avoid blocking event loop
+- Polling: static values read every poll until non-None; dynamic values
+  keep last known value on None (no more "unavailable" gaps)
+- Method name fix: `print_test()` → `print_test_page()`
+- Pylint 9.91/10
+
+### Changed
+- 3-retry loop on USB read failure with warning on final attempt
+
+### Dependencies
+- `paperang-p2-lib >= 0.3.6`
+
+## v1.3.0 (2026-05-12)
+
+### Added
+- USB discovery: auto-detect Paperang P2 when plugged in (VID 0x4348, PID 0x5584)
+- Config flow: UI-based setup with import from YAML, unique_id to prevent duplicates
+- All 11 sensors now grouped under single "Paperang P2 Printer" device
+
+### Changed
+- `integration_type` set to `device`
+- Coordinator logic moved to `__init__.py` for proper config entry lifecycle
+- Sensor platform now uses `async_setup_entry` instead of YAML-based `async_setup_platform`
+- Each sensor read now has 200ms delay to avoid USB communication conflicts
+
+### Performance
+- Static sensor values (voltage, temperature, firmware version, model, serial, etc.)
+  are cached after first read, only re-read on device disconnect/reconnect
+- Each poll cycle now reads only battery + status (0.4s vs 2.4s for full scan)
+
+### Fixed
+- Firmware version binary-to-int decoding (`\x00\x01` → `"1"`)
+- Proper device association via `_attr_device_info` (was silently ignored by HA's `cached_property`)
+- Coordinator `update_method` now uses `functools.partial` for reliable `hass` binding
+- Pylint score improved to 9.83/10
+- Removed non-existent `binary_sensor` and `button` platforms from `PLATFORMS`
+
+### Dependencies
+- `paperang-p2-lib >= 0.3.5`
+
+## v1.2.3 (2026-05-12)
+
+### Added
+- Expanded sensor platform: voltage, temperature, heat_density, paper_type, firmware version, model, serial number, board version, hardware info
+- All sensors grouped under single "Paperang P2 Printer" device via `DeviceInfo`
+
+### Fixed
+- Resolved pylint `too-many-positional-arguments` warning by making optional `__init__` params keyword-only
+- Fixed coordinator `update_method` to use `functools.partial` instead of lambda for reliable `hass` binding
+- Removed `__pycache__` from git tracking
+
+## v1.2.2 (2026-05-12)
+
+### Changed
+- `_read_printer_state()` refactored to async with executor wrapper
+- Dependency bump: `paperang-p2-lib >= 0.3.3`
+- Removed monkey-patch, now calls lib API directly
+
+## v1.2.1 (2026-05-12)
+
+### Changed
+- Dependency bump: `paperang-p2-lib >= 0.3.2` (fixes GET command response parsing)
+
+## v1.2.0 (2026-05-12)
+
+### Added
+- Sensor platform: battery level and printer status monitoring
+  - `sensor.paperang_p2_battery` — battery percentage (%)
+  - `sensor.paperang_p2_status` — printer status (raw hex)
+  - Polling every 60 seconds via DataUpdateCoordinator
+- New services: `paperang.get_status`, `paperang.feed_paper`
+- `async_setup_entry` / `async_unload_entry` for future config flow support
+- Dependency bump: `paperang-p2-lib >= 0.2.2`
+
+### Fixed
+- `get_status()` and `get_battery()` now send required data byte (via lib update)
+- Resolved all pylint warnings in sensor.py
+
+## v1.1.1 (2026-05-11)
+
+### Added
+- HACS one-click install button in README
+
+### Fixed
+- Install instructions URLs point to GitHub repository
+
+## v1.1.1 (2026-05-11)
+
+### Added
+- HACS one-click install button in README
+
+### Fixed
+- Install instructions URLs point to GitHub repository
+
+
+## v1.1.0 (2026-05-08)
+
+### Changed
+- **Use paperang-p2-lib**: Core printer logic now comes from paperang-p2-lib pip package
+  - Removed embedded `paperang_core.py` (replaced by `paperang.PaperangP2`)
+  - Removed bundled fonts (provided by paperang-p2-lib + paperang-p2-fonts-cjk)
+  - Removed `profiles.json` (bundled in paperang-p2-lib)
+  - Updated manifest requirements to `paperang-p2-lib[qr,cjk]>=0.2.0`
+- Simplified `const.py` (font constants no longer needed)
+- Slimmer component zip (no embedded fonts, ~7MB smaller)
+
+## v1.0.2 (2026-05-08)
+
+### Added
+- Add release workflow for automated GitHub Releases
+
+## v1.0.1 (2026-05-08)
+
+### Fixed
+- Fix pylint issues: trailing whitespace, line length, import order, unused args
+- Break long lines in paperang_core.py main block
+- Shorten pattern-test help line
+
+### Added
+- Add Pylint workflow for Python code analysis
+- Add GitHub Actions workflow for validation
+- Add brand assets and printer icon
+
+### Changed
+- Update codeowners to @mdj2812
+- Update repo URLs to GitHub mirror
+
+## v1.0.0 (2026-05-08)
+
+Initial release of the Paperang P2 Printer Home Assistant integration.
+
+### Features
+
+- **Text Printing**: Print text with configurable font size and heat density
+- **Image Printing**: Print images with print profiles (portrait, landscape, document, high_contrast, light)
+- **QR Code Printing**: Print QR codes with configurable size
+- **Pickup Code Printing**: Print large pickup codes (96px bold) for package lockers
+
+### Services
+
+- `paperang.print_text` - Print text content
+- `paperang.print_image` - Print an image
+- `paperang.print_qr` - Print a QR code
+- `paperang.print_pickup_code` - Print a large pickup code
+
+### Technical
+
+- Wraps the verified working `paperang_p2.py` core script
+- USB direct connection (no MQTT required)
+- Font support with local font files at `/config/paperang/`
