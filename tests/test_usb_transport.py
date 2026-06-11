@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 class TestUsbTransportWithPath:
     """Tests for UsbTransportWithPath constructor."""
@@ -164,3 +166,192 @@ class TestVerifyPrinter:
         ):
             result = verify_printer(bus=1, port=[3])
         assert result is False
+
+    def test_verify_resource_busy_retry_succeeds(self):
+        """Resource busy on first attempt, succeeds on retry."""
+        from custom_components.paperang.transport.usb import verify_printer
+
+        fail_printer = MagicMock()
+        fail_printer.connect.side_effect = RuntimeError("Resource busy")
+
+        ok_printer = MagicMock()
+        ok_printer.get_battery.return_value = 80
+
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                side_effect=[fail_printer, ok_printer],
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
+            patch("time.sleep"),  # skip actual sleep
+        ):
+            result = verify_printer(bus=1, port=[3])
+        assert result is True
+
+    def test_verify_resource_busy_exhausted(self):
+        """Resource busy ×3 → returns False after all retries exhausted."""
+        from custom_components.paperang.transport.usb import verify_printer
+
+        fail_printer = MagicMock()
+        fail_printer.connect.side_effect = RuntimeError("Resource busy")
+
+        with (
+            patch(
+                "custom_components.paperang.transport.usb.PaperangP2",
+                return_value=fail_printer,
+            ),
+            patch("custom_components.paperang.transport.usb.UsbTransportWithPath"),
+            patch("time.sleep"),
+        ):
+            result = verify_printer(bus=1, port=[3])
+        assert result is False
+
+
+class TestScanUsbDevicesImportError:
+    """Tests for scan_usb_devices() when pyusb is not installed."""
+
+    def test_returns_empty_on_import_error(self):
+        """Returns [] when usb.core cannot be imported."""
+        import sys
+
+        # Temporarily remove usb.core from sys.modules so the
+        # `import usb.core` inside scan_usb_devices raises ImportError.
+        usb_core = sys.modules.pop("usb.core", None)
+        try:
+            from custom_components.paperang.transport.usb import scan_usb_devices
+
+            result = scan_usb_devices()
+            assert result == []
+        finally:
+            if usb_core is not None:
+                sys.modules["usb.core"] = usb_core
+
+
+class TestUsbTransportConnect:
+    """Tests for UsbTransportWithPath.connect() — mocked USB stack.
+
+    ``connect()`` does ``import usb.core`` / ``import usb.util`` inside
+    the function body.  Standard ``patch()`` sometimes fails across local
+    imports, so we inject mock modules directly into ``sys.modules``
+    (with manual save/restore).
+    """
+
+    def setup_method(self):
+        """Save original usb.* modules before each test."""
+        import sys
+
+        self._orig_usb = sys.modules.pop("usb", None)
+        self._orig_usb_core = sys.modules.pop("usb.core", None)
+        self._orig_usb_util = sys.modules.pop("usb.util", None)
+
+    def teardown_method(self):
+        """Restore original usb.* modules after each test."""
+        import sys
+
+        # Remove our injected mocks
+        sys.modules.pop("usb.core", None)
+        sys.modules.pop("usb.util", None)
+        sys.modules.pop("usb", None)
+
+        # Restore originals
+        if self._orig_usb is not None:
+            sys.modules["usb"] = self._orig_usb
+        if self._orig_usb_core is not None:
+            sys.modules["usb.core"] = self._orig_usb_core
+        if self._orig_usb_util is not None:
+            sys.modules["usb.util"] = self._orig_usb_util
+
+    @staticmethod
+    def _inject_usb_modules(mock_dev, mock_ep_out, mock_ep_in):
+        """Inject mock usb.* modules into sys.modules."""
+        import sys
+
+        mock_usb_core = MagicMock()
+        mock_usb_core.find.return_value = [mock_dev]
+
+        mock_usb_util = MagicMock()
+        mock_usb_util.find_descriptor.side_effect = [mock_ep_out, mock_ep_in]
+        mock_usb_util.ENDPOINT_OUT = 0x00
+        mock_usb_util.ENDPOINT_IN = 0x80
+        mock_usb_util.endpoint_direction.side_effect = lambda addr: addr & 0x80
+
+        usb_pkg = MagicMock()
+        usb_pkg.core = mock_usb_core
+        usb_pkg.util = mock_usb_util
+
+        sys.modules["usb"] = usb_pkg
+        sys.modules["usb.core"] = mock_usb_core
+        sys.modules["usb.util"] = mock_usb_util
+
+    def test_connect_finds_and_configures_device(self):
+        """connect() locates device, detaches kernel driver, configures endpoints."""
+        from custom_components.paperang.transport.usb import UsbTransportWithPath
+
+        mock_dev = MagicMock()
+        mock_dev.bus = 2
+        mock_dev.port_numbers = [1, 3]
+        mock_dev.is_kernel_driver_active.return_value = True
+
+        mock_cfg = MagicMock()
+        mock_intf = MagicMock()
+        mock_cfg.__getitem__.return_value = mock_intf
+        mock_dev.get_active_configuration.return_value = mock_cfg
+
+        mock_ep_out = MagicMock()
+        mock_ep_in = MagicMock()
+
+        t = UsbTransportWithPath(bus=2, port=[1, 3])
+        t.vid = 0x4348
+        t.pid = 0x5584
+
+        self._inject_usb_modules(mock_dev, mock_ep_out, mock_ep_in)
+        result = t.connect()
+
+        assert result is True
+        assert t._dev is mock_dev
+        assert t._ep_out is mock_ep_out
+        assert t._ep_in is mock_ep_in
+        mock_dev.detach_kernel_driver.assert_called_once_with(0)
+        mock_dev.set_configuration.assert_called_once()
+
+    def test_connect_device_not_found_raises(self):
+        """RuntimeError when no matching device at specified bus/port."""
+        from custom_components.paperang.transport.usb import UsbTransportWithPath
+
+        wrong_dev = MagicMock()
+        wrong_dev.bus = 99
+        wrong_dev.port_numbers = [9, 9]
+
+        t = UsbTransportWithPath(bus=2, port=[1, 3])
+        t.vid = 0x4348
+        t.pid = 0x5584
+
+        self._inject_usb_modules(wrong_dev, MagicMock(), MagicMock())
+        with pytest.raises(
+            RuntimeError, match="Paperang P2 not found at bus=2"
+        ):
+            t.connect()
+
+    def test_connect_no_kernel_driver(self):
+        """connect() works when kernel driver is not active."""
+        from custom_components.paperang.transport.usb import UsbTransportWithPath
+
+        mock_dev = MagicMock()
+        mock_dev.bus = 1
+        mock_dev.port_numbers = [4]
+        mock_dev.is_kernel_driver_active.return_value = False
+
+        mock_cfg = MagicMock()
+        mock_cfg.__getitem__.return_value = MagicMock()
+        mock_dev.get_active_configuration.return_value = mock_cfg
+
+        t = UsbTransportWithPath(bus=1, port=[4])
+        t.vid = 0x4348
+        t.pid = 0x5584
+
+        self._inject_usb_modules(mock_dev, MagicMock(), MagicMock())
+        result = t.connect()
+
+        assert result is True
+        mock_dev.detach_kernel_driver.assert_not_called()
+        mock_dev.set_configuration.assert_called_once()

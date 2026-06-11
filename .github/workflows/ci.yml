@@ -45,7 +45,7 @@ jobs:
           format: markdown
           output: both
           fail_below_min: true
-          thresholds: "80 80"
+          thresholds: "90 90"
       - name: Generate coverage badge SVG
         run: |
           python3 -m pip install coverage-badge
