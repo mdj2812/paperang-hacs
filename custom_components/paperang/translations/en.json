@@ -80,7 +80,7 @@
       "btn_print": {
         "name": "Print"
       },
-      "btn_feed": {
+      "btn_feed_paper": {
         "name": "Feed Paper"
       },
       "btn_test_print": {
@@ -125,6 +125,11 @@
     "text": {
       "print_content": {
         "name": "Print Content"
+      }
+    },
+    "switch": {
+      "vertical": {
+        "name": "Vertical Printing"
       }
     }
   },

@@ -80,7 +80,7 @@
       "btn_print": {
         "name": "打印"
       },
-      "btn_feed": {
+      "btn_feed_paper": {
         "name": "送纸"
       },
       "btn_test_print": {
@@ -125,6 +125,11 @@
     "text": {
       "print_content": {
         "name": "打印内容"
+      }
+    },
+    "switch": {
+      "vertical": {
+        "name": "竖版打印"
       }
     }
   },
