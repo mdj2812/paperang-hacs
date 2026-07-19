@@ -10,7 +10,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..core.paperang_lib import BtTransport, PAPERANG_BT_NAMES, PaperangP2, check_paperang_uuid
+from ..core.paperang_lib import (
+    BtTransport,
+    PAPERANG_BT_NAMES,
+    PaperangP2,
+    check_paperang_uuid,
+)
 
 
 def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
