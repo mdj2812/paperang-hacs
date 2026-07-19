@@ -13,6 +13,25 @@ from typing import Any
 from ..core.paperang_lib import BtTransport, PaperangP2
 
 BT_NAMES = {"paperang", "miaomiaoji"}
+PAPERANG_SERVICE_UUID = "0000fee7-0000-1000-8000-00805f9b34fb"
+
+
+def _check_paperang_uuid(address: str) -> bool:
+    """Check if a Bluetooth device advertises the Paperang service UUID.
+
+    Queries ``bluetoothctl info`` for the device's UUID list and returns
+    True if ``PAPERANG_SERVICE_UUID`` (0000fee7) is present.
+    """
+    import subprocess  # pylint: disable=import-outside-toplevel
+
+    try:
+        info = subprocess.run(
+            ["bluetoothctl", "info", address],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:  # pylint: disable=broad-exception-caught
+        return False
+    return PAPERANG_SERVICE_UUID in info.stdout.lower()
 
 
 def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
@@ -46,18 +65,9 @@ def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
                     if any(name.lower().startswith(n) for n in BT_NAMES):
                         result.append({"name": name, "address": addr})
                         seen.add(addr)
-                    else:
-                        # UUID fallback: query bluetoothctl info
-                        try:
-                            info = subprocess.run(
-                                ["bluetoothctl", "info", addr],
-                                capture_output=True, text=True, timeout=5,
-                            )
-                        except Exception:  # pylint: disable=broad-exception-caught
-                            continue
-                        if "0000fee7" in info.stdout.lower():
-                            result.append({"name": name, "address": addr})
-                            seen.add(addr)
+                    elif _check_paperang_uuid(addr):
+                        result.append({"name": name, "address": addr})
+                        seen.add(addr)
     except Exception:  # pylint: disable=broad-exception-caught
         pass
     return result

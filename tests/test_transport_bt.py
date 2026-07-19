@@ -52,15 +52,9 @@ class TestScanFallbackDevices:
         devices_proc.stdout = "Device AA:BB:CC:DD:EE:FF RandomPrinter\n"
         devices_proc.returncode = 0
 
-        info_proc = MagicMock()
-        info_proc.stdout = (
-            "Device AA:BB:CC:DD:EE:FF\n"
-            "    UUID: Audio Sink  (0000110b-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_proc.returncode = 0
-
-        with patch("subprocess.run",
-                   side_effect=[devices_proc, info_proc]):
+        with patch("subprocess.run", return_value=devices_proc), \
+             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+                   return_value=False):
             result = _scan_fallback_devices(set())
 
         assert result == []
@@ -95,16 +89,9 @@ class TestScanFallbackDevices:
         devices_proc.stdout = "Device AA:BB:CC:DD:EE:FF MyRenamedPrinty\n"
         devices_proc.returncode = 0
 
-        info_proc = MagicMock()
-        info_proc.stdout = (
-            "Device AA:BB:CC:DD:EE:FF\n"
-            "    Name: MyRenamedPrinty\n"
-            "    UUID: Vendor specific  (0000fee7-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_proc.returncode = 0
-
-        with patch("subprocess.run",
-                   side_effect=[devices_proc, info_proc]):
+        with patch("subprocess.run", return_value=devices_proc), \
+             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+                   return_value=True):
             result = _scan_fallback_devices(set())
 
         assert len(result) == 1
@@ -118,15 +105,9 @@ class TestScanFallbackDevices:
         devices_proc.stdout = "Device 11:22:33:44:55:66 SomeGadget\n"
         devices_proc.returncode = 0
 
-        info_proc = MagicMock()
-        info_proc.stdout = (
-            "Device 11:22:33:44:55:66\n"
-            "    UUID: Handsfree  (0000111e-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_proc.returncode = 0
-
-        with patch("subprocess.run",
-                   side_effect=[devices_proc, info_proc]):
+        with patch("subprocess.run", return_value=devices_proc), \
+             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+                   return_value=False):
             result = _scan_fallback_devices(set())
 
         assert result == []
@@ -143,41 +124,65 @@ class TestScanFallbackDevices:
         )
         devices_proc.returncode = 0
 
-        info_renamed = MagicMock()
-        info_renamed.stdout = (
-            "Device AA:BB:CC:DD:EE:FF\n"
-            "    UUID: Vendor specific  (0000fee7-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_renamed.returncode = 0
-
-        info_speaker = MagicMock()
-        info_speaker.stdout = (
-            "Device 11:22:33:44:55:66\n"
-            "    UUID: Audio Sink  (0000110b-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_speaker.returncode = 0
-
-        with patch("subprocess.run",
-                   side_effect=[devices_proc, info_renamed, info_speaker]):
+        with patch("subprocess.run", return_value=devices_proc), \
+             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+                   side_effect=[True, False]):
             result = _scan_fallback_devices(set())
 
         assert len(result) == 2
         assert result[0] == {"name": "Paperang-01", "address": "00:15:83:EB:05:17"}
         assert result[1] == {"name": "RenamedPrinty", "address": "AA:BB:CC:DD:EE:FF"}
 
-    def test_uuid_fallback_info_error_skips_device(self):
-        """bluetoothctl info failure → device skipped, no crash."""
+    def test_uuid_fallback_error_skips_device(self):
+        """_check_paperang_uuid returns False (error) → device skipped."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
         devices_proc = MagicMock()
         devices_proc.stdout = "Device DE:AD:BE:EF:00:01 BadDevice\n"
         devices_proc.returncode = 0
 
-        with patch("subprocess.run",
-                   side_effect=[devices_proc, OSError("bluetoothctl not found")]):
+        with patch("subprocess.run", return_value=devices_proc), \
+             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+                   return_value=False):
             result = _scan_fallback_devices(set())
 
         assert result == []
+
+    def test_check_paperang_uuid_finds_service(self):
+        """_check_paperang_uuid returns True when info shows matching UUID."""
+        from custom_components.paperang.transport.bt import _check_paperang_uuid
+
+        info_proc = MagicMock()
+        info_proc.stdout = (
+            "Device AA:BB:CC:DD:EE:FF\n"
+            "    UUID: Vendor specific  (0000fee7-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_proc.returncode = 0
+
+        with patch("subprocess.run", return_value=info_proc):
+            assert _check_paperang_uuid("AA:BB:CC:DD:EE:FF") is True
+
+    def test_check_paperang_uuid_no_service(self):
+        """_check_paperang_uuid returns False for non-Paperang UUID."""
+        from custom_components.paperang.transport.bt import _check_paperang_uuid
+
+        info_proc = MagicMock()
+        info_proc.stdout = (
+            "Device 11:22:33:44:55:66\n"
+            "    UUID: Audio Sink  (0000110b-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_proc.returncode = 0
+
+        with patch("subprocess.run", return_value=info_proc):
+            assert _check_paperang_uuid("11:22:33:44:55:66") is False
+
+    def test_check_paperang_uuid_error_returns_false(self):
+        """_check_paperang_uuid returns False when bluetoothctl fails."""
+        from custom_components.paperang.transport.bt import _check_paperang_uuid
+
+        with patch("subprocess.run",
+                   side_effect=OSError("bluetoothctl not found")):
+            assert _check_paperang_uuid("DE:AD:BE:EF:00:01") is False
 
 
 # ── scan_bt_devices ──────────────────────────────────────────────────
