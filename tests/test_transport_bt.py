@@ -53,7 +53,7 @@ class TestScanFallbackDevices:
         devices_proc.returncode = 0
 
         with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
                    return_value=False):
             result = _scan_fallback_devices(set())
 
@@ -90,7 +90,7 @@ class TestScanFallbackDevices:
         devices_proc.returncode = 0
 
         with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
                    return_value=True):
             result = _scan_fallback_devices(set())
 
@@ -106,7 +106,7 @@ class TestScanFallbackDevices:
         devices_proc.returncode = 0
 
         with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
                    return_value=False):
             result = _scan_fallback_devices(set())
 
@@ -125,7 +125,7 @@ class TestScanFallbackDevices:
         devices_proc.returncode = 0
 
         with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
                    side_effect=[True, False]):
             result = _scan_fallback_devices(set())
 
@@ -142,7 +142,7 @@ class TestScanFallbackDevices:
         devices_proc.returncode = 0
 
         with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt._check_paperang_uuid",
+             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
                    return_value=False):
             result = _scan_fallback_devices(set())
 
@@ -150,7 +150,7 @@ class TestScanFallbackDevices:
 
     def test_check_paperang_uuid_finds_service(self):
         """_check_paperang_uuid returns True when info shows matching UUID."""
-        from custom_components.paperang.transport.bt import _check_paperang_uuid
+        from custom_components.paperang.transport.bt import check_paperang_uuid
 
         info_proc = MagicMock()
         info_proc.stdout = (
@@ -164,7 +164,7 @@ class TestScanFallbackDevices:
 
     def test_check_paperang_uuid_no_service(self):
         """_check_paperang_uuid returns False for non-Paperang UUID."""
-        from custom_components.paperang.transport.bt import _check_paperang_uuid
+        from custom_components.paperang.transport.bt import check_paperang_uuid
 
         info_proc = MagicMock()
         info_proc.stdout = (
@@ -178,7 +178,7 @@ class TestScanFallbackDevices:
 
     def test_check_paperang_uuid_error_returns_false(self):
         """_check_paperang_uuid returns False when bluetoothctl fails."""
-        from custom_components.paperang.transport.bt import _check_paperang_uuid
+        from custom_components.paperang.transport.bt import check_paperang_uuid
 
         with patch("subprocess.run",
                    side_effect=OSError("bluetoothctl not found")):
