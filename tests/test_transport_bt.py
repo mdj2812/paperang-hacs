@@ -45,13 +45,22 @@ class TestScanFallbackDevices:
         assert "AA:BB:CC:DD:EE:FF" in seen
 
     def test_no_paperang_devices(self):
-        """Returns empty when no matching device names found."""
+        """Returns empty when no matching device names or UUIDs found."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
-        fake_stdout = "Device AA:BB:CC:DD:EE:FF RandomPrinter\n"
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.stdout = fake_stdout
-            mock_run.return_value.returncode = 0
+        devices_proc = MagicMock()
+        devices_proc.stdout = "Device AA:BB:CC:DD:EE:FF RandomPrinter\n"
+        devices_proc.returncode = 0
+
+        info_proc = MagicMock()
+        info_proc.stdout = (
+            "Device AA:BB:CC:DD:EE:FF\n"
+            "    UUID: Audio Sink  (0000110b-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_proc.returncode = 0
+
+        with patch("subprocess.run",
+                   side_effect=[devices_proc, info_proc]):
             result = _scan_fallback_devices(set())
 
         assert result == []
@@ -72,6 +81,100 @@ class TestScanFallbackDevices:
         with patch("subprocess.run") as mock_run:
             mock_run.return_value.stdout = ""
             mock_run.return_value.returncode = 0
+            result = _scan_fallback_devices(set())
+
+        assert result == []
+
+    # ── UUID fallback tests ──
+
+    def test_uuid_fallback_finds_renamed_device(self):
+        """A renamed/paired device with matching UUID is discovered."""
+        from custom_components.paperang.transport.bt import _scan_fallback_devices
+
+        devices_proc = MagicMock()
+        devices_proc.stdout = "Device AA:BB:CC:DD:EE:FF MyRenamedPrinty\n"
+        devices_proc.returncode = 0
+
+        info_proc = MagicMock()
+        info_proc.stdout = (
+            "Device AA:BB:CC:DD:EE:FF\n"
+            "    Name: MyRenamedPrinty\n"
+            "    UUID: Vendor specific  (0000fee7-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_proc.returncode = 0
+
+        with patch("subprocess.run",
+                   side_effect=[devices_proc, info_proc]):
+            result = _scan_fallback_devices(set())
+
+        assert len(result) == 1
+        assert result[0] == {"name": "MyRenamedPrinty", "address": "AA:BB:CC:DD:EE:FF"}
+
+    def test_uuid_fallback_skips_non_paperang_uuid(self):
+        """Device with non-matching name and UUID is excluded."""
+        from custom_components.paperang.transport.bt import _scan_fallback_devices
+
+        devices_proc = MagicMock()
+        devices_proc.stdout = "Device 11:22:33:44:55:66 SomeGadget\n"
+        devices_proc.returncode = 0
+
+        info_proc = MagicMock()
+        info_proc.stdout = (
+            "Device 11:22:33:44:55:66\n"
+            "    UUID: Handsfree  (0000111e-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_proc.returncode = 0
+
+        with patch("subprocess.run",
+                   side_effect=[devices_proc, info_proc]):
+            result = _scan_fallback_devices(set())
+
+        assert result == []
+
+    def test_uuid_fallback_and_name_match_coexist(self):
+        """Both fast path (name) and UUID fallback find paired devices."""
+        from custom_components.paperang.transport.bt import _scan_fallback_devices
+
+        devices_proc = MagicMock()
+        devices_proc.stdout = (
+            "Device 00:15:83:EB:05:17 Paperang-01\n"
+            "Device AA:BB:CC:DD:EE:FF RenamedPrinty\n"
+            "Device 11:22:33:44:55:66 RandomSpeaker\n"
+        )
+        devices_proc.returncode = 0
+
+        info_renamed = MagicMock()
+        info_renamed.stdout = (
+            "Device AA:BB:CC:DD:EE:FF\n"
+            "    UUID: Vendor specific  (0000fee7-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_renamed.returncode = 0
+
+        info_speaker = MagicMock()
+        info_speaker.stdout = (
+            "Device 11:22:33:44:55:66\n"
+            "    UUID: Audio Sink  (0000110b-0000-1000-8000-00805f9b34fb)\n"
+        )
+        info_speaker.returncode = 0
+
+        with patch("subprocess.run",
+                   side_effect=[devices_proc, info_renamed, info_speaker]):
+            result = _scan_fallback_devices(set())
+
+        assert len(result) == 2
+        assert result[0] == {"name": "Paperang-01", "address": "00:15:83:EB:05:17"}
+        assert result[1] == {"name": "RenamedPrinty", "address": "AA:BB:CC:DD:EE:FF"}
+
+    def test_uuid_fallback_info_error_skips_device(self):
+        """bluetoothctl info failure → device skipped, no crash."""
+        from custom_components.paperang.transport.bt import _scan_fallback_devices
+
+        devices_proc = MagicMock()
+        devices_proc.stdout = "Device DE:AD:BE:EF:00:01 BadDevice\n"
+        devices_proc.returncode = 0
+
+        with patch("subprocess.run",
+                   side_effect=[devices_proc, OSError("bluetoothctl not found")]):
             result = _scan_fallback_devices(set())
 
         assert result == []

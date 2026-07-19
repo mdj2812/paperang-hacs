@@ -16,7 +16,15 @@ BT_NAMES = {"paperang", "miaomiaoji"}
 
 
 def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
-    """Fallback: bluetoothctl devices for already-paired printers."""
+    """Fallback: bluetoothctl devices for already-paired printers.
+
+    Discovery strategy:
+    1. Name starts with paperang/miaomiaoji → fast path accept
+    2. Otherwise → bluetoothctl info <addr>, check for 0000fee7 UUID
+
+    This ensures renamed/paired printers are discoverable by their
+    SDP service UUID even if the reported device name is non-standard.
+    """
     import subprocess  # pylint: disable=import-outside-toplevel
 
     result: list[dict[str, Any]] = []
@@ -33,11 +41,23 @@ def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
                 parts = line.split(" ", 2)
                 if len(parts) >= 3:
                     addr, name = parts[1], parts[2]
-                    if addr not in seen and any(
-                        name.lower().startswith(n) for n in BT_NAMES
-                    ):
+                    if addr in seen:
+                        continue
+                    if any(name.lower().startswith(n) for n in BT_NAMES):
                         result.append({"name": name, "address": addr})
                         seen.add(addr)
+                    else:
+                        # UUID fallback: query bluetoothctl info
+                        try:
+                            info = subprocess.run(
+                                ["bluetoothctl", "info", addr],
+                                capture_output=True, text=True, timeout=5,
+                            )
+                        except Exception:  # pylint: disable=broad-exception-caught
+                            continue
+                        if "0000fee7" in info.stdout.lower():
+                            result.append({"name": name, "address": addr})
+                            seen.add(addr)
     except Exception:  # pylint: disable=broad-exception-caught
         pass
     return result
