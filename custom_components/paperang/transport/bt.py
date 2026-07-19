@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..core.paperang_lib import BtTransport, PAPERANG_SERVICE_UUID, PaperangP2, _check_paperang_uuid
+from ..core.paperang_lib import BtTransport, PaperangP2, _check_paperang_uuid
 
 BT_NAMES = {"paperang", "miaomiaoji"}
 
