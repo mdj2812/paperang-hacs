@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.5.2 (2026-07-19)
+
+### Fixed
+- **BT discovery: UUID-based fallback for renamed/non-standard devices** — 
+  `_scan_fallback_devices()` now discovers paired printers by SDP UUID
+  (`0000fee7`) when the reported device name doesn't match
+  `{paperang, miaomiaoji}`. Active scan path benefits from
+  paperang-p2-lib v1.2.1 UUID fallback automatically.
+- Minimum paperang-p2-lib requirement bumped to `>=1.2.1`.
+
+### Changed
+- `PAPERANG_BT_NAMES` and `check_paperang_uuid()` imported from
+  paperang-p2-lib instead of being duplicated in hacs.
+
 ## v1.5.1 (2026-06-10)
 
 ### Added
