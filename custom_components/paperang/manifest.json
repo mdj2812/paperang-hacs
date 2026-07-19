@@ -1,0 +1,31 @@
+{
+  "domain": "paperang",
+  "name": "Paperang P2 Printer",
+  "bluetooth": [
+    {
+      "service_uuid": "00001101-0000-1000-8000-00805f9b34fb",
+      "connectable": true
+    },
+    {
+      "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb",
+      "connectable": true
+    }
+  ],
+  "codeowners": ["@mdj2812"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/mdj2812/paperang-hacs",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/mdj2812/paperang-hacs/issues",
+  "requirements": ["paperang-p2-lib[qr,cjk]>=1.2.1"],
+  "usb": [
+    {
+      "vid": "4348",
+      "pid": "5584",
+      "manufacturer": "paperang",
+      "description": "*paperang*"
+    }
+  ],
+  "version": "1.5.2"
+}
