@@ -4,6 +4,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+# All tests mock lib imports — avoids dependency on paperang-p2-lib being
+# installed / PyPI-cached in the CI container.
+
+_MOCK_BT_NAMES = {"paperang", "miaomiaoji"}
+
+
+def _mock_check_uuid_true(_addr: str) -> bool:
+    return True
+
+
+def _mock_check_uuid_false(_addr: str) -> bool:
+    return False
+
 
 # ── _scan_fallback_devices ──────────────────────────────────────────
 
@@ -11,7 +24,11 @@ import pytest
 class TestScanFallbackDevices:
     """Tests for _scan_fallback_devices (bluetoothctl fallback)."""
 
-    def test_returns_paperang_devices(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           return_value=False)
+    def test_returns_paperang_devices(self, mock_uuid, mock_names):
         """Finds devices named 'Paperang-xxxx' in bluetoothctl output."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -23,15 +40,17 @@ class TestScanFallbackDevices:
         with patch("subprocess.run") as mock_run:
             mock_run.return_value.stdout = fake_stdout
             mock_run.return_value.returncode = 0
-            with patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                       return_value=False):
-                result = _scan_fallback_devices(set())
+            result = _scan_fallback_devices(set())
 
         assert len(result) == 2
         assert result[0] == {"name": "Paperang-01", "address": "AA:BB:CC:DD:EE:FF"}
         assert result[1] == {"name": "miaomiaoji-P2", "address": "77:88:99:AA:BB:CC"}
 
-    def test_dedup_by_seen_set(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           return_value=False)
+    def test_dedup_by_seen_set(self, mock_uuid, mock_names):
         """Skips addresses already in the seen set."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -46,7 +65,11 @@ class TestScanFallbackDevices:
         assert result == []
         assert "AA:BB:CC:DD:EE:FF" in seen
 
-    def test_no_paperang_devices(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           return_value=False)
+    def test_no_paperang_devices(self, mock_uuid, mock_names):
         """Returns empty when no matching device names or UUIDs found."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -54,14 +77,14 @@ class TestScanFallbackDevices:
         devices_proc.stdout = "Device AA:BB:CC:DD:EE:FF RandomPrinter\n"
         devices_proc.returncode = 0
 
-        with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                   return_value=False):
+        with patch("subprocess.run", return_value=devices_proc):
             result = _scan_fallback_devices(set())
 
         assert result == []
 
-    def test_subprocess_exception_handled(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    def test_subprocess_exception_handled(self, mock_names):
         """Returns empty list on subprocess error."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -70,7 +93,9 @@ class TestScanFallbackDevices:
 
         assert result == []
 
-    def test_empty_stdout(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    def test_empty_stdout(self, mock_names):
         """Returns empty on empty bluetoothctl output."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -83,7 +108,11 @@ class TestScanFallbackDevices:
 
     # ── UUID fallback tests ──
 
-    def test_uuid_fallback_finds_renamed_device(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           return_value=True)
+    def test_uuid_fallback_finds_renamed_device(self, mock_uuid, mock_names):
         """A renamed/paired device with matching UUID is discovered."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -91,15 +120,18 @@ class TestScanFallbackDevices:
         devices_proc.stdout = "Device AA:BB:CC:DD:EE:FF MyRenamedPrinty\n"
         devices_proc.returncode = 0
 
-        with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                   return_value=True):
+        with patch("subprocess.run", return_value=devices_proc):
             result = _scan_fallback_devices(set())
 
         assert len(result) == 1
-        assert result[0] == {"name": "MyRenamedPrinty", "address": "AA:BB:CC:DD:EE:FF"}
+        assert result[0] == {"name": "MyRenamedPrinty",
+                             "address": "AA:BB:CC:DD:EE:FF"}
 
-    def test_uuid_fallback_skips_non_paperang_uuid(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           return_value=False)
+    def test_uuid_fallback_skips_non_paperang_uuid(self, mock_uuid, mock_names):
         """Device with non-matching name and UUID is excluded."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -107,14 +139,16 @@ class TestScanFallbackDevices:
         devices_proc.stdout = "Device 11:22:33:44:55:66 SomeGadget\n"
         devices_proc.returncode = 0
 
-        with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                   return_value=False):
+        with patch("subprocess.run", return_value=devices_proc):
             result = _scan_fallback_devices(set())
 
         assert result == []
 
-    def test_uuid_fallback_and_name_match_coexist(self):
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           side_effect=[True, False])
+    def test_uuid_fallback_and_name_match_coexist(self, mock_uuid, mock_names):
         """Both fast path (name) and UUID fallback find paired devices."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
@@ -126,65 +160,31 @@ class TestScanFallbackDevices:
         )
         devices_proc.returncode = 0
 
-        with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                   side_effect=[True, False]):
+        with patch("subprocess.run", return_value=devices_proc):
             result = _scan_fallback_devices(set())
 
         assert len(result) == 2
-        assert result[0] == {"name": "Paperang-01", "address": "00:15:83:EB:05:17"}
-        assert result[1] == {"name": "RenamedPrinty", "address": "AA:BB:CC:DD:EE:FF"}
+        assert result[0] == {"name": "Paperang-01",
+                             "address": "00:15:83:EB:05:17"}
+        assert result[1] == {"name": "RenamedPrinty",
+                             "address": "AA:BB:CC:DD:EE:FF"}
 
-    def test_uuid_fallback_error_skips_device(self):
-        """_check_paperang_uuid returns False (error) → device skipped."""
+    @patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+           _MOCK_BT_NAMES)
+    @patch("custom_components.paperang.transport.bt.check_paperang_uuid",
+           return_value=False)
+    def test_uuid_fallback_error_skips_device(self, mock_uuid, mock_names):
+        """check_paperang_uuid returns False (error) → device skipped."""
         from custom_components.paperang.transport.bt import _scan_fallback_devices
 
         devices_proc = MagicMock()
         devices_proc.stdout = "Device DE:AD:BE:EF:00:01 BadDevice\n"
         devices_proc.returncode = 0
 
-        with patch("subprocess.run", return_value=devices_proc), \
-             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                   return_value=False):
+        with patch("subprocess.run", return_value=devices_proc):
             result = _scan_fallback_devices(set())
 
         assert result == []
-
-    def test_check_paperang_uuid_finds_service(self):
-        """_check_paperang_uuid returns True when info shows matching UUID."""
-        from custom_components.paperang.transport.bt import check_paperang_uuid
-
-        info_proc = MagicMock()
-        info_proc.stdout = (
-            "Device AA:BB:CC:DD:EE:FF\n"
-            "    UUID: Vendor specific  (0000fee7-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_proc.returncode = 0
-
-        with patch("subprocess.run", return_value=info_proc):
-            assert check_paperang_uuid("AA:BB:CC:DD:EE:FF") is True
-
-    def test_check_paperang_uuid_no_service(self):
-        """check_paperang_uuid returns False for non-Paperang UUID."""
-        from custom_components.paperang.transport.bt import check_paperang_uuid
-
-        info_proc = MagicMock()
-        info_proc.stdout = (
-            "Device 11:22:33:44:55:66\n"
-            "    UUID: Audio Sink  (0000110b-0000-1000-8000-00805f9b34fb)\n"
-        )
-        info_proc.returncode = 0
-
-        with patch("subprocess.run", return_value=info_proc):
-            assert check_paperang_uuid("11:22:33:44:55:66") is False
-
-    def test_check_paperang_uuid_error_returns_false(self):
-        """check_paperang_uuid returns False when bluetoothctl fails."""
-        from custom_components.paperang.transport.bt import check_paperang_uuid
-
-        with patch("subprocess.run",
-                   side_effect=OSError("bluetoothctl not found")):
-            assert check_paperang_uuid("DE:AD:BE:EF:00:01") is False
 
 
 # ── scan_bt_devices ──────────────────────────────────────────────────
@@ -203,15 +203,19 @@ class TestScanBtDevices:
             ("11:22:33:44:55:66", "OtherDevice"),
         ]
 
-        with patch("custom_components.paperang.transport.bt.BtTransport", mock_bt), \
-             patch("custom_components.paperang.transport.bt._scan_fallback_devices",
-                   return_value=[]), \
-             patch("custom_components.paperang.transport.bt.check_paperang_uuid",
-                   return_value=False):
+        with (
+            patch("custom_components.paperang.transport.bt.BtTransport",
+                  mock_bt),
+            patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+                  _MOCK_BT_NAMES),
+            patch("custom_components.paperang.transport.bt._scan_fallback_devices",
+                  return_value=[]),
+        ):
             result = scan_bt_devices()
 
         assert len(result) == 1
-        assert result[0] == {"name": "Paperang-01", "address": "AA:BB:CC:DD:EE:FF"}
+        assert result[0] == {"name": "Paperang-01",
+                             "address": "AA:BB:CC:DD:EE:FF"}
 
     def test_active_scan_empty_falls_back(self):
         """When active scan returns empty, falls back to bluetoothctl."""
@@ -220,14 +224,20 @@ class TestScanBtDevices:
         mock_bt = MagicMock()
         mock_bt.scan.return_value = []
 
-        with patch("custom_components.paperang.transport.bt.BtTransport", mock_bt), \
-             patch("custom_components.paperang.transport.bt._scan_fallback_devices",
-                   return_value=[{"name": "miaomiaoji-P2",
-                                  "address": "77:88:99:AA:BB:CC"}]):
+        with (
+            patch("custom_components.paperang.transport.bt.BtTransport",
+                  mock_bt),
+            patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+                  _MOCK_BT_NAMES),
+            patch("custom_components.paperang.transport.bt._scan_fallback_devices",
+                  return_value=[{"name": "miaomiaoji-P2",
+                                 "address": "77:88:99:AA:BB:CC"}]),
+        ):
             result = scan_bt_devices()
 
         assert len(result) == 1
-        assert result[0] == {"name": "miaomiaoji-P2", "address": "77:88:99:AA:BB:CC"}
+        assert result[0] == {"name": "miaomiaoji-P2",
+                             "address": "77:88:99:AA:BB:CC"}
 
     def test_active_scan_exception_handled(self):
         """BtTransport.scan() raising exception → empty list, fallback used."""
@@ -236,10 +246,15 @@ class TestScanBtDevices:
         mock_bt = MagicMock()
         mock_bt.scan.side_effect = RuntimeError("scan failed")
 
-        with patch("custom_components.paperang.transport.bt.BtTransport", mock_bt), \
-             patch("custom_components.paperang.transport.bt._scan_fallback_devices",
-                   return_value=[{"name": "Paperang-01",
-                                  "address": "AA:BB:CC:DD:EE:FF"}]):
+        with (
+            patch("custom_components.paperang.transport.bt.BtTransport",
+                  mock_bt),
+            patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+                  _MOCK_BT_NAMES),
+            patch("custom_components.paperang.transport.bt._scan_fallback_devices",
+                  return_value=[{"name": "Paperang-01",
+                                 "address": "AA:BB:CC:DD:EE:FF"}]),
+        ):
             result = scan_bt_devices()
 
         assert len(result) == 1
@@ -254,11 +269,14 @@ class TestScanBtDevices:
             ("11:22:33:44:55:66", ""),
         ]
 
-        with patch("custom_components.paperang.transport.bt.BtTransport", mock_bt):
-            with patch(
-                "custom_components.paperang.transport.bt._scan_fallback_devices",
-                return_value=[],
-            ):
-                result = scan_bt_devices()
+        with (
+            patch("custom_components.paperang.transport.bt.BtTransport",
+                  mock_bt),
+            patch("custom_components.paperang.transport.bt.PAPERANG_BT_NAMES",
+                  _MOCK_BT_NAMES),
+            patch("custom_components.paperang.transport.bt._scan_fallback_devices",
+                  return_value=[]),
+        ):
+            result = scan_bt_devices()
 
         assert result == []
