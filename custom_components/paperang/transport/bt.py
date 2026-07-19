@@ -10,13 +10,24 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..core.paperang_lib import BtTransport, PaperangP2
-
-BT_NAMES = {"paperang", "miaomiaoji"}
+from ..core.paperang_lib import (
+    BtTransport,
+    PAPERANG_BT_NAMES,
+    PaperangP2,
+    check_paperang_uuid,
+)
 
 
 def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
-    """Fallback: bluetoothctl devices for already-paired printers."""
+    """Fallback: bluetoothctl devices for already-paired printers.
+
+    Discovery strategy:
+    1. Name starts with paperang/miaomiaoji → fast path accept
+    2. Otherwise → bluetoothctl info <addr>, check for 0000fee7 UUID
+
+    This ensures renamed/paired printers are discoverable by their
+    SDP service UUID even if the reported device name is non-standard.
+    """
     import subprocess  # pylint: disable=import-outside-toplevel
 
     result: list[dict[str, Any]] = []
@@ -33,9 +44,12 @@ def _scan_fallback_devices(seen: set[str]) -> list[dict[str, Any]]:
                 parts = line.split(" ", 2)
                 if len(parts) >= 3:
                     addr, name = parts[1], parts[2]
-                    if addr not in seen and any(
-                        name.lower().startswith(n) for n in BT_NAMES
-                    ):
+                    if addr in seen:
+                        continue
+                    if any(name.lower().startswith(n) for n in PAPERANG_BT_NAMES):
+                        result.append({"name": name, "address": addr})
+                        seen.add(addr)
+                    elif check_paperang_uuid(addr):
                         result.append({"name": name, "address": addr})
                         seen.add(addr)
     except Exception:  # pylint: disable=broad-exception-caught
@@ -62,7 +76,7 @@ def scan_bt_devices() -> list[dict[str, Any]]:
         devices = []
 
     for addr, name in devices:
-        if name and any(name.lower().startswith(n) for n in BT_NAMES):
+        if name and any(name.lower().startswith(n) for n in PAPERANG_BT_NAMES):
             result.append({"name": name, "address": addr})
             seen.add(addr)
 

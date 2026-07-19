@@ -29,5 +29,9 @@ UsbTransportBase = _lib.transport.UsbTransport  # pylint: disable=no-member
 
 try:
     BtTransport = _lib.transport.BtTransport  # pylint: disable=no-member
+    check_paperang_uuid = _lib.transport.check_paperang_uuid  # pylint: disable=no-member
+    PAPERANG_BT_NAMES = _lib.transport.PAPERANG_BT_NAMES  # pylint: disable=no-member
 except (ImportError, AttributeError):
     BtTransport = None  # pylint: disable=invalid-name
+    check_paperang_uuid = None  # pylint: disable=invalid-name
+    PAPERANG_BT_NAMES = None  # pylint: disable=invalid-name
