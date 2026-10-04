@@ -353,7 +353,7 @@ class TestUsbTransportConnect:
 
         self._inject_usb_modules(wrong_dev, MagicMock(), MagicMock())
         with pytest.raises(
-            RuntimeError, match="Paperang P2 not found at bus=2"
+            RuntimeError, match="Paperang printer not found at bus=2"
         ):
             t.connect()
 
