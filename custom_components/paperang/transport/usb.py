@@ -54,6 +54,9 @@ class UsbTransportWithPath(UsbTransportBase):
         super().__init__(vid, pid, pids)
         self._target_bus = bus
         self._target_port = tuple(port) if port else ()
+        # Kept locally rather than read back off the parent, so this subclass
+        # does not depend on the parent's attribute bookkeeping.
+        self._pids = tuple(pids)
         self.matched_pid = None
         self._dev = None
         self._ep_out = None
@@ -66,7 +69,7 @@ class UsbTransportWithPath(UsbTransportBase):
 
         self._dev = None
         self.matched_pid = None
-        for pid in self.pids:
+        for pid in self._pids:
             devices = usb.core.find(find_all=True, idVendor=self.vid, idProduct=pid)
             for d in devices:
                 if (
@@ -80,7 +83,7 @@ class UsbTransportWithPath(UsbTransportBase):
                 break
 
         if self._dev is None:
-            wanted = "/".join(f"0x{pid:04x}" for pid in self.pids)
+            wanted = "/".join(f"0x{pid:04x}" for pid in self._pids)
             raise RuntimeError(
                 f"Paperang printer not found at bus={self._target_bus} "
                 f"port={list(self._target_port)} (PID {wanted})"

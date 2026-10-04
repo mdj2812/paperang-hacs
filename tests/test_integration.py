@@ -201,7 +201,7 @@ class TestServiceCalls:
             mock_tp.return_value = mock_transport
             mod._get_printer("test_eid")
             mock_tp.assert_called_once_with(bus=1, port=[3])
-            mock_p2.assert_called_once_with(transport=mock_transport)
+            mock_p2.assert_called_once_with(transport=mock_transport, model="p2")
 
     async def test_read_printer_state_firmware_decode(
         self, hass: HomeAssistant, mock_printer
