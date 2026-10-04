@@ -11,6 +11,10 @@ CONF_TRANSPORT = "transport"
 CONF_BT_ADDRESS = "bt_address"
 CONF_USB_BUS = "usb_bus"
 CONF_USB_PORT = "usb_port"
+# Printer model resolved when the entry was created ("P2", "D1", …).
+# Entries created before multi-model support have no value and fall back
+# to the library default.
+CONF_MODEL = "model"
 
 # Services
 SERVICE_PRINT_TEXT = "print_text"

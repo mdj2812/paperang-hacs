@@ -32,8 +32,8 @@ class TestConfigFlowCreateEntry:
         flow._selected_usb = {"usb_path": "1-3", "bus": 1, "port": [3]}
 
         with patch(
-            "custom_components.paperang.config_flow._verify_printer",
-            return_value=True,
+            "custom_components.paperang.config_flow._probe_printer",
+            return_value={"available": True, "model": "P2"},
         ):
             result = await flow.async_step_usb_verify()
 
@@ -53,8 +53,8 @@ class TestConfigFlowCreateEntry:
         }
 
         with patch(
-            "custom_components.paperang.config_flow._verify_bt_printer",
-            return_value=True,
+            "custom_components.paperang.config_flow._probe_bt_printer",
+            return_value={"available": True, "model": "P2"},
         ):
             result = await flow.async_step_bt_verify()
 
@@ -77,8 +77,8 @@ class TestConfigFlowCreateEntry:
             return_value=[device],
         ):
             with patch(
-                "custom_components.paperang.config_flow._verify_printer",
-                return_value=True,
+                "custom_components.paperang.config_flow._probe_printer",
+                return_value={"available": True, "model": "P2"},
             ):
                 result = await flow.async_step_user({"transport": "usb"})
 
@@ -119,8 +119,8 @@ class TestConfigFlowCreateEntry:
         ]
 
         with patch(
-            "custom_components.paperang.config_flow._verify_bt_printer",
-            return_value=True,
+            "custom_components.paperang.config_flow._probe_bt_printer",
+            return_value={"available": True, "model": "P2"},
         ):
             result = await flow.async_step_select_bt_device(
                 {"bt_device": "AA:BB:CC:DD:EE:01"}

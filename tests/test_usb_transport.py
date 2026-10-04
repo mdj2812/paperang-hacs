@@ -32,23 +32,48 @@ class TestScanUsbDevices:
 
     def test_returns_devices(self):
         """Returns list of device dicts when devices are found."""
-        from custom_components.paperang.transport.usb import scan_usb_devices
+        from custom_components.paperang.transport.usb import (
+            PAPERANG_PIDS,
+            scan_usb_devices,
+        )
 
         dev = MagicMock()
         dev.bus = 2
         dev.port_numbers = [1, 3]
         dev.address = 5
 
-        with patch("usb.core.find", return_value=[dev]):
+        def fake_find(find_all=True, idVendor=None, idProduct=None):
+            """Only the first known PID has a device attached."""
+            return [dev] if idProduct == PAPERANG_PIDS[0] else []
+
+        with patch("usb.core.find", side_effect=fake_find):
             result = scan_usb_devices()
 
         assert len(result) == 1
-        assert result[0] == {
-            "usb_path": "2-1-3",
-            "bus": 2,
-            "port": [1, 3],
-            "address": 5,
-        }
+        assert result[0]["usb_path"] == "2-1-3"
+        assert result[0]["bus"] == 2
+        assert result[0]["port"] == [1, 3]
+        assert result[0]["address"] == 5
+        assert result[0]["pid"] == PAPERANG_PIDS[0]
+
+    def test_scans_every_registered_pid(self):
+        """One lookup per known model PID, so a D1 is found too."""
+        from custom_components.paperang.transport.usb import (
+            PAPERANG_PIDS,
+            scan_usb_devices,
+        )
+
+        seen: list[int] = []
+
+        def fake_find(find_all=True, idVendor=None, idProduct=None):
+            seen.append(idProduct)
+            return []
+
+        with patch("usb.core.find", side_effect=fake_find):
+            scan_usb_devices()
+
+        assert seen == list(PAPERANG_PIDS)
+        assert 0x5584 in seen
 
     def test_returns_empty(self):
         """Returns empty list when no devices found."""
@@ -328,7 +353,7 @@ class TestUsbTransportConnect:
 
         self._inject_usb_modules(wrong_dev, MagicMock(), MagicMock())
         with pytest.raises(
-            RuntimeError, match="Paperang P2 not found at bus=2"
+            RuntimeError, match="Paperang printer not found at bus=2"
         ):
             t.connect()
 

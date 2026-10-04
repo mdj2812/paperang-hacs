@@ -18,7 +18,7 @@ class TestGetPrinter:
         with patch.object(pr, "PaperangP2") as mock_p2:
             mod._get_printer(FAKE_ENTRY_ID)
             mock_p2.assert_called_once()
-            assert mock_p2.call_args[1] == {}
+            assert mock_p2.call_args[1] == {"model": "p2"}
 
     def test_usb_with_bus_port_uses_custom_transport(self):
         import custom_components.paperang as mod
@@ -38,7 +38,7 @@ class TestGetPrinter:
             mock_tp.return_value = mock_transport
             mod._get_printer(FAKE_ENTRY_ID)
             mock_tp.assert_called_once_with(bus=1, port=[3])
-            mock_p2.assert_called_once_with(transport=mock_transport)
+            mock_p2.assert_called_once_with(transport=mock_transport, model="p2")
 
     def test_no_transport_configs_falls_back_to_usb(self):
         import custom_components.paperang as mod

@@ -33,9 +33,9 @@ pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 #   from .transport.bt import scan_bt_devices as _scan_bt_devices
 #   from .transport.bt import verify_bt_printer as _verify_bt_printer
 _PATCH_USB_SCAN = "custom_components.paperang.config_flow._scan_usb_devices"
-_PATCH_USB_VERIFY = "custom_components.paperang.config_flow._verify_printer"
+_PATCH_USB_PROBE = "custom_components.paperang.config_flow._probe_printer"
 _PATCH_BT_SCAN = "custom_components.paperang.config_flow._scan_bt_devices"
-_PATCH_BT_VERIFY = "custom_components.paperang.config_flow._verify_bt_printer"
+_PATCH_BT_PROBE = "custom_components.paperang.config_flow._probe_bt_printer"
 
 # ── Mock USB scan data ────────────────────────────────────────────
 FAKE_USB_DEVICES = [
@@ -76,7 +76,7 @@ class TestConfigFlowUSB:
         """Single USB device → skip select → verify → create entry."""
         with (
             patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
-            patch(_PATCH_USB_VERIFY, return_value=True),
+            patch(_PATCH_USB_PROBE, return_value={"available": True, "model": "P2"}),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
@@ -92,7 +92,7 @@ class TestConfigFlowUSB:
         """Verify fails → shows form with error."""
         with (
             patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
-            patch(_PATCH_USB_VERIFY, return_value=False),
+            patch(_PATCH_USB_PROBE, return_value={"available": False, "model": None}),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
@@ -120,7 +120,7 @@ class TestConfigFlowUSBMulti:
         """Multiple USB devices → select_device → pick → verify → create."""
         with (
             patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES),
-            patch(_PATCH_USB_VERIFY, return_value=True),
+            patch(_PATCH_USB_PROBE, return_value={"available": True, "model": "P2"}),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
@@ -161,7 +161,7 @@ class TestConfigFlowBT:
         """Single BT device → auto-skip select → verify → create entry."""
         with (
             patch(_PATCH_BT_SCAN, return_value=FAKE_BT_DEVICES[:1]),
-            patch(_PATCH_BT_VERIFY, return_value=True),
+            patch(_PATCH_BT_PROBE, return_value={"available": True, "model": "P2"}),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": "classic_bluetooth"}
@@ -187,7 +187,7 @@ class TestConfigFlowUser:
         """User flow → pick USB transport → scan → verify → create."""
         with (
             patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
-            patch(_PATCH_USB_VERIFY, return_value=True),
+            patch(_PATCH_USB_PROBE, return_value={"available": True, "model": "P2"}),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -272,7 +272,7 @@ class TestConfigFlowOptions:
 
         with (
             patch(_PATCH_USB_SCAN, return_value=FAKE_USB_DEVICES[:1]),
-            patch(_PATCH_USB_VERIFY, return_value=True),
+            patch(_PATCH_USB_PROBE, return_value={"available": True, "model": "P2"}),
         ):
             result = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": config_entries.SOURCE_USB}
