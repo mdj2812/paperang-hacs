@@ -54,6 +54,7 @@ class UsbTransportWithPath(UsbTransportBase):
         super().__init__(vid, pid, pids)
         self._target_bus = bus
         self._target_port = tuple(port) if port else ()
+        self.matched_pid = None
         self._dev = None
         self._ep_out = None
         self._ep_in = None
