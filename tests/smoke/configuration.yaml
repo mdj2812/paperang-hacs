@@ -1,0 +1,14 @@
+# Minimal HA config for container smoke tests.
+# paperang: triggers async_setup → services registered
+
+default_config:
+
+paperang:
+
+http:
+  use_x_forwarded_for: true
+
+logger:
+  default: info
+  logs:
+    custom_components.paperang: debug

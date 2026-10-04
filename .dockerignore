@@ -1,0 +1,4 @@
+# Exclude everything except what Dockerfile.ha-test needs
+*
+!custom_components/paperang/
+!tests/smoke/configuration.yaml

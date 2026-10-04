@@ -1,0 +1,21 @@
+# Smoke-test HA container with Paperang custom component pre-installed.
+# Uses the official HA Core Docker image (no supervisor — matches the
+# standalone Docker install that many users run).
+# Used by CI to verify the component loads and registers services correctly.
+
+FROM ghcr.io/home-assistant/home-assistant:stable
+
+# Ensure curl is available for health-check + API calls
+RUN apk add --no-cache curl
+
+# Install paperang-p2-lib (the core printer library)
+RUN pip install paperang-p2-lib>=1.2.0
+
+# Copy minimal HA config — just enough to boot and expose REST API
+COPY tests/smoke/configuration.yaml /config/configuration.yaml
+
+# Copy the custom component
+COPY custom_components/paperang/ /config/custom_components/paperang/
+
+# Ensure correct owner (HA runs as root in the dev image)
+RUN chmod -R 755 /config/custom_components/paperang/
