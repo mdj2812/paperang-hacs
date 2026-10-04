@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from custom_components.paperang.config_flow import (
     _scan_usb_devices,
-    _verify_printer,
+    _probe_printer,
 )
 from custom_components.paperang.transport.bt import (
     scan_bt_devices,
@@ -21,17 +21,17 @@ class TestUsbDiscovery:
             result = _scan_usb_devices()
             assert result == []
 
-    def test_verify_printer_no_lib_returns_false(self):
-        """_verify_printer returns False when paperang is missing."""
+    def test_probe_printer_no_lib_returns_false(self):
+        """_probe_printer returns False when paperang is missing."""
         with patch(
             "custom_components.paperang.transport.usb.PaperangP2",
             side_effect=ImportError,
         ):
-            result = _verify_printer(1, [3])
-            assert result is False
+            result = _probe_printer(1, [3])
+            assert result["available"] is False
 
-    def test_verify_printer_success(self):
-        """_verify_printer returns True on successful connect."""
+    def test_probe_printer_success(self):
+        """_probe_printer returns True on successful connect."""
         mock_p = MagicMock()
         mock_p.get_battery.return_value = 80
 
@@ -44,15 +44,15 @@ class TestUsbDiscovery:
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
             ):
-                result = _verify_printer(1, [3])
+                result = _probe_printer(1, [3])
 
-        assert result is True
+        assert result["available"] is True
         mock_p.connect.assert_called_once()
         mock_p.get_battery.assert_called_once()
         mock_p.disconnect.assert_called_once()
 
-    def test_verify_printer_battery_none_returns_false(self):
-        """_verify_printer returns False when get_battery returns None."""
+    def test_probe_printer_battery_none_returns_false(self):
+        """_probe_printer returns False when get_battery returns None."""
         mock_p = MagicMock()
         mock_p.get_battery.return_value = None
 
@@ -65,12 +65,12 @@ class TestUsbDiscovery:
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
             ):
-                result = _verify_printer(1, [3])
+                result = _probe_printer(1, [3])
 
-        assert result is False
+        assert result["available"] is False
 
-    def test_verify_printer_exception_returns_false(self):
-        """_verify_printer returns False on exception."""
+    def test_probe_printer_exception_returns_false(self):
+        """_probe_printer returns False on exception."""
         mock_p = MagicMock()
         mock_p.connect.side_effect = RuntimeError("boom")
 
@@ -83,12 +83,12 @@ class TestUsbDiscovery:
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
             ):
-                result = _verify_printer(1, [3])
+                result = _probe_printer(1, [3])
 
-        assert result is False
+        assert result["available"] is False
 
-    def test_verify_printer_disconnect_exception_handled(self):
-        """_verify_printer handles disconnect exception gracefully."""
+    def test_probe_printer_disconnect_exception_handled(self):
+        """_probe_printer handles disconnect exception gracefully."""
         mock_p = MagicMock()
         mock_p.get_battery.return_value = 80
         mock_p.disconnect.side_effect = RuntimeError("disconnect boom")
@@ -102,9 +102,9 @@ class TestUsbDiscovery:
                 "custom_components.paperang.transport.usb.UsbTransportWithPath",
                 return_value=mock_tp,
             ):
-                result = _verify_printer(1, [3])
+                result = _probe_printer(1, [3])
 
-        assert result is True  # battery was read before disconnect failed
+        assert result["available"] is True  # battery was read before disconnect failed
 
 
 class TestBtDiscovery:

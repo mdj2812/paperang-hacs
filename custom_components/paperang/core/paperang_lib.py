@@ -27,6 +27,15 @@ crc32_paperang = _lib.crc32_paperang  # pylint: disable=no-member
 pack_packet = _lib.pack_packet  # pylint: disable=no-member
 UsbTransportBase = _lib.transport.UsbTransport  # pylint: disable=no-member
 
+# Multi-model support (paperang-p2-lib >= 1.3.0).  Fetched defensively so this
+# module still imports against an older library instead of failing setup.
+Paperang = getattr(_lib, "Paperang", _lib.PaperangP2)  # noqa: B009
+DEFAULT_MODEL = getattr(_lib, "DEFAULT_MODEL", "p2")
+get_model = getattr(_lib, "get_model", None)
+list_models = getattr(_lib, "list_models", None)
+usb_pids = getattr(_lib, "usb_pids", None)
+resolve_model = getattr(_lib, "resolve_model", None)
+
 try:
     BtTransport = _lib.transport.BtTransport  # pylint: disable=no-member
     check_paperang_uuid = _lib.transport.check_paperang_uuid  # pylint: disable=no-member

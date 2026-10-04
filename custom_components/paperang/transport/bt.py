@@ -15,6 +15,7 @@ from ..core.paperang_lib import (
     PAPERANG_BT_NAMES,
     PaperangP2,
     check_paperang_uuid,
+    resolve_model,
 )
 
 
@@ -88,24 +89,37 @@ def scan_bt_devices() -> list[dict[str, Any]]:
 
 
 def verify_bt_printer(address: str) -> bool:
-    """Connect to classic-BT printer and verify communication.
+    """Backwards-compatible boolean check used by older callers."""
+    return probe_bt_printer(address)["available"]
 
-    BtTransport is synchronous (pure socket) — no event-loop is needed,
-    unlike BleTransport which requires ``asyncio.run_until_complete()``.
 
-    Returns True on success, False on any error.
+def probe_bt_printer(address: str) -> dict[str, Any]:
+    """Connect to a classic-BT printer, verify it, and resolve its model.
+
+    ``BtTransport`` is synchronous (a plain RFCOMM socket), so no event loop is
+    involved.  Returns ``{"available": bool, "model": str | None}``; the model
+    comes from ``CMD_GET_MODEL``, since Bluetooth carries no VID/PID.
     """
     if BtTransport is None:
-        return False
+        return {"available": False, "model": None}
 
     printer = None
+    transport = None
     try:
-        printer = PaperangP2(transport=BtTransport(address=address))
+        transport = BtTransport(address=address)
+        printer = PaperangP2(transport=transport)
         printer.connect()
         battery = printer.get_battery()
-        return battery is not None
+        available = battery is not None
+        model = None
+        if available and resolve_model is not None:
+            try:
+                model = resolve_model(reported_name=printer.get_model()).name
+            except Exception:  # pylint: disable=broad-exception-caught
+                model = None
+        return {"available": available, "model": model}
     except Exception:  # pylint: disable=broad-exception-caught
-        return False
+        return {"available": False, "model": None}
     finally:
         if printer is not None:
             try:

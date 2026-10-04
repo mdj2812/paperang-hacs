@@ -16,6 +16,7 @@ from homeassistant.core import callback
 
 from .const import (
     CONF_BT_ADDRESS,
+    CONF_MODEL,
     CONF_TRANSPORT,
     CONF_USB_BUS,
     CONF_USB_PORT,
@@ -23,10 +24,11 @@ from .const import (
     TRANSPORT_BT,
     TRANSPORT_USB,
 )
+from .core.paperang_lib import DEFAULT_MODEL
 from .transport.bt import scan_bt_devices as _scan_bt_devices
-from .transport.bt import verify_bt_printer as _verify_bt_printer
+from .transport.bt import probe_bt_printer as _probe_bt_printer
 from .transport.usb import scan_usb_devices as _scan_usb_devices
-from .transport.usb import verify_printer as _verify_printer
+from .transport.usb import probe_usb_printer as _probe_printer
 
 
 class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -81,7 +83,7 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         options = {
             dev["usb_path"]: (
-                f"Paperang P2 — USB {dev['usb_path']}"
+                f"Paperang {dev.get('model') or 'printer'} — USB {dev['usb_path']}"
                 f" (bus {dev['bus']}, addr {dev['address']})"
             )
             for dev in self._usb_discovered
@@ -107,22 +109,24 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(f"paperang_usb_{usb_path}")
         self._abort_if_unique_id_configured()
 
-        ok = await self.hass.async_add_executor_job(
-            _verify_printer, dev["bus"], dev["port"]
+        probe = await self.hass.async_add_executor_job(
+            _probe_printer, dev["bus"], dev["port"]
         )
 
-        if not ok:
+        if not probe["available"]:
             return self.async_show_form(
                 step_id="usb_verify",
                 errors={"base": "communication_failed"},
             )
 
+        model = probe.get("model") or DEFAULT_MODEL
         return self.async_create_entry(
-            title=f"Paperang P2 (USB {usb_path})",
+            title=f"Paperang {model} (USB {usb_path})",
             data={
                 CONF_TRANSPORT: TRANSPORT_USB,
                 CONF_USB_BUS: dev["bus"],
                 CONF_USB_PORT: dev["port"],
+                CONF_MODEL: model,
             },
         )
 
@@ -183,18 +187,20 @@ class PaperangConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(f"paperang_bt_{address}")
         self._abort_if_unique_id_configured()
 
-        ok = await self.hass.async_add_executor_job(_verify_bt_printer, address)
-        if not ok:
+        probe = await self.hass.async_add_executor_job(_probe_bt_printer, address)
+        if not probe["available"]:
             return self.async_show_form(
                 step_id="bt_verify",
                 errors={"base": "communication_failed"},
             )
 
+        model = probe.get("model") or DEFAULT_MODEL
         return self.async_create_entry(
-            title=f"Paperang P2 ({dev['name']})",
+            title=f"Paperang {model} ({dev['name']})",
             data={
                 CONF_TRANSPORT: TRANSPORT_BT,
                 CONF_BT_ADDRESS: address,
+                CONF_MODEL: model,
             },
         )
 

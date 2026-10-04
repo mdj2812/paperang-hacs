@@ -21,6 +21,44 @@ _paperang.transport = MagicMock()
 _paperang.transport.Transport = object
 _paperang.transport.UsbTransport = MagicMock
 
+
+class _StubModel:
+    """Minimal stand-in for paperang.models.PrinterModel."""
+
+    def __init__(self, name: str, print_width: int) -> None:
+        self.name = name
+        self.print_width = print_width
+        self.line_bytes = print_width // 8
+
+
+STUB_MODELS = {
+    "p2": _StubModel("P2", 576),
+    "d1": _StubModel("D1", 384),
+}
+
+
+def _stub_get_model(model=None):
+    if model is None:
+        return STUB_MODELS["p2"]
+    return STUB_MODELS[str(model).strip().lower()]
+
+
+def _stub_resolve_model(vid=None, pid=None, reported_name=None):
+    """Resolve like the library does: reported name first, then USB ID."""
+    if reported_name and "d1" in str(reported_name).lower():
+        return STUB_MODELS["d1"]
+    if pid == 0x5585:
+        return STUB_MODELS["d1"]
+    return STUB_MODELS["p2"]
+
+
+_paperang.Paperang = _paperang.PaperangP2
+_paperang.DEFAULT_MODEL = "p2"
+_paperang.usb_pids = MagicMock(return_value=(0x5584, 0x5585))
+_paperang.get_model = MagicMock(side_effect=_stub_get_model)
+_paperang.list_models = MagicMock(return_value=dict(STUB_MODELS))
+_paperang.resolve_model = MagicMock(side_effect=_stub_resolve_model)
+
 sys.modules["paperang"] = _paperang
 sys.modules["paperang.transport"] = _paperang.transport
 

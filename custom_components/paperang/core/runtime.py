@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from ..const import (
     CONF_BT_ADDRESS,
+    CONF_MODEL,
     CONF_TRANSPORT,
     CONF_USB_BUS,
     CONF_USB_PORT,
     TRANSPORT_BT,
 )
 from ..transport.usb import UsbTransportWithPath
-from .paperang_lib import BtTransport, PaperangP2
+from .paperang_lib import DEFAULT_MODEL, BtTransport, PaperangP2
 
 transport_configs: dict[str, dict[str, object]] = {}
 
@@ -83,15 +84,19 @@ def _get_printer(entry_id: str | None = None):
     else:
         return PaperangP2()
 
+    model_name = cfg.get(CONF_MODEL) or DEFAULT_MODEL
     transport_type = cfg.get(CONF_TRANSPORT, "")
     if transport_type == TRANSPORT_BT and BtTransport is not None:
         bt_addr = cfg.get(CONF_BT_ADDRESS, "")
         bt = BtTransport(address=bt_addr) if bt_addr else BtTransport()
-        return PaperangP2(transport=bt)
+        return PaperangP2(transport=bt, model=model_name)
 
     bus = cfg.get(CONF_USB_BUS)
     port = cfg.get(CONF_USB_PORT)
     if bus is not None and port is not None:
-        return PaperangP2(transport=UsbTransportWithPath(bus=bus, port=port))
+        return PaperangP2(
+            transport=UsbTransportWithPath(bus=bus, port=port),
+            model=model_name,
+        )
 
-    return PaperangP2()
+    return PaperangP2(model=model_name)

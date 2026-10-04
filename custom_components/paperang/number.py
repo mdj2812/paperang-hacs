@@ -11,6 +11,7 @@ from homeassistant.components.number import NumberEntity
 from homeassistant.const import PERCENTAGE
 
 from .const import DOMAIN
+from .core.models import entry_print_width
 from .entity import PaperangEntity, make_device_info
 
 
@@ -30,6 +31,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up number platform from config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     device_info = make_device_info(entry)
+
+    # QR size cannot exceed the print head of the connected model.
+    print_width = entry_print_width(entry)
+    qr_maximum = min(576, print_width)
+    qr_default = min(500, qr_maximum)
 
     async_add_entities(
         [
@@ -71,8 +77,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 num_range=NumberRange(
                     icon="mdi:qrcode",
                     minimum=100,
-                    maximum=576,
-                    default=500,
+                    maximum=qr_maximum,
+                    default=qr_default,
                     step=10,
                     unit="px",
                 ),
